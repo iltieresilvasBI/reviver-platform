@@ -72,29 +72,11 @@ export async function signup(formData: FormData) {
   if (error) redirect(safeMessage(friendlyAuthError(error)));
   if (data.session) redirect("/dashboard");
 
-  redirect(
-    safeMessage(
-      "Conta criada. Foi enviado um email de confirmação. Depois de confirmar, volta aqui e inicia sessão.",
-    ),
-  );
-}
+  // Public Reviver accounts are allowed before ministry email verification.
+  // Hosted Supabase may still return no session from signUp when confirmation is enabled,
+  // so sign in immediately after the database activation trigger has run.
+  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+  if (!loginError) redirect("/dashboard");
 
-export async function resendConfirmation(formData: FormData) {
-  const supabase = await createClient();
-  const email = String(formData.get("resendEmail") ?? "").trim();
-
-  if (!email) redirect(safeMessage("Indica o email da conta."));
-
-  const origin = await getAppOrigin();
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
-    },
-  });
-
-  if (error) redirect(safeMessage(friendlyAuthError(error)));
-
-  redirect(safeMessage("Email de confirmação reenviado. Verifica também a pasta de spam."));
+  redirect(safeMessage("Conta criada. Agora podes iniciar sessão com o email e a password escolhidos."));
 }
