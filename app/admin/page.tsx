@@ -1,26 +1,56 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
-import { setEmailVerification, setGlobalRole } from "./actions";
 
-export default async function AdminPage({searchParams}:{searchParams:Promise<{message?:string}>}){
-  const qs=await searchParams; const ctx=await getAccessContext();
-  if(!ctx.isAdmin)return <AppShell title="Admin" active="/admin" email={ctx.email}><section className="hero-card"><p className="eyebrow">ACESSO RESTRITO</p><h2>Administração global</h2><p>Esta área exige o papel Admin.</p></section></AppShell>;
-  const {data:users}=await ctx.supabase.rpc("admin_user_directory");
-  return <AppShell title="Admin" active="/admin" email={ctx.email}>
-    {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
-    <div className="button-row" style={{marginBottom:18}}><Link className="button primary" href="/admin/academy">Gerir Academy</Link><Link className="button" href="/media">Gerir site e conteúdo</Link><Link className="button" href="/">Ver site público</Link></div>
-    <div className="grid grid-2">
-      <section className="card"><p className="eyebrow">UTILIZADORES</p><h2>{(users??[]).length} contas</h2><p className="muted">As contas públicas ficam ativas imediatamente. A verificação de email é um controlo separado para acessos internos.</p></section>
-      <form action={setGlobalRole} className="card form-grid"><p className="eyebrow">PAPEL GLOBAL</p><div className="field"><label>Email</label><input name="email" type="email" required/></div><div className="field"><label>Papel</label><select name="role"><option value="user">Utilizador</option><option value="admin">Admin</option></select></div><button className="button primary">Atualizar</button></form>
+export default async function AdminPage(){
+  const ctx=await getAccessContext();
+  if(!ctx.isAdmin) return <AppShell title="Admin" active="/admin" email={ctx.email}><section className="hero-card"><p className="eyebrow">ACESSO RESTRITO</p><h2>Administração global</h2><p>Esta área exige o papel Admin.</p></section></AppShell>;
+
+  const [
+    {count:usersCount},
+    {count:contentCount},
+    {count:reviewCount},
+    {count:publishedCount},
+    {count:lessonsCount},
+    {count:pendingWorshipCount},
+    {data:reviewItems},
+  ]=await Promise.all([
+    ctx.supabase.from("profiles").select("*",{count:"exact",head:true}),
+    ctx.supabase.from("content_items").select("*",{count:"exact",head:true}),
+    ctx.supabase.from("content_items").select("*",{count:"exact",head:true}).eq("status","in_review"),
+    ctx.supabase.from("content_items").select("*",{count:"exact",head:true}).eq("status","published"),
+    ctx.supabase.from("academy_lessons").select("*",{count:"exact",head:true}).eq("active",true),
+    ctx.supabase.from("network_memberships").select("id,networks!inner(slug)",{count:"exact",head:true}).eq("status","pending").eq("networks.slug","worship"),
+    ctx.supabase.from("content_items").select("id,title,content_type,status,submitted_at").eq("status","in_review").order("submitted_at",{ascending:true}).limit(6),
+  ]);
+
+  const areas=[
+    {title:"Conteúdo e site",text:"Eventos, campanhas, notícias, vídeos, imagens, revisão e publicação.",href:"/media",cta:"Abrir CMS"},
+    {title:"Aprovações",text:"Fila editorial com aprovação separada da publicação.",href:"/admin/aprovacoes",cta:"Rever fila"},
+    {title:"Reviver Academy",text:"Cursos, módulos, aulas, vídeos e quizzes.",href:"/admin/academy",cta:"Gerir Academy"},
+    {title:"Utilizadores",text:"Contas, verificação, admins e papéis de mídia.",href:"/admin/utilizadores",cta:"Gerir acessos"},
+    {title:"Ministério de Louvor",text:"Membros, convites, pedidos, escalas, ensaios e repertório.",href:"/worship",cta:"Gerir Louvor"},
+    {title:"Site público",text:"Ver exatamente o que a comunidade está a receber.",href:"/",cta:"Abrir site"},
+  ];
+
+  return <AppShell title="Centro de Administração" active="/admin" email={ctx.email}>
+    <section className="hero-card">
+      <p className="eyebrow">REVIVER CONTROL CENTER</p>
+      <h2>Um único ponto para operar todo o ecossistema.</h2>
+      <p>Conteúdo público, Academy, utilizadores, aprovações e Ministério de Louvor são administrados sem edição de código.</p>
+    </section>
+
+    <div className="grid grid-4" style={{marginTop:18}}>
+      <div className="card metric"><span>Utilizadores</span><strong>{usersCount??0}</strong></div>
+      <div className="card metric"><span>Conteúdos</span><strong>{contentCount??0}</strong></div>
+      <div className="card metric"><span>Aguardam revisão</span><strong>{reviewCount??0}</strong></div>
+      <div className="card metric"><span>Aulas ativas</span><strong>{lessonsCount??0}</strong></div>
     </div>
-    <div className="section-title"><h2>Verificação para ministérios</h2></div>
-    <form action={setEmailVerification} className="card form-grid" style={{maxWidth:760}}>
-      <div className="field"><label>Email</label><input name="email" type="email" required/></div>
-      <div className="field"><label>Estado</label><select name="verified"><option value="true">Verificado</option><option value="false">Pendente</option></select></div>
-      <button className="button primary">Atualizar verificação</button>
-    </form>
-    <div className="section-title"><h2>Diretório</h2></div>
-    <div className="list">{(users??[]).map((u:any)=><div className="list-row" key={u.user_id}><div><h3>{u.display_name||u.email}</h3><span className="muted small">{u.email} · {u.phone||"sem contacto"}</span></div><div className="button-row"><span className={u.email_verified_at?"pill ok":"pill"}>{u.email_verified_at?"email verificado":"email pendente"}</span><span className={u.global_role==="admin"?"pill gold":"pill"}>{u.global_role}</span></div></div>)}</div>
+
+    <div className="section-title"><h2>Áreas de gestão</h2><span className="muted small">{publishedCount??0} conteúdos publicados · {pendingWorshipCount??0} pedidos do Louvor</span></div>
+    <div className="grid grid-3">{areas.map(a=><Link className="card admin-area-card" href={a.href} key={a.href}><p className="eyebrow">{a.cta}</p><h3>{a.title}</h3><p className="muted">{a.text}</p><span className="text-link">Abrir →</span></Link>)}</div>
+
+    <div className="section-title"><h2>Fila editorial</h2><Link href="/admin/aprovacoes" className="muted small">Ver fila completa</Link></div>
+    <div className="list">{(reviewItems??[]).length===0?<div className="empty">Não há conteúdos à espera de aprovação.</div>:(reviewItems??[]).map((item:any)=><Link href={`/media/preview/${item.id}`} className="list-row" key={item.id}><div><span className="pill gold">{item.content_type}</span><h3 style={{marginTop:8}}>{item.title}</h3><span className="muted small">{item.submitted_at?new Date(item.submitted_at).toLocaleString("pt-PT"):"Data de submissão indisponível"}</span></div><span className="pill">em revisão</span></Link>)}</div>
   </AppShell>
 }
