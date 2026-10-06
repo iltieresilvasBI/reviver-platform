@@ -63,8 +63,8 @@ export async function transitionContent(formData:FormData){
 export async function grantMediaRole(formData:FormData){
   const supabase=await createClient(); const email=String(formData.get("email")??"").trim(); const role=String(formData.get("role")??"media_editor");
   const {error}=await supabase.rpc("grant_app_role_by_email",{p_email:email,p_role:role});
-  if(error)redirect("/admin/utilizadores?message="+encodeURIComponent(error.message));
-  revalidatePath("/media"); revalidatePath("/admin/utilizadores"); redirect("/admin/utilizadores?message="+encodeURIComponent("Papel de mídia atribuído."));
+  if(error)redirect("/media?message="+encodeURIComponent(error.message));
+  revalidatePath("/media"); revalidatePath("/admin/utilizadores"); redirect("/media?message="+encodeURIComponent("Papel atribuído."));
 }
 
 export async function updateContent(formData:FormData){
