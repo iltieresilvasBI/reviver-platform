@@ -11,6 +11,7 @@ const nav=[
   ["Louvor","/worship"],
   ["Conteúdo","/media"],
   ["Perfil","/profile"],
+  ["Admin","/admin"],
 ];
 
 export function AppShell({title,eyebrow="REVIVER PLATFORM",active,email,children}:Props){
