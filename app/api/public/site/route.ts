@@ -1,1 +1,12 @@
-import { getSiteDynamicData } from "@/lib/site-data";\nimport { publicJson, publicOptions } from "@/lib/api-response";\n\nexport async function GET(){\n  try{\n    const data=await getSiteDynamicData();\n    return publicJson({ok:true,data});\n  }catch{\n    return publicJson({ok:false,error:"Unable to load site data."},503);\n  }\n}\nexport const OPTIONS=publicOptions;\n
+import { getSiteDynamicData } from "@/lib/site-data";
+import { publicJson, publicOptions } from "@/lib/api-response";
+
+export async function GET(){
+  try{
+    const data=await getSiteDynamicData();
+    return publicJson({ok:true,data});
+  }catch{
+    return publicJson({ok:false,error:"Unable to load site data."},503);
+  }
+}
+export const OPTIONS=publicOptions;
