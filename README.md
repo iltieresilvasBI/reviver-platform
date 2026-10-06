@@ -15,3 +15,6 @@ Nova base técnica da Igreja Reviver.
 4. Executar `npm run dev`.
 
 Nenhuma chave secreta deve ser commitada.
+
+
+Deployment trigger: sync latest Reviver Platform source with Vercel.
