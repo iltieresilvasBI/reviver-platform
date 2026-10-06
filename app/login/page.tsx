@@ -1,40 +1,23 @@
-import { login, signup } from "./actions";
+import { login, requestPasswordReset, resendConfirmation, signup } from "./actions";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message?: string }> }) {
-  const { message } = await searchParams;
-
-  return (
-    <main style={{ minHeight:"100vh", display:"grid", placeItems:"center", padding:24, background:"radial-gradient(circle at 15% 10%, rgba(216,168,78,.12), transparent 34%), #0b0c0e" }}>
-      <section className="card" style={{ width:"min(500px,100%)", padding:30 }}>
-        <p className="eyebrow">REVIVER DIGITAL</p>
-        <h1 style={{ margin:"8px 0", fontSize:42, letterSpacing:"-.04em" }}>Uma conta. Toda a Reviver.</h1>
-        <p className="muted" style={{ lineHeight:1.6 }}>Academy, Ministério de Louvor e Central de Conteúdo num único acesso.</p>
-
-        {message && <p className="notice" style={{ marginTop:16 }}>{message}</p>}
-
-        <form className="form-grid" style={{ marginTop:22 }}>
-          <div className="field">
-            <label>Email</label>
-            <input name="email" type="email" required autoComplete="email" />
-          </div>
-          <div className="field">
-            <label>Password</label>
-            <input name="password" type="password" minLength={8} required autoComplete="current-password" />
-          </div>
-          <div className="button-row">
-            <button className="button primary" formAction={login}>Entrar</button>
-            <button className="button" formAction={signup}>Criar conta</button>
-          </div>
-        </form>
-
-        <div style={{ borderTop:"1px solid var(--border)", margin:"22px 0", paddingTop:22 }}>
-          <button className="button" style={{ width:"100%", opacity:.55, cursor:"not-allowed" }} disabled>
-            Google Login — em configuração
-          </button>
+export default async function LoginPage({searchParams}:{searchParams:Promise<{message?:string}>}){
+  const {message}=await searchParams;
+  return <main className="auth-page">
+    <section className="auth-card">
+      <div className="auth-brand"><img src="/images/reviver-logo.png" alt="Igreja Reviver"/><div><p className="eyebrow">REVIVER DIGITAL</p><h1>Uma conta. Toda a Reviver.</h1></div></div>
+      <p className="muted">Academy, Ministério de Louvor e áreas internas num único acesso.</p>
+      {message&&<p className="notice" style={{marginTop:16}}>{message}</p>}
+      <form className="form-grid" style={{marginTop:22}}>
+        <div className="field"><label>Email</label><input name="email" type="email" required autoComplete="email"/></div>
+        <div className="field"><label>Password</label><input name="password" type="password" minLength={8} required autoComplete="current-password"/></div>
+        <div className="field"><label>Confirmar password <span className="muted small">(apenas ao criar conta)</span></label><input name="confirm_password" type="password" minLength={8} autoComplete="new-password"/></div>
+        <div className="button-row"><button className="button primary" formAction={login}>Entrar</button><button className="button" formAction={signup}>Criar conta</button></div>
+        <div className="auth-secondary">
+          <button className="text-button" formAction={resendConfirmation} formNoValidate>Reenviar confirmação</button>
+          <button className="text-button" formAction={requestPasswordReset} formNoValidate>Esqueci a password</button>
         </div>
-
-        <p className="muted small">A conta pública pode ser usada imediatamente. A verificação do email continua obrigatória apenas para ativar acessos internos a ministérios.</p>
-      </section>
-    </main>
-  );
+      </form>
+      <p className="muted small" style={{marginTop:20}}>O acesso público é separado das permissões internas dos ministérios. Papéis de Admin, Mídia e Louvor são atribuídos por responsáveis autorizados.</p>
+    </section>
+  </main>
 }
