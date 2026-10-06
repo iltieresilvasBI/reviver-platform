@@ -39,3 +39,37 @@ export async function grantMediaRole(formData:FormData){
   if(error) redirect("/media?message="+encodeURIComponent(error.message));
   revalidatePath("/media"); redirect("/media?message=Papel atribuído.");
 }
+
+
+export async function updateContent(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("contentId")??"");
+  const title=String(formData.get("title")??"").trim();
+  const slug=slugify(String(formData.get("slug")??"")||title);
+  const payload={
+    title,slug,
+    summary:String(formData.get("summary")??"").trim()||null,
+    body:String(formData.get("body")??"").trim()||null,
+    youtube_id:String(formData.get("youtube_id")??"").trim()||null,
+    event_start:String(formData.get("event_start")??"").trim()||null,
+    event_end:String(formData.get("event_end")??"").trim()||null,
+    event_location:String(formData.get("event_location")??"").trim()||null,
+    campaign_start:String(formData.get("campaign_start")??"").trim()||null,
+    campaign_end:String(formData.get("campaign_end")??"").trim()||null,
+    cta_label:String(formData.get("cta_label")??"").trim()||null,
+    cta_url:String(formData.get("cta_url")??"").trim()||null,
+    featured:formData.get("featured")==="on",
+    priority:Number(formData.get("priority")??0)||0,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await supabase.from("content_items").update(payload).eq("id",id);
+  if(error) redirect("/media?message="+encodeURIComponent(error.message));
+  const networkSlug=String(formData.get("network")??"").trim();
+  await supabase.from("content_item_networks").delete().eq("content_item_id",id);
+  if(networkSlug){
+    const {data:network}=await supabase.from("networks").select("id").eq("slug",networkSlug).maybeSingle();
+    if(network) await supabase.from("content_item_networks").insert({content_item_id:id,network_id:network.id});
+  }
+  revalidatePath("/media"); revalidatePath("/"); revalidatePath("/eventos"); revalidatePath("/midia"); revalidatePath("/campanhas"); revalidatePath("/noticias");
+  redirect("/media?message=Conteúdo atualizado.");
+}
