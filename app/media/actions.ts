@@ -15,8 +15,13 @@ export async function createContent(formData:FormData){
   const event_location=String(formData.get("event_location")??"").trim()||null; const campaign_start=String(formData.get("campaign_start")??"").trim()||null;
   const campaign_end=String(formData.get("campaign_end")??"").trim()||null; const cta_label=String(formData.get("cta_label")??"").trim()||null;
   const cta_url=String(formData.get("cta_url")??"").trim()||null; const featured=formData.get("featured")==="on";
-  const {error}=await supabase.from("content_items").insert({content_type,title,slug,summary,body,youtube_id,event_start,event_location,campaign_start,campaign_end,cta_label,cta_url,featured,created_by:String(uid),status:"draft"});
-  if(error) redirect("/media?message="+encodeURIComponent(error.message));
+  const networkSlug=String(formData.get("network")??"").trim();
+  const {data:item,error}=await supabase.from("content_items").insert({content_type,title,slug,summary,body,youtube_id,event_start,event_location,campaign_start,campaign_end,cta_label,cta_url,featured,created_by:String(uid),status:"draft"}).select("id").single();
+  if(error||!item) redirect("/media?message="+encodeURIComponent(error?.message??"Falha ao criar conteúdo"));
+  if(networkSlug){
+    const {data:network}=await supabase.from("networks").select("id").eq("slug",networkSlug).eq("active",true).maybeSingle();
+    if(network) await supabase.from("content_item_networks").insert({content_item_id:item.id,network_id:network.id});
+  }
   revalidatePath("/media"); redirect("/media?message=Conteúdo criado como rascunho.");
 }
 
