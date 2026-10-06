@@ -12,8 +12,7 @@ export default async function LessonPage({params,searchParams}:{params:Promise<{
     supabase.from("quiz_questions").select("id,prompt,sort_order").eq("lesson_id",lesson.id).order("sort_order"),
     supabase.from("lesson_progress").select("status,best_score_percentage,first_completed_at").eq("user_id",userId).eq("lesson_id",lesson.id).maybeSingle()
   ]);
-  const qids=(questions??[]).map(q=>q.id);
-  const {data:options}=qids.length?await supabase.from("quiz_options_public").select("id,question_id,label,sort_order").in("question_id",qids).order("sort_order"):{data:[] as any[]};
+  const {data:options}=await supabase.rpc("get_quiz_options",{p_lesson_id:lesson.id});
   return <AppShell title={lesson.title} active="/academy" email={email}>
     {progress?.status==="completed"&&<div className="notice ok">Aula concluída oficialmente. Novas tentativas servem para revisão e não acrescentam XP.</div>}
     {qs.score&&<div className={qs.passed==="1"?"notice ok":"notice warn"} style={{marginTop:12}}>Resultado: {qs.score}% · {qs.passed==="1"?"Aprovado":"Ainda não atingiu a nota de aprovação"}{Number(qs.xp)>0?` · +${qs.xp} XP`:""}</div>}
