@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
-import { setEmailVerification, setGlobalRole } from "../actions";
-import { grantMediaRole } from "@/app/media/actions";
+import { grantMediaRoleAdmin, setEmailVerification, setGlobalRole } from "../actions";
 
 export default async function UsersAdmin({searchParams}:{searchParams:Promise<{message?:string}>}){
   const qs=await searchParams; const ctx=await getAccessContext();
@@ -14,7 +13,7 @@ export default async function UsersAdmin({searchParams}:{searchParams:Promise<{m
     {error&&<div className="notice warn" style={{marginBottom:16}}>Não foi possível carregar o diretório: {error.message}</div>}
     <div className="grid grid-3">
       <form action={setGlobalRole} className="card form-grid"><p className="eyebrow">ADMIN GLOBAL</p><div className="field"><label>Email</label><input name="email" type="email" required/></div><div className="field"><label>Papel</label><select name="role"><option value="user">Utilizador</option><option value="admin">Admin</option></select></div><button className="button primary">Atualizar papel</button></form>
-      <form action={grantMediaRole} className="card form-grid"><p className="eyebrow">EQUIPA DE MÍDIA</p><div className="field"><label>Email</label><input name="email" type="email" required/></div><div className="field"><label>Papel</label><select name="role"><option value="media_editor">Editor</option><option value="media_leader">Líder de Mídia</option></select></div><button className="button primary">Atribuir papel</button></form>
+      <form action={grantMediaRoleAdmin} className="card form-grid"><p className="eyebrow">EQUIPA DE MÍDIA</p><div className="field"><label>Email</label><input name="email" type="email" required/></div><div className="field"><label>Papel</label><select name="role"><option value="media_editor">Editor</option><option value="media_leader">Líder de Mídia</option></select></div><button className="button primary">Atribuir papel</button></form>
       <form action={setEmailVerification} className="card form-grid"><p className="eyebrow">ACESSO A MINISTÉRIOS</p><div className="field"><label>Email</label><input name="email" type="email" required/></div><div className="field"><label>Verificação interna</label><select name="verified"><option value="true">Verificado</option><option value="false">Pendente</option></select></div><button className="button primary">Atualizar verificação</button></form>
     </div>
     <div className="section-title"><h2>Diretório</h2><span className="muted small">{(users??[]).length} contas</span></div>
