@@ -1,1 +1,2 @@
-import { PublicSiteShell } from "@/components/public-site-shell"; export default function Page(){return <PublicSiteShell><main style={{maxWidth:900,margin:"0 auto",padding:"70px 22px"}}><p className="eyebrow">IGREJA REVIVER</p><h1 style={{fontSize:"clamp(52px,8vw,92px)",letterSpacing:"-.06em"}}>Sobre</h1><p className="muted" style={{fontSize:19,lineHeight:1.8}}>Esta página está preparada para receber a história, missão, visão e informação institucional oficial da Igreja Reviver sem inventar dados não fornecidos.</p></main></PublicSiteShell>}
+import { PublicSitePage } from "@/components/public-site-page";
+export default async function Page(){return <PublicSitePage path="sobre" />;}
