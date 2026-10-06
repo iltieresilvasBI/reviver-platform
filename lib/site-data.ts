@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import type { SiteDynamicData } from '@/components/site-exact';
-import {demoEvents,demoCampaigns,demoNews,demoVideos} from '@/lib/site-static';
 
 function localDate(iso:string|null){return iso?new Date(iso).toISOString().slice(0,10):null}
 function localTime(iso:string|null){return iso?new Date(iso).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Lisbon'}):'A confirmar'}
@@ -27,7 +26,7 @@ export async function getSiteDynamicData():Promise<SiteDynamicData>{
  const campaigns=(items??[]).filter(x=>x.content_type==='campaign').map(x=>({slug:x.slug,name:x.title,description:x.summary||x.body||'',period:period(x.campaign_start,x.campaign_end),status:(x.campaign_end&&new Date(x.campaign_end)<new Date()?'encerrada':'ativa') as 'ativa'|'encerrada',image:image(x.id),cta:x.cta_label||'Conhecer a campanha',demo:false,featured:Boolean(x.featured)}));
  const news=(items??[]).filter(x=>x.content_type==='post').map(x=>({slug:x.slug,title:x.title,category:categoryFor(networkByItem.get(x.id)),text:x.summary||x.body||''}));
  const videos=(items??[]).filter(x=>x.content_type==='video'&&x.youtube_id).map(x=>({id:x.youtube_id!,title:x.title,category:videoCategory(networkByItem.get(x.id)),description:x.summary||x.body||''}));
- return {events:events.length?events:demoEvents,campaigns:campaigns.length?campaigns:demoCampaigns,news:news.length?news:demoNews,videos:videos.length?videos:demoVideos};
+ return {events,campaigns,news,videos};
 }
 
 export async function dynamicPageMetadata(path:string){

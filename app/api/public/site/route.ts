@@ -1,13 +1,12 @@
 import { getSiteDynamicData } from "@/lib/site-data";
+import { publicJson, publicOptions } from "@/lib/api-response";
 
-export async function GET() {
-  try {
-    const data = await getSiteDynamicData();
-    return Response.json(
-      { ok:true, data },
-      { headers:{ "Cache-Control":"public, s-maxage=60, stale-while-revalidate=300" } },
-    );
-  } catch {
-    return Response.json({ ok:false, error:"Unable to load site data." }, { status:500 });
+export async function GET(){
+  try{
+    const data=await getSiteDynamicData();
+    return publicJson({ok:true,data});
+  }catch{
+    return publicJson({ok:false,error:"Unable to load site data."},503);
   }
 }
+export const OPTIONS=publicOptions;
