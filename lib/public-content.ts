@@ -30,6 +30,7 @@ export async function listPublishedContent(
     );
 
   const category = searchParams.get("category");
+  const network = searchParams.get("network");
   const featured = searchParams.get("featured");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
@@ -39,6 +40,27 @@ export async function listPublishedContent(
   if (featured === "true") query = query.eq("featured", true);
   if (contentType === "event" && from) query = query.gte("event_start", from);
   if (contentType === "event" && to) query = query.lte("event_start", to);
+
+  if (network) {
+    const { data: networkRow } = await supabase
+      .from("networks")
+      .select("id")
+      .eq("slug", network)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (!networkRow) return [];
+
+    const { data: networkLinks, error: networkError } = await supabase
+      .from("content_item_networks")
+      .select("content_item_id")
+      .eq("network_id", networkRow.id);
+
+    if (networkError) throw networkError;
+    const networkIds = (networkLinks ?? []).map((row) => row.content_item_id);
+    if (!networkIds.length) return [];
+    query = query.in("id", networkIds);
+  }
 
   if (category) {
     const { data: categoryRow } = await supabase
