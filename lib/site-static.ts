@@ -1,6 +1,34 @@
-export const site = {
-  name: 'Igreja Reviver', academyUrl: '/login', email: '', whatsapp: '', address: '', mapEmbedUrl: '',
-  social: { instagram: '', facebook: '', youtube: '', other: '' }, hours: '',
+export type SiteSettings = {
+  name:string;
+  academyUrl:string;
+  email:string;
+  whatsapp:string;
+  address:string;
+  mapEmbedUrl:string;
+  social:{instagram:string;facebook:string;youtube:string;other:string};
+  hours:string;
+  aboutIntro:string;
+  history:string;
+  mission:string;
+  vision:string;
+  values:string;
+  leadership:string;
+};
+export const site:SiteSettings = {
+  name:'Igreja Reviver',
+  academyUrl:'/login',
+  email:'',
+  whatsapp:'',
+  address:'',
+  mapEmbedUrl:'',
+  social:{instagram:'',facebook:'',youtube:'',other:''},
+  hours:'',
+  aboutIntro:'',
+  history:'',
+  mission:'',
+  vision:'',
+  values:'',
+  leadership:'',
 };
 export const categories = ['Geral', 'Kids', 'Jovens', 'Mulheres', 'Homens', 'Louvor'];
 export type EventItem = { slug:string; name:string; date:string|null; time:string; location:string; description:string; category:string; image:string; demo:boolean };
