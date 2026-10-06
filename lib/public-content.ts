@@ -8,25 +8,8 @@ export type PublicContentType =
   | "campaign"
   | "gallery";
 
-const publicSelect = [
-  "id",
-  "content_type",
-  "title",
-  "slug",
-  "summary",
-  "body",
-  "event_start",
-  "event_end",
-  "event_location",
-  "campaign_start",
-  "campaign_end",
-  "cta_label",
-  "cta_url",
-  "youtube_id",
-  "featured",
-  "priority",
-  "published_at",
-].join(",");
+const publicSelect =
+  "id,content_type,title,slug,summary,body,event_start,event_end,event_location,campaign_start,campaign_end,cta_label,cta_url,youtube_id,featured,priority,published_at" as const;
 
 export async function listPublishedContent(
   contentType: PublicContentType,
