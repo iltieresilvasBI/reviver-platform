@@ -1,0 +1,9 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { PublicSiteShell } from "@/components/public-site-shell";
+import { getPublishedContentBySlug } from "@/lib/public-content";
+export default async function Page({params}:{params:Promise<{slug:string}>}){
+ const {slug}=await params; const item=await getPublishedContentBySlug("campaign" as const,slug); if(!item) notFound();
+ const cover=item.media?.find((m:any)=>m.media_type==="cover")??item.media?.[0];
+ return <PublicSiteShell><main style={{maxWidth:900,margin:"0 auto",padding:"60px 22px"}}><Link href="/campanhas" className="muted small">← Voltar</Link>{cover?.external_url&&<img src={cover.external_url} alt={cover.alt_text??item.title} style={{width:"100%",maxHeight:520,objectFit:"cover",borderRadius:20,marginTop:24}}/>}<p className="eyebrow" style={{marginTop:28}}>{item.content_type}</p><h1 style={{fontSize:"clamp(44px,7vw,78px)",letterSpacing:"-.055em",margin:"10px 0"}}>{item.title}</h1><p className="muted" style={{fontSize:19,lineHeight:1.7}}>{item.summary}</p>{item.youtube_id&&<div className="video-wrap" style={{marginTop:24}}><iframe src={`https://www.youtube-nocookie.com/embed/${item.youtube_id}`} title={item.title} allowFullScreen/></div>}{item.event_start&&<div className="notice" style={{marginTop:22}}>{new Date(item.event_start).toLocaleString("pt-PT")}{item.event_location?` · ${item.event_location}`:""}</div>}{item.body&&<div style={{whiteSpace:"pre-wrap",lineHeight:1.8,marginTop:26}}>{item.body}</div>}{item.cta_label&&item.cta_url&&<a className="button primary" href={item.cta_url} style={{marginTop:24}}>{item.cta_label}</a>}</main></PublicSiteShell>
+}
