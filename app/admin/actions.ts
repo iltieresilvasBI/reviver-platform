@@ -9,7 +9,7 @@ export async function setGlobalRole(formData:FormData){
   const role=String(formData.get("role")??"user");
   const {error}=await supabase.rpc("set_global_role_by_email",{p_email:email,p_role:role});
   if(error) redirect("/admin/utilizadores?message="+encodeURIComponent(error.message));
-  revalidatePath("/admin"); revalidatePath("/admin/utilizadores"); redirect("/admin?message=Papel global atualizado.");
+  revalidatePath("/admin"); revalidatePath("/admin/utilizadores"); redirect("/admin/utilizadores?message="+encodeURIComponent("Papel global atualizado."));
 }
 
 
