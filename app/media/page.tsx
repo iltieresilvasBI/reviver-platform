@@ -19,9 +19,9 @@ export default async function MediaPage({searchParams}:{searchParams:Promise<{me
         <div className="field"><label>Slug opcional</label><input name="slug" placeholder="gerado automaticamente"/></div><div className="field"><label>Rede</label><select name="network"><option value="">Geral</option><option value="kids">Kids</option><option value="youth">Youth</option><option value="women">Mulheres</option><option value="men">Homens</option><option value="worship">Ministério de Louvor</option></select></div>
         <div className="field"><label>Resumo</label><textarea name="summary"/></div>
         <div className="field"><label>Conteúdo</label><textarea name="body"/></div>
-        <div className="grid grid-2"><div className="field"><label>YouTube ID</label><input name="youtube_id"/></div><div className="field"><label>Local do evento</label><input name="event_location"/></div></div>
-        <div className="grid grid-2"><div className="field"><label>Início do evento</label><input name="event_start" type="datetime-local"/></div><div className="field"><label>Início da campanha</label><input name="campaign_start" type="datetime-local"/></div></div>
-        <div className="field"><label>Fim da campanha</label><input name="campaign_end" type="datetime-local"/></div>
+        <div className="grid grid-2"><div className="field"><label>YouTube: link ou ID</label><input name="youtube_id" placeholder="https://youtube.com/watch?v=..."/></div><div className="field"><label>Local do evento</label><input name="event_location"/></div></div>
+        <div className="grid grid-2"><div className="field"><label>Início do evento</label><input name="event_start" type="datetime-local"/></div><div className="field"><label>Fim do evento</label><input name="event_end" type="datetime-local"/></div></div>
+        <div className="grid grid-2"><div className="field"><label>Início da campanha</label><input name="campaign_start" type="datetime-local"/></div><div className="field"><label>Fim da campanha</label><input name="campaign_end" type="datetime-local"/></div></div>
         <div className="grid grid-2"><div className="field"><label>CTA</label><input name="cta_label"/></div><div className="field"><label>URL do CTA</label><input name="cta_url" type="url"/></div></div>
         <label className="quiz-option"><input type="checkbox" name="featured"/> Destaque</label>
         <button className="button primary">Criar rascunho</button>
@@ -34,7 +34,7 @@ export default async function MediaPage({searchParams}:{searchParams:Promise<{me
         </form>}
       </div>
     </div>
-    <div className="section-title"><h2>Conteúdos</h2><span className="muted small">{(items??[]).length} registos</span></div>
+    <div className="section-title"><h2>Conteúdos</h2><div className="button-row"><a className="button" href="/admin/aprovacoes">Fila de aprovações</a><span className="muted small">{(items??[]).length} registos</span></div></div>
     <div className="list">{(items??[]).length===0?<div className="empty">Nenhum conteúdo criado.</div>:(items??[]).map(i=><div className="card" key={i.id}>
       <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
         <div><span className="pill">{i.content_type}</span> <span className={i.status==="published"?"pill ok":"pill gold"}>{i.status}</span><h3 style={{fontSize:20,margin:"10px 0 4px"}}>{i.title}</h3><span className="muted small">/{i.slug}{i.scheduled_for?` · agendado ${new Date(i.scheduled_for).toLocaleString("pt-PT")}`:""}</span></div>
