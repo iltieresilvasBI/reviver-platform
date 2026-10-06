@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./sites-exact.css";
 
 export const metadata: Metadata = {
   title: "Reviver Platform",
