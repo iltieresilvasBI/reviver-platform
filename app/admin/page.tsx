@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
 import { setEmailVerification, setGlobalRole } from "./actions";
@@ -8,6 +9,7 @@ export default async function AdminPage({searchParams}:{searchParams:Promise<{me
   const {data:users}=await ctx.supabase.rpc("admin_user_directory");
   return <AppShell title="Admin" active="/admin" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
+    <div className="button-row" style={{marginBottom:18}}><Link className="button primary" href="/admin/academy">Gerir Academy</Link><Link className="button" href="/media">Gerir site e conteúdo</Link><Link className="button" href="/">Ver site público</Link></div>
     <div className="grid grid-2">
       <section className="card"><p className="eyebrow">UTILIZADORES</p><h2>{(users??[]).length} contas</h2><p className="muted">As contas públicas ficam ativas imediatamente. A verificação de email é um controlo separado para acessos internos.</p></section>
       <form action={setGlobalRole} className="card form-grid"><p className="eyebrow">PAPEL GLOBAL</p><div className="field"><label>Email</label><input name="email" type="email" required/></div><div className="field"><label>Papel</label><select name="role"><option value="user">Utilizador</option><option value="admin">Admin</option></select></div><button className="button primary">Atualizar</button></form>
