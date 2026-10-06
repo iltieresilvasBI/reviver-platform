@@ -4,16 +4,50 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-function safeMessage(code: string) {
-  return `/login?message=${encodeURIComponent(code)}`;
+const PROD_URL = "https://reviver-platform-gamma.vercel.app";
+
+function safeMessage(message: string) {
+  return `/login?message=${encodeURIComponent(message)}`;
+}
+
+async function getAppOrigin() {
+  const h = await headers();
+  const forwardedHost = h.get("x-forwarded-host");
+  const host = forwardedHost ?? h.get("host");
+  const forwardedProto = h.get("x-forwarded-proto");
+
+  if (host) {
+    const proto = forwardedProto ?? (host.includes("localhost") ? "http" : "https");
+    return `${proto}://${host}`;
+  }
+
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+  if (vercelUrl) return vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
+
+  return PROD_URL;
+}
+
+function friendlyAuthError(error: { code?: string; message?: string }) {
+  if (error.code === "email_not_confirmed") {
+    return "A conta existe, mas o email ainda não foi confirmado. Usa «Reenviar confirmação» abaixo.";
+  }
+  if (error.code === "invalid_credentials") {
+    return "Email ou password incorretos.";
+  }
+  if (error.code === "over_email_send_rate_limit") {
+    return "O Supabase limitou temporariamente o envio de emails. Aguarda cerca de 60 segundos e tenta novamente.";
+  }
+  return "Não foi possível concluir a autenticação.";
 }
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirect(safeMessage("Não foi possível iniciar sessão. Verifique o email e a password."));
+  if (error) redirect(safeMessage(friendlyAuthError(error)));
+
   redirect("/dashboard");
 }
 
@@ -21,26 +55,46 @@ export async function signup(formData: FormData) {
   const supabase = await createClient();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? "";
+
+  if (password.length < 8) {
+    redirect(safeMessage("A password deve ter pelo menos 8 caracteres."));
+  }
+
+  const origin = await getAppOrigin();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: origin ? `${origin}/auth/callback?next=/dashboard` : undefined },
+    options: {
+      emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
+    },
   });
-  if (error) redirect(safeMessage("Não foi possível criar a conta."));
+
+  if (error) redirect(safeMessage(friendlyAuthError(error)));
   if (data.session) redirect("/dashboard");
-  redirect(safeMessage("Conta criada. Confirme o email se o projeto exigir confirmação."));
+
+  redirect(
+    safeMessage(
+      "Conta criada. Foi enviado um email de confirmação. Depois de confirmar, volta aqui e inicia sessão.",
+    ),
+  );
 }
 
-export async function signInWithGoogle() {
+export async function resendConfirmation(formData: FormData) {
   const supabase = await createClient();
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? "";
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${origin}/auth/callback?next=/dashboard` },
+  const email = String(formData.get("resendEmail") ?? "").trim();
+
+  if (!email) redirect(safeMessage("Indica o email da conta."));
+
+  const origin = await getAppOrigin();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
+    },
   });
-  if (error || !data.url) redirect(safeMessage("Google Login ainda não está configurado."));
-  redirect(data.url);
+
+  if (error) redirect(safeMessage(friendlyAuthError(error)));
+
+  redirect(safeMessage("Email de confirmação reenviado. Verifica também a pasta de spam."));
 }
