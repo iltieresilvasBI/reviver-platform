@@ -4,7 +4,6 @@ import { acceptWorshipInvite, createWorshipItem, decideWorship, inviteWorship, r
 
 export default async function WorshipPage({searchParams}:{searchParams:Promise<{message?:string}>}){
   const qs=await searchParams; const ctx=await getAccessContext();
-  const {data:user}=await ctx.supabase.auth.getUser();
   const {data:network}=await ctx.supabase.from("networks").select("id").eq("slug","worship").single();
   const {data:membership}=network?await ctx.supabase.from("network_memberships").select("id,role,status,requested_at,approved_at").eq("user_id",ctx.userId).eq("network_id",network.id).maybeSingle():{data:null as any};
   const canRead=ctx.isAdmin||membership?.status==="active";
@@ -31,7 +30,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     {!canRead?<section className="hero-card">
       <p className="eyebrow">ACESSO INTERNO</p><h2>Recursos do Ministério de Louvor</h2>
       <p>Escalas, ensaios, repertório, ficheiros e avisos são reservados a membros aprovados.</p>
-      {!user.user?.email_confirmed_at&&<p className="notice warn">Confirma primeiro o teu email para pedir ou ativar acesso ao ministério.</p>}
+      {!ctx.profile?.email_verified_at&&<p className="notice warn">O teu acesso público está ativo, mas o email ainda precisa de verificação administrativa para pedir ou ativar acesso ao ministério.</p>}
       {membership?.status==="pending"?<span className="pill gold">Pedido em análise</span>:membership?.status==="invited"?<form action={acceptWorshipInvite}><button className="button primary">Aceitar convite</button></form>:<form action={requestWorshipAccess}><button className="button primary">Pedir acesso</button></form>}
     </section>:<>
       <div className="grid grid-3">

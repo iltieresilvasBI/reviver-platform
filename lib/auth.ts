@@ -13,7 +13,7 @@ export async function getAccessContext() {
   const { supabase, userId, email } = await requireUser();
 
   const [{ data: profile }, { data: appRoles }, { data: memberships }] = await Promise.all([
-    supabase.from("profiles").select("id,display_name,avatar_url,phone,global_role").eq("id", userId).maybeSingle(),
+    supabase.from("profiles").select("id,display_name,avatar_url,phone,global_role,email_verified_at").eq("id", userId).maybeSingle(),
     supabase.from("user_app_roles").select("role,revoked_at").eq("user_id", userId).is("revoked_at", null),
     supabase.from("network_memberships").select("role,status,network_id,networks(slug,name)").eq("user_id", userId),
   ]);
