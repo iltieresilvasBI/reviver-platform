@@ -1,1 +1,20 @@
-"use server";\nimport { revalidatePath } from "next/cache";\nimport { redirect } from "next/navigation";\nimport { getAccessContext } from "@/lib/auth";\n\nexport async function updateMessageStatus(formData:FormData){\n  const ctx=await getAccessContext();\n  if(!ctx.isAdmin)redirect("/dashboard");\n  const id=String(formData.get("id")??"");\n  const status=String(formData.get("status")??"read");\n  if(!["new","read","replied","archived"].includes(status))redirect("/admin/mensagens?message="+encodeURIComponent("Estado inválido."));\n  const {error}=await ctx.supabase.from("contact_messages").update({\n    status,\n    handled_by:ctx.userId,\n    handled_at:new Date().toISOString(),\n  }).eq("id",id);\n  if(error)redirect("/admin/mensagens?message="+encodeURIComponent(error.message));\n  revalidatePath("/admin/mensagens");\n  revalidatePath("/admin");\n}\n
+"use server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getAccessContext } from "@/lib/auth";
+
+export async function updateMessageStatus(formData:FormData){
+  const ctx=await getAccessContext();
+  if(!ctx.isAdmin)redirect("/dashboard");
+  const id=String(formData.get("id")??"");
+  const status=String(formData.get("status")??"read");
+  if(!["new","read","replied","archived"].includes(status))redirect("/admin/mensagens?message="+encodeURIComponent("Estado inválido."));
+  const {error}=await ctx.supabase.from("contact_messages").update({
+    status,
+    handled_by:ctx.userId,
+    handled_at:new Date().toISOString(),
+  }).eq("id",id);
+  if(error)redirect("/admin/mensagens?message="+encodeURIComponent(error.message));
+  revalidatePath("/admin/mensagens");
+  revalidatePath("/admin");
+}
