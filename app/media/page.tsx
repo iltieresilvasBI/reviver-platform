@@ -16,7 +16,7 @@ export default async function MediaPage({searchParams}:{searchParams:Promise<{me
         <div><p className="eyebrow">NOVO CONTEÚDO</p><h2 style={{marginTop:4}}>Criar rascunho</h2></div>
         <div className="field"><label>Tipo</label><select name="content_type"><option value="post">Post/notícia</option><option value="event">Evento</option><option value="video">Vídeo</option><option value="campaign">Campanha</option><option value="gallery">Galeria</option><option value="home_highlight">Destaque da Home</option></select></div>
         <div className="field"><label>Título</label><input name="title" required/></div>
-        <div className="field"><label>Slug opcional</label><input name="slug" placeholder="gerado automaticamente"/></div>
+        <div className="field"><label>Slug opcional</label><input name="slug" placeholder="gerado automaticamente"/></div><div className="field"><label>Rede</label><select name="network"><option value="">Geral</option><option value="worship">Ministério de Louvor</option></select></div>
         <div className="field"><label>Resumo</label><textarea name="summary"/></div>
         <div className="field"><label>Conteúdo</label><textarea name="body"/></div>
         <div className="grid grid-2"><div className="field"><label>YouTube ID</label><input name="youtube_id"/></div><div className="field"><label>Local do evento</label><input name="event_location"/></div></div>
