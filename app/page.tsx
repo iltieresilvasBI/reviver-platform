@@ -1,36 +1,23 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function HomePage() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const email = typeof data?.claims?.email === "string" ? data.claims.email : null;
-
-  return (
-    <main style={{ minHeight: "100vh", padding: "48px", background: "radial-gradient(circle at 20% 20%, rgba(216,168,78,.12), transparent 34%), #0b0c0e" }}>
-      <div style={{ maxWidth: 920, margin: "0 auto" }}>
-        <p style={{ color: "#d8a84e", letterSpacing: ".16em", fontSize: 12, fontWeight: 800 }}>REVIVER PLATFORM</p>
-        <h1 style={{ fontSize: "clamp(44px,7vw,84px)", lineHeight: .95, margin: "18px 0" }}>
-          Viver. Crescer. Servir.
-        </h1>
-        <p style={{ color: "#9ea4ad", maxWidth: 660, lineHeight: 1.7 }}>
-          Nova base técnica da Reviver Academy, Central de Conteúdo e áreas internas.
-        </p>
-        <div style={{ display: "flex", gap: 12, marginTop: 28, flexWrap: "wrap" }}>
-          {email ? (
-            <span style={{ border: "1px solid #2a2f36", borderRadius: 12, padding: "12px 16px" }}>
-              Sessão ativa: {email}
-            </span>
-          ) : (
-            <Link href="/login" style={{ background: "#d8a84e", color: "#17120a", borderRadius: 12, padding: "12px 18px", fontWeight: 800 }}>
-              Entrar
-            </Link>
-          )}
-          <Link href="/api/health" style={{ border: "1px solid #2a2f36", borderRadius: 12, padding: "12px 18px" }}>
-            Health API
-          </Link>
-        </div>
+export default async function HomePage(){
+  const supabase=await createClient(); const {data}=await supabase.auth.getClaims();
+  const signedIn=Boolean(data?.claims?.sub);
+  return <main style={{minHeight:"100vh",padding:"48px 24px",background:"radial-gradient(circle at 20% 20%, rgba(216,168,78,.12), transparent 34%), #0b0c0e"}}>
+    <div style={{maxWidth:980,margin:"0 auto",paddingTop:"8vh"}}>
+      <p className="eyebrow">REVIVER PLATFORM</p>
+      <h1 style={{fontSize:"clamp(54px,9vw,112px)",lineHeight:.9,letterSpacing:"-.06em",margin:"20px 0"}}>Viver. Crescer. Servir.</h1>
+      <p className="muted" style={{maxWidth:700,fontSize:18,lineHeight:1.7}}>Reviver Academy, Vocal Gym, Ministério de Louvor e Central de Conteúdo numa única plataforma.</p>
+      <div className="button-row" style={{marginTop:30}}>
+        <Link className="button primary" href={signedIn?"/dashboard":"/login"}>{signedIn?"Abrir dashboard":"Entrar"}</Link>
+        <Link className="button" href="/api/health">Estado da plataforma</Link>
       </div>
-    </main>
-  );
+      <div className="grid grid-3" style={{marginTop:70}}>
+        <div className="card"><p className="eyebrow">ACADEMY</p><h3>Formação vocal</h3><p className="muted">Aulas, quizzes, progresso, XP e conquistas.</p></div>
+        <div className="card"><p className="eyebrow">MINISTÉRIO</p><h3>Área interna do Louvor</h3><p className="muted">Escalas, ensaios, repertório, avisos e recursos.</p></div>
+        <div className="card"><p className="eyebrow">MÍDIA</p><h3>Central de Conteúdo</h3><p className="muted">Fluxo editorial com aprovação, agenda e API pública.</p></div>
+      </div>
+    </div>
+  </main>
 }
