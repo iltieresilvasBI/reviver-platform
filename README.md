@@ -18,3 +18,19 @@ Nenhuma chave secreta deve ser commitada.
 
 
 Deployment trigger: sync latest Reviver Platform source with Vercel.
+
+## Public CMS API
+
+Read-only endpoints expose only content already published by the editorial workflow:
+
+- `GET /api/public/content?type=event`
+- `GET /api/public/content?type=campaign`
+- `GET /api/public/content?type=video`
+- `GET /api/public/content?type=post`
+- `GET /api/public/content?type=home_highlight`
+- `GET /api/public/content/:slug?type=event`
+- `GET /api/public/site`
+
+Supported filters on collection requests include `network`, `category`, `featured`, `from`, `to`, `limit` and `offset` where applicable.
+
+Internal profiles, memberships, Academy progress, quiz answers and administration data are not exposed by these endpoints.
