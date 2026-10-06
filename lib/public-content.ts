@@ -85,7 +85,22 @@ export async function listPublishedContent(
   const { data, error } = await query.range(offset, offset + limit - 1);
   if (error) throw error;
 
-  return data ?? [];
+  const rows = data ?? [];
+  const ids = rows.map((row) => row.id);
+  if (!ids.length) return [];
+
+  const { data: media, error: mediaError } = await supabase
+    .from("content_media")
+    .select("id,content_item_id,media_type,external_url,alt_text,sort_order")
+    .in("content_item_id", ids)
+    .order("sort_order");
+
+  if (mediaError) throw mediaError;
+
+  return rows.map((row) => ({
+    ...row,
+    media: (media ?? []).filter((m) => m.content_item_id === row.id),
+  }));
 }
 
 export async function getPublishedContentBySlug(
