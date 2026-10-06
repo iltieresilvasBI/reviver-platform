@@ -13,6 +13,7 @@ export default async function AdminPage(){
     {count:publishedCount},
     {count:lessonsCount},
     {count:pendingWorshipCount},
+    {count:newMessagesCount},
     {data:reviewItems},
   ]=await Promise.all([
     ctx.supabase.from("profiles").select("*",{count:"exact",head:true}),
@@ -21,6 +22,7 @@ export default async function AdminPage(){
     ctx.supabase.from("content_items").select("*",{count:"exact",head:true}).eq("status","published"),
     ctx.supabase.from("academy_lessons").select("*",{count:"exact",head:true}).eq("active",true),
     ctx.supabase.from("network_memberships").select("id,networks!inner(slug)",{count:"exact",head:true}).eq("status","pending").eq("networks.slug","worship"),
+    ctx.supabase.from("contact_messages").select("*",{count:"exact",head:true}).eq("status","new"),
     ctx.supabase.from("content_items").select("id,title,content_type,status,submitted_at").eq("status","in_review").order("submitted_at",{ascending:true}).limit(6),
   ]);
 
@@ -29,6 +31,7 @@ export default async function AdminPage(){
     {title:"Aprovações",text:"Fila editorial com aprovação separada da publicação.",href:"/admin/aprovacoes",cta:"Rever fila"},
     {title:"Reviver Academy",text:"Cursos, módulos, aulas, vídeos e quizzes.",href:"/admin/academy",cta:"Gerir Academy"},
     {title:"Utilizadores",text:"Contas, verificação, admins e papéis de mídia.",href:"/admin/utilizadores",cta:"Gerir acessos"},
+    {title:"Mensagens",text:"Contactos recebidos pelo site público e respetivo estado.",href:"/admin/mensagens",cta:`${newMessagesCount??0} novas`},
     {title:"Ministério de Louvor",text:"Membros, convites, pedidos, escalas, ensaios e repertório.",href:"/worship",cta:"Gerir Louvor"},
     {title:"Site público",text:"Ver exatamente o que a comunidade está a receber.",href:"/",cta:"Abrir site"},
   ];
@@ -47,7 +50,7 @@ export default async function AdminPage(){
       <div className="card metric"><span>Aulas ativas</span><strong>{lessonsCount??0}</strong></div>
     </div>
 
-    <div className="section-title"><h2>Áreas de gestão</h2><span className="muted small">{publishedCount??0} conteúdos publicados · {pendingWorshipCount??0} pedidos do Louvor</span></div>
+    <div className="section-title"><h2>Áreas de gestão</h2><span className="muted small">{publishedCount??0} conteúdos publicados · {pendingWorshipCount??0} pedidos do Louvor · {newMessagesCount??0} mensagens novas</span></div>
     <div className="grid grid-3">{areas.map(a=><Link className="card admin-area-card" href={a.href} key={a.href}><p className="eyebrow">{a.cta}</p><h3>{a.title}</h3><p className="muted">{a.text}</p><span className="text-link">Abrir →</span></Link>)}</div>
 
     <div className="section-title"><h2>Fila editorial</h2><Link href="/admin/aprovacoes" className="muted small">Ver fila completa</Link></div>
