@@ -5,7 +5,8 @@ import {
   acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
   createWorshipRehearsal,createWorshipSchedule,createWorshipSong,createWorshipUnavailability,decideWorship,
   deleteWorshipUnavailability,inviteWorship,markWorshipAttendance,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
-  respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus
+  respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus,updateWorshipScheduleTheme,
+  updateWorshipPublication,setWorshipPublicRepertoire,confirmWorshipExecutions
 } from "./actions";
 
 const roleOptions=[
@@ -61,7 +62,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
   const [
     {data:items},{data:memberProfiles},{data:schedules},{data:songs},
-    {data:assignments},{data:scheduleSongs},{data:rehearsals},{data:responses},{data:unavailability}
+    {data:assignments},{data:scheduleSongs},{data:rehearsals},{data:responses},{data:unavailability},{data:executions}
   ]=await Promise.all([
     ctx.supabase.from("worship_items").select("id,item_type,title,body,starts_at,external_url,created_at").order("starts_at",{ascending:true}).order("created_at",{ascending:false}),
     ctx.supabase.from("worship_member_profiles").select("id,membership_id,group_code,roles,notes,active"),
@@ -72,10 +73,12 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     ctx.supabase.from("worship_rehearsals").select("*").order("starts_at",{ascending:true}).limit(50),
     ctx.supabase.from("worship_assignment_responses").select("assignment_id,response_status,note,responded_at"),
     ctx.supabase.from("worship_member_unavailability").select("id,membership_id,starts_on,ends_on,reason,created_at").order("starts_on"),
+    ctx.supabase.from("worship_song_executions").select("id,schedule_id,song_id,key_used,version_used,confirmed_at,worship_schedules!inner(title,starts_at,status)"),
   ]);
 
   const now=Date.now();
   const upcomingSchedules=(schedules??[]).filter((s:any)=>new Date(s.starts_at).getTime()>=now&&s.status!=="cancelled");
+  const recentPastSchedules=(schedules??[]).filter((s:any)=>new Date(s.starts_at).getTime()<now&&s.status!=="cancelled").slice(-8).reverse();
   const upcomingRehearsals=(rehearsals??[]).filter((r:any)=>new Date(r.starts_at).getTime()>=now);
   const myAssignments=(assignments??[]).filter((a:any)=>a.membership_id===membership?.id);
   const myProfile=(memberProfiles??[]).find((p:any)=>p.membership_id===membership?.id);
@@ -91,6 +94,20 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
   const profilesByMembership=new Map((memberProfiles??[]).map((p:any)=>[p.membership_id,p]));
   const songsById=new Map((songs??[]).map((s:any)=>[s.id,s]));
   const responseByAssignment=new Map((responses??[]).map((r:any)=>[r.assignment_id,r]));
+  const executionKeys=new Set((executions??[]).map((e:any)=>e.schedule_id+"|"+e.song_id));
+  const usageBefore=(songId:string,reference:string)=>{
+    const end=new Date(reference);
+    const start=new Date(end);
+    start.setMonth(start.getMonth()-4);
+    const rows=(executions??[]).filter((e:any)=>{
+      const schedule=(e as any).worship_schedules;
+      if(e.song_id!==songId||!schedule||schedule.status!=="completed") return false;
+      const when=new Date(schedule.starts_at);
+      return when>=start&&when<end;
+    });
+    rows.sort((a:any,b:any)=>new Date((b as any).worship_schedules.starts_at).getTime()-new Date((a as any).worship_schedules.starts_at).getTime());
+    return {count:rows.length,last:rows[0]??null};
+  };
 
   const {count:lessonCount}=canLead
     ?await ctx.supabase.from("academy_lessons").select("*",{count:"exact",head:true}).eq("active",true)
@@ -246,7 +263,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         <form action={createWorshipSchedule} className="card form-grid">
           <p className="eyebrow">NOVA ESCALA</p>
           <div className="field"><label>Título</label><input name="title" required placeholder="Culto de domingo"/></div>
-          <div className="grid grid-3"><div className="field"><label>Tipo</label><input name="serviceType" placeholder="Celebração / manhã / noite"/></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div><div className="field"><label>Tema do culto</label><input name="theme" placeholder="Graça / Família / Missões"/></div></div>
+          <div className="grid grid-3"><div className="field"><label>Tipo</label><input name="serviceType" placeholder="Celebração / manhã / noite"/></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div><div className="field"><label>Temas do culto</label><input name="themes" placeholder="Graça, Família, Missões"/></div></div>
           <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Chegada</label><input name="callTime" type="datetime-local"/></div></div>
           <div className="field"><label>Notas</label><textarea name="notes"/></div>
           <button className="button primary">Criar escala</button>
@@ -287,7 +304,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
       <div className="section-title"><h2>Configurar escalas</h2></div>
       <div className="list">{upcomingSchedules.length===0?<div className="empty">Cria a primeira escala para configurar equipa e repertório.</div>:upcomingSchedules.map((s:any)=><details className="card" key={s.id}>
-        <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"}{s.theme?" · Tema "+s.theme:""} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
+        <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"}{(s.themes??[]).length?" · "+(s.themes??[]).join(" / "):s.theme?" · "+s.theme:""} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
         <div className="button-row" style={{marginTop:14}}>
           <form action={autoAssignWorshipGroup}>
             <input type="hidden" name="scheduleId" value={s.id}/>
@@ -318,23 +335,64 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             <button className="button">Adicionar à escala</button>
           </form>
 
-          <form action={addSongToWorshipSchedule} className="form-grid">
-            <input type="hidden" name="scheduleId" value={s.id}/>
+          <div className="form-grid">
             <p className="eyebrow">ADICIONAR MÚSICA</p>
-            <div className="field"><label>Música{s.theme?" · tema "+s.theme:""}</label><select name="songId" required><option value="">Selecionar</option>{(songs??[]).filter((song:any)=>!s.theme||(Array.isArray(song.themes)&&song.themes.some((theme:string)=>theme.toLocaleLowerCase("pt-PT")===String(s.theme).toLocaleLowerCase("pt-PT")))).map((song:any)=><option value={song.id} key={song.id}>{song.title}</option>)}</select></div>
-            {s.theme&&<div className="muted small">A lista mostra apenas músicas marcadas com o tema “{s.theme}”. Gere e edite temas no Repertório Inteligente.</div>}
-            <div className="grid grid-2"><div className="field"><label>Posição</label><input name="position" type="number" min="1" defaultValue="1"/></div><div className="field"><label>Tom</label><input name="keyOverride"/></div></div>
-            <button className="button">Adicionar ao culto</button>
-          </form>
+            <form action={addSongToWorshipSchedule} className="form-grid">
+              <input type="hidden" name="scheduleId" value={s.id}/>
+              <div className="field"><label>Música por tema</label><select name="songId" required><option value="">Selecionar</option>{(songs??[]).filter((song:any)=>{
+                const serviceThemes=((s.themes??[]) as string[]).length?(s.themes??[]):s.theme?[s.theme]:[];
+                return serviceThemes.length===0||(Array.isArray(song.themes)&&song.themes.some((theme:string)=>serviceThemes.some((t:string)=>t.toLocaleLowerCase("pt-PT")===theme.toLocaleLowerCase("pt-PT"))));
+              }).map((song:any)=>{const usage=usageBefore(song.id,s.starts_at); return <option value={song.id} key={song.id}>{song.title} · {usage.count}× em 4 meses</option>})}</select></div>
+              <div className="grid grid-2"><div className="field"><label>Posição</label><input name="position" type="number" min="1" defaultValue="1"/></div><div className="field"><label>Tom</label><input name="keyOverride"/></div></div>
+              <button className="button">Adicionar ao culto</button>
+            </form>
+            {(((s.themes??[]) as string[]).length>0||s.theme)&&<details><summary className="text-button" style={{cursor:"pointer"}}>Ver todo o repertório</summary><form action={addSongToWorshipSchedule} className="form-grid" style={{marginTop:10}}><input type="hidden" name="scheduleId" value={s.id}/><div className="field"><select name="songId" required><option value="">Selecionar qualquer música</option>{(songs??[]).map((song:any)=>{const usage=usageBefore(song.id,s.starts_at);return <option value={song.id} key={song.id}>{song.title} · {usage.count}× em 4 meses</option>})}</select></div><input type="hidden" name="position" value="1"/><button className="button">Adicionar fora do tema</button></form></details>}
+          </div>
 
-          <form action={updateWorshipScheduleStatus} className="form-grid">
-            <input type="hidden" name="scheduleId" value={s.id}/>
-            <p className="eyebrow">ESTADO</p>
-            <div className="field"><label>Estado da escala</label><select name="status" defaultValue={s.status}><option value="planned">Planeada</option><option value="confirmed">Confirmada</option><option value="completed">Concluída</option><option value="cancelled">Cancelada</option></select></div>
-            <button className="button">Guardar estado</button>
-          </form>
+          <div className="form-grid">
+            <form action={updateWorshipScheduleTheme} className="form-grid">
+              <input type="hidden" name="scheduleId" value={s.id}/>
+              <p className="eyebrow">TEMAS</p>
+              <div className="field"><label>Temas, separados por vírgula</label><input name="themes" defaultValue={((s.themes??[]) as string[]).join(", ")||s.theme||""}/></div>
+              <button className="button">Guardar temas</button>
+            </form>
+            <form action={updateWorshipScheduleStatus} className="form-grid">
+              <input type="hidden" name="scheduleId" value={s.id}/>
+              <p className="eyebrow">ESTADO</p>
+              <div className="field"><label>Estado da escala</label><select name="status" defaultValue={s.status}><option value="planned">Planeada</option><option value="confirmed">Confirmada</option><option value="completed">Concluída</option><option value="cancelled">Cancelada</option></select></div>
+              <button className="button">Guardar estado</button>
+            </form>
+            <div className="card">
+              <p className="eyebrow">APROVAÇÃO E PUBLICAÇÃO</p>
+              <div className="button-row">
+                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="draft"/><button className="button">Rascunho</button></form>
+                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="approve"/><button className="button">Aprovar</button></form>
+                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="publish"/><button className="button primary">Publicar equipa</button></form>
+              </div>
+              <div className="muted small" style={{marginTop:8}}>Estado editorial: {s.publication_state??"draft"}. Aprovar não publica nem envia mensagens.</div>
+              <form action={setWorshipPublicRepertoire} className="button-row" style={{marginTop:10}}>
+                <input type="hidden" name="scheduleId" value={s.id}/>
+                <input type="hidden" name="publicRepertoire" value={s.public_repertoire?"false":"true"}/>
+                <button className="button">{s.public_repertoire?"Retirar repertório público":"Autorizar repertório público"}</button>
+              </form>
+            </div>
+          </div>
         </div>
       </details>)}</div>
+
+      <div className="section-title"><div><p className="eyebrow">PÓS-CULTO</p><h2>Confirmar repertório executado</h2></div><span className="muted small">Só estas confirmações entram nos relatórios.</span></div>
+      <div className="list">{recentPastSchedules.length===0?<div className="empty">Nenhum culto anterior para confirmar.</div>:recentPastSchedules.map((s:any)=>{
+        const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===s.id).sort((a:any,b:any)=>a.position-b.position);
+        return <details className="card" key={"executed-"+s.id}>
+          <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · {new Date(s.starts_at).toLocaleString("pt-PT")} · {s.status}</summary>
+          <form action={confirmWorshipExecutions} className="form-grid" style={{marginTop:14}}>
+            <input type="hidden" name="scheduleId" value={s.id}/>
+            <p className="muted small">Marque apenas as músicas efetivamente cantadas. Guardar novamente substitui a confirmação anterior deste culto.</p>
+            {setlist.length===0?<div className="empty">Este culto não tem repertório planeado. Adicione primeiro as músicas realizadas.</div>:setlist.map((x:any)=>{const song=songsById.get(x.song_id) as any;return <label className="list-row" key={x.id} style={{cursor:"pointer"}}><span><strong>{song?.title??"Música"}</strong><span className="muted small"> · tom {x.key_override||song?.default_key||"—"}{song?.version_name?" · "+song.version_name:""}</span></span><input type="checkbox" name="songIds" value={x.song_id} defaultChecked={executionKeys.has(s.id+"|"+x.song_id)}/></label>})}
+            {setlist.length>0&&<button className="button primary">Confirmar execução e concluir culto</button>}
+          </form>
+        </details>
+      })}</div>
 
       <div className="section-title"><h2>Membros, grupos e Academy</h2></div>
       <div className="list">{memberMetrics.map((m:any)=><details className="card" key={m.membership_id}>
