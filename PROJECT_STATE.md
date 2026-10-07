@@ -101,3 +101,24 @@ Each instrument has at least two lessons. The second lessons are guided practica
 2. Review Admin resource delete/upload flow once more.
 3. Run final Supabase Security Advisor.
 4. Mark PR ready only after all checks pass.
+
+## Checkpoint 2026-10-07 — Persisted Academy video curation
+- Production baseline before this branch: `6518fba7f2da3082c6c3419be3a52cc149fa86b9`.
+- Academy video curation is now persisted in `academy_lessons`:
+  - `video_review_status`
+  - `video_review_note`
+  - `video_reviewed_at`
+  - `video_reviewed_by`
+- Final live inventory: 15 videos verified, 0 pending.
+- Any future `youtube_id` change automatically resets review state to `pending`.
+- Reset trigger verified transactionally with rollback.
+- New `review_academy_video(uuid,text,text)` RPC:
+  - SECURITY INVOKER
+  - authenticated callable
+  - internal Admin check
+  - anon has no execute grant
+  - regular user test rejected with `admin required`
+- Student lesson renderer shows embedded video only when review status is `verified`.
+- Admin can set pending / verified / blocked and save a review note.
+- Curated replacements and confirmations are captured in migration `20261007163000_academy_video_review_state.sql`.
+

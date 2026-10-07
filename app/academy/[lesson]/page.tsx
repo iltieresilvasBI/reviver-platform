@@ -12,21 +12,32 @@ const blockedEnglishVideoIds=new Set([
 export default async function LessonPage({params,searchParams}:{params:Promise<{lesson:string}>,searchParams:Promise<{score?:string;passed?:string;xp?:string;quiz?:string}>}) {
   const {lesson:slug}=await params; const qs=await searchParams;
   const {supabase,userId,email}=await requireUser();
-  const {data:lesson}=await supabase.from("academy_lessons").select("id,title,slug,summary,objectives,exercise,youtube_id,duration_minutes,xp_reward,pass_percentage,module_id").eq("slug",slug).eq("active",true).maybeSingle();
+  const {data:lesson}=await supabase.from("academy_lessons").select("id,title,slug,summary,objectives,exercise,youtube_id,video_review_status,video_review_note,duration_minutes,xp_reward,pass_percentage,module_id").eq("slug",slug).eq("active",true).maybeSingle();
   if(!lesson) notFound();
   const [{data:questions},{data:progress}]=await Promise.all([
     supabase.from("quiz_questions").select("id,prompt,sort_order").eq("lesson_id",lesson.id).order("sort_order"),
     supabase.from("lesson_progress").select("status,best_score_percentage,first_completed_at").eq("user_id",userId).eq("lesson_id",lesson.id).maybeSingle()
   ]);
   const {data:options}=await supabase.rpc("get_quiz_options",{p_lesson_id:lesson.id});
-  const videoApproved=Boolean(lesson.youtube_id&&!blockedEnglishVideoIds.has(lesson.youtube_id));
+  const videoApproved=Boolean(
+    lesson.youtube_id &&
+    lesson.video_review_status==="verified" &&
+    !blockedEnglishVideoIds.has(lesson.youtube_id)
+  );
+  const videoMessage=!lesson.youtube_id
+    ?"Aula prática disponível em formato guiado. O vídeo é complementar e poderá ser adicionado depois."
+    :lesson.video_review_status==="blocked"||blockedEnglishVideoIds.has(lesson.youtube_id)
+      ?"Vídeo indisponível: foi bloqueado pela curadoria da Academy."
+      :lesson.video_review_status==="pending"
+        ?"Vídeo temporariamente oculto enquanto a curadoria valida idioma e origem."
+        :"Vídeo temporariamente indisponível.";
 
   return <AppShell title={lesson.title} active="/academy" email={email}>
     {progress?.status==="completed"&&<div className="notice ok">Aula concluída oficialmente. Novas tentativas servem para revisão e não acrescentam XP.</div>}
     {qs.score&&<div className={qs.passed==="1"?"notice ok":"notice warn"} style={{marginTop:12}}>Resultado: {qs.score}% · {qs.passed==="1"?"Aprovado":"Ainda não atingiu a nota de aprovação"}{Number(qs.xp)>0?` · +${qs.xp} XP`:""}</div>}
     <div className="grid grid-2" style={{marginTop:18}}>
       <div>
-        {videoApproved?<div className="video-wrap"><iframe src={`https://www.youtube-nocookie.com/embed/${lesson.youtube_id}`} title={lesson.title} allowFullScreen /></div>:<div className="empty">{lesson.youtube_id?"Vídeo removido temporariamente: conteúdo em inglês. A substituição em português ou dublada está em curadoria.":"Aula prática disponível em formato guiado. O vídeo é complementar e poderá ser adicionado depois."}</div>}
+        {videoApproved?<div className="video-wrap"><iframe src={`https://www.youtube-nocookie.com/embed/${lesson.youtube_id}`} title={lesson.title} allowFullScreen /></div>:<div className="empty">{videoMessage}</div>}
         <div className="card" style={{marginTop:16}}><p className="eyebrow">RESUMO</p><p>{lesson.summary}</p><p className="muted">{lesson.objectives}</p></div>
       </div>
       <div className="card">

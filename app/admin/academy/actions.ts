@@ -126,3 +126,20 @@ export async function deleteQuestion(formData:FormData){
   if(error) redirect("/admin/academy?message="+encodeURIComponent(error.message));
   revalidatePath("/admin/academy");
 }
+
+
+export async function reviewVideo(formData:FormData){
+  const s=await requireAdmin();
+  const lessonId=String(formData.get("lessonId")??"");
+  const status=String(formData.get("reviewStatus")??"pending");
+  const note=String(formData.get("reviewNote")??"").trim()||null;
+  const {error}=await s.rpc("review_academy_video",{
+    p_lesson_id:lessonId,
+    p_status:status,
+    p_note:note
+  });
+  if(error) redirect("/admin/academy?message="+encodeURIComponent(error.message));
+  revalidatePath("/admin/academy");
+  revalidatePath("/academy");
+  redirect("/admin/academy?message="+encodeURIComponent("Curadoria do vídeo atualizada."));
+}

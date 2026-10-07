@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
-import { createLesson,createModule,createQuestion,deactivateLesson,deleteQuestion,updateLesson,updateQuestion } from "./actions";
+import { createLesson,createModule,createQuestion,deactivateLesson,deleteQuestion,reviewVideo,updateLesson,updateQuestion } from "./actions";
 
-const blockedVideoIds=new Set(["YCLyAmXtpfY","nBQH1c20xbs","N50kF0FE3hM"]);
-const pendingReviewVideoIds=new Set(["7nIyHuz1LWk","3OjBVoTqlkA","j_DNPhNlC-w","362-gVCXrYc","-URtAQxpU6U","PoDkBUsZ-aU"]);
 
 export default async function AcademyAdmin({searchParams}:{searchParams:Promise<{message?:string}>}){
   const qs=await searchParams; const ctx=await getAccessContext();
@@ -19,9 +17,9 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
   const {data:options}=qids.length?await ctx.supabase.from("quiz_options").select("*").in("question_id",qids).order("sort_order"):{data:[] as any[]};
   const course=courses?.[0];
   const allLessons=lessons??[];
-  const blockedCount=allLessons.filter((l:any)=>l.youtube_id&&blockedVideoIds.has(l.youtube_id)).length;
-  const pendingReviewCount=allLessons.filter((l:any)=>l.youtube_id&&pendingReviewVideoIds.has(l.youtube_id)).length;
-  const videoCount=allLessons.filter((l:any)=>l.youtube_id&&!blockedVideoIds.has(l.youtube_id)&&!pendingReviewVideoIds.has(l.youtube_id)).length;
+  const blockedCount=allLessons.filter((l:any)=>l.youtube_id&&l.video_review_status==="blocked").length;
+  const pendingReviewCount=allLessons.filter((l:any)=>l.youtube_id&&l.video_review_status==="pending").length;
+  const videoCount=allLessons.filter((l:any)=>l.youtube_id&&l.video_review_status==="verified").length;
   const guidedCount=allLessons.filter((l:any)=>!l.youtube_id).length;
   return <AppShell title="Gestão da Academy" active="/admin" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
@@ -30,7 +28,7 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
 
     <div className="section-title"><div><p className="eyebrow">CURADORIA</p><h2>Estado do conteúdo</h2></div><span className="muted small">Aulas sem vídeo continuam válidas como conteúdo guiado.</span></div>
     <div className="grid grid-4">
-      <article className="card metric"><p className="eyebrow">VERIFICADOS</p><strong>{videoCount}</strong><span>vídeos configurados fora da lista pendente/bloqueada</span></article>
+      <article className="card metric"><p className="eyebrow">VERIFICADOS</p><strong>{videoCount}</strong><span>vídeos aprovados pela curadoria</span></article>
       <article className="card metric"><p className="eyebrow">REVISÃO</p><strong>{pendingReviewCount}</strong><span>vídeos antigos ainda por validar</span></article>
       <article className="card metric"><p className="eyebrow">GUIADAS</p><strong>{guidedCount}</strong><span>aulas completas sem vídeo obrigatório</span></article>
       <article className="card metric"><p className="eyebrow">BLOQUEADAS</p><strong>{blockedCount}</strong><span>IDs impedidos pela curadoria</span></article>
@@ -60,7 +58,7 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
       <div className="list">{(lessons??[]).filter(l=>l.module_id===m.id).map(l=>{
         const qsFor=(questions??[]).filter(q=>q.lesson_id===l.id);
         return <details key={l.id} style={{borderTop:"1px solid var(--border)",paddingTop:14}}>
-          <summary style={{cursor:"pointer",fontWeight:800}}>{l.title} {!l.active&&<span className="pill">inativa</span>} {l.youtube_id?(blockedVideoIds.has(l.youtube_id)?<span className="pill">vídeo bloqueado</span>:pendingReviewVideoIds.has(l.youtube_id)?<span className="pill gold">revisão pendente</span>:<span className="pill ok">vídeo verificado</span>):<span className="pill gold">aula guiada</span>}</summary>
+          <summary style={{cursor:"pointer",fontWeight:800}}>{l.title} {!l.active&&<span className="pill">inativa</span>} {l.youtube_id?(l.video_review_status==="blocked"?<span className="pill">vídeo bloqueado</span>:l.video_review_status==="pending"?<span className="pill gold">revisão pendente</span>:<span className="pill ok">vídeo verificado</span>):<span className="pill gold">aula guiada</span>}</summary>
           <form action={updateLesson} className="form-grid" style={{marginTop:16}}>
             <input type="hidden" name="lessonId" value={l.id}/>
             <div className="grid grid-3"><div className="field"><label>Título</label><input name="title" defaultValue={l.title}/></div><div className="field"><label>Slug</label><input name="slug" defaultValue={l.slug}/></div><div className="field"><label>Link YouTube ou ID (português/dublado)</label><input name="youtube" defaultValue={l.youtube_id??""}/></div></div>
@@ -70,6 +68,16 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
             <div className="grid grid-4"><div className="field"><label>Duração</label><input name="duration" type="number" defaultValue={l.duration_minutes??""}/></div><div className="field"><label>XP</label><input name="xp" type="number" defaultValue={l.xp_reward}/></div><div className="field"><label>Aprovação %</label><input name="pass" type="number" defaultValue={l.pass_percentage}/></div><div className="field"><label>Ordem</label><input name="sortOrder" type="number" defaultValue={l.sort_order}/></div></div>
             <div className="button-row"><button className="button primary">Guardar aula</button><Link className="button" href={`/admin/academy/preview/${l.id}`}>Pré-visualizar</Link></div>
           </form>
+          {l.youtube_id&&<form action={reviewVideo} className="card form-grid" style={{marginTop:12}}>
+            <input type="hidden" name="lessonId" value={l.id}/>
+            <p className="eyebrow">CURADORIA DO VÍDEO</p>
+            <div className="grid grid-2">
+              <div className="field"><label>Estado</label><select name="reviewStatus" defaultValue={l.video_review_status??"pending"}><option value="pending">Revisão pendente</option><option value="verified">Verificado</option><option value="blocked">Bloqueado</option></select></div>
+              <div className="field"><label>Nota da revisão</label><input name="reviewNote" defaultValue={l.video_review_note??""} placeholder="Idioma, canal e motivo da decisão"/></div>
+            </div>
+            <div className="muted small">Ao trocar o YouTube ID da aula, o estado volta automaticamente para revisão pendente.</div>
+            <button className="button">Guardar curadoria</button>
+          </form>}
           {l.active&&<form action={deactivateLesson} style={{marginTop:10}}><input type="hidden" name="lessonId" value={l.id}/><button className="button danger">Desativar aula</button></form>}
           <div className="section-title"><h3>Quiz</h3></div>
           <div className="list">{qsFor.map((q:any)=>{
