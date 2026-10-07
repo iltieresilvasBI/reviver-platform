@@ -5,7 +5,7 @@ import {
   acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,createWorshipItem,
   createWorshipRehearsal,createWorshipSchedule,createWorshipSong,decideWorship,
   inviteWorship,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
-  saveWorshipMemberProfile,updateWorshipScheduleStatus
+  respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus
 } from "./actions";
 
 const roleOptions=[
@@ -53,7 +53,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
   const [
     {data:items},{data:memberProfiles},{data:schedules},{data:songs},
-    {data:assignments},{data:scheduleSongs},{data:rehearsals}
+    {data:assignments},{data:scheduleSongs},{data:rehearsals},{data:responses}
   ]=await Promise.all([
     ctx.supabase.from("worship_items").select("id,item_type,title,body,starts_at,external_url,created_at").order("starts_at",{ascending:true}).order("created_at",{ascending:false}),
     ctx.supabase.from("worship_member_profiles").select("id,membership_id,group_code,roles,notes,active"),
@@ -62,6 +62,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     ctx.supabase.from("worship_schedule_members").select("*").order("created_at"),
     ctx.supabase.from("worship_schedule_songs").select("*").order("position"),
     ctx.supabase.from("worship_rehearsals").select("*").order("starts_at",{ascending:true}).limit(50),
+    ctx.supabase.from("worship_assignment_responses").select("assignment_id,response_status,note,responded_at"),
   ]);
 
   const now=Date.now();
@@ -74,6 +75,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
   const directoryByMembership=new Map((directory??[]).map((m:any)=>[m.membership_id,m]));
   const profilesByMembership=new Map((memberProfiles??[]).map((p:any)=>[p.membership_id,p]));
   const songsById=new Map((songs??[]).map((s:any)=>[s.id,s]));
+  const responseByAssignment=new Map((responses??[]).map((r:any)=>[r.assignment_id,r]));
 
   const {count:lessonCount}=canLead
     ?await ctx.supabase.from("academy_lessons").select("*",{count:"exact",head:true}).eq("active",true)
@@ -119,7 +121,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
             <div><div className="button-row"><span className="pill gold">Grupo {s.group_code??"—"}</span><span className={s.status==="confirmed"?"pill ok":"pill"}>{s.status}</span>{mine&&<span className="pill ok">estou escalado</span>}</div><h3 style={{margin:"10px 0 4px"}}>{s.title}</h3><span className="muted small">{new Date(s.starts_at).toLocaleString("pt-PT")}{s.call_time?` · chegada ${new Date(s.call_time).toLocaleString("pt-PT")}`:""}{s.service_type?` · ${s.service_type}`:""}</span></div>
-            {mine&&<div><strong>{roleLabel(mine.role)}</strong></div>}
+            {mine&&<div><strong>{roleLabel(mine.role)}</strong>{responseByAssignment.get(mine.id)&&<div className="muted small" style={{marginTop:4}}>{(responseByAssignment.get(mine.id) as any).response_status==="confirmed"?"Presença confirmada":"Indisponibilidade registada"}</div>}</div>}
           </div>
         </summary>
 
@@ -131,9 +133,26 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             {canLead
               ?<div className="list">{people.length===0?<div className="empty">Sem pessoas atribuídas.</div>:people.map((a:any)=>{
                 const person=directoryByMembership.get(a.membership_id) as any;
-                return <div className="list-row" key={a.id}><div><strong>{person?.display_name||person?.email||"Membro"}</strong><div className="muted small">{roleLabel(a.role)} · {a.attendance_status}</div></div><form action={removeWorshipAssignment}><input type="hidden" name="assignmentId" value={a.id}/><button className="button danger">Remover</button></form></div>
+                const response=responseByAssignment.get(a.id) as any;
+                return <div className="list-row" key={a.id}><div><strong>{person?.display_name||person?.email||"Membro"}</strong><div className="muted small">{roleLabel(a.role)} · {response?response.response_status==="confirmed"?"confirmado":"não disponível":"sem resposta"}</div>{response?.note&&<div className="muted small">{response.note}</div>}</div><form action={removeWorshipAssignment}><input type="hidden" name="assignmentId" value={a.id}/><button className="button danger">Remover</button></form></div>
               })}</div>
-              :mine?<div className="notice">A tua função: <strong>{roleLabel(mine.role)}</strong></div>:<div className="muted">Esta escala pertence ao grupo {s.group_code??"—"}.</div>}
+              :mine?<div>
+                <div className="notice">A tua função: <strong>{roleLabel(mine.role)}</strong></div>
+                <div className="button-row" style={{marginTop:12}}>
+                  <form action={respondToWorshipAssignment}>
+                    <input type="hidden" name="assignmentId" value={mine.id}/>
+                    <input type="hidden" name="responseStatus" value="confirmed"/>
+                    <button className="button primary">Confirmar presença</button>
+                  </form>
+                  <form action={respondToWorshipAssignment} className="button-row">
+                    <input type="hidden" name="assignmentId" value={mine.id}/>
+                    <input type="hidden" name="responseStatus" value="declined"/>
+                    <input name="note" className="inline-input" placeholder="Motivo opcional"/>
+                    <button className="button danger">Não posso</button>
+                  </form>
+                </div>
+                {responseByAssignment.get(mine.id)&&<div className="muted small" style={{marginTop:10}}>Resposta atual: {(responseByAssignment.get(mine.id) as any).response_status==="confirmed"?"Confirmado":"Não disponível"}{(responseByAssignment.get(mine.id) as any).note?` · ${(responseByAssignment.get(mine.id) as any).note}`:""}</div>}
+              </div>:<div className="muted">Esta escala pertence ao grupo {s.group_code??"—"}.</div>}
           </div>
 
           <div className="card">
@@ -208,6 +227,16 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <div className="list">{upcomingSchedules.length===0?<div className="empty">Cria a primeira escala para configurar equipa e repertório.</div>:upcomingSchedules.map((s:any)=><details className="card" key={s.id}>
         <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
         <div className="grid grid-3" style={{marginTop:16}}>
+          <div className="card">
+            <p className="eyebrow">RESPOSTAS DA EQUIPA</p>
+            {(()=>{
+              const people=(assignments??[]).filter((a:any)=>a.schedule_id===s.id);
+              const confirmed=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="confirmed").length;
+              const declined=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="declined").length;
+              const pending=people.length-confirmed-declined;
+              return <div className="grid grid-3"><div className="metric"><span>Confirmados</span><strong>{confirmed}</strong></div><div className="metric"><span>Não podem</span><strong>{declined}</strong></div><div className="metric"><span>Sem resposta</span><strong>{pending}</strong></div></div>;
+            })()}
+          </div>
           <form action={assignWorshipMember} className="form-grid">
             <input type="hidden" name="scheduleId" value={s.id}/>
             <p className="eyebrow">ESCALAR PESSOA</p>
