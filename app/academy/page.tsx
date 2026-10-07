@@ -15,6 +15,20 @@ const backingSlugs=new Set(["worship"]);
 const instrumentSlugs=new Set(["violao","guitarra","baixo","bateria","teclado-piano"]);
 const technicalSlugs=new Set(["behringer-x32","iluminacao-igreja"]);
 
+function TrackProgress({label,moduleSlugs,modules,lessons,progress}:{label:string;moduleSlugs:Set<string>;modules:AcademyModule[];lessons:any[];progress:any[]}){
+  const moduleIds=new Set(modules.filter(m=>moduleSlugs.has(m.slug)).map(m=>m.id));
+  const trackLessons=lessons.filter(l=>moduleIds.has(l.module_id));
+  const completed=trackLessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.status==="completed")).length;
+  const total=trackLessons.length;
+  const percent=total?Math.round((completed/total)*100):0;
+  return <article className="card metric">
+    <p className="eyebrow">{label}</p>
+    <strong>{percent}%</strong>
+    <span>{completed} de {total} aulas concluídas</span>
+    <div className="progress" style={{marginTop:14}}><span style={{width:`${percent}%`}} /></div>
+  </article>
+}
+
 function ModuleBlock({module,lessons,progress}:{module:AcademyModule;lessons:any[];progress:any[]}){
   const ml=lessons.filter(l=>l.module_id===module.id);
   const displayTitle=module.slug==="worship"?"Harmonia e Backing Vocals":module.title;
@@ -54,6 +68,14 @@ export default async function AcademyPage() {
       <h2>Formação para voz, instrumentos e equipa técnica</h2>
       <p>Trilhas com aulas, exercícios, quizzes e progresso. Os vídeos publicados devem estar em português ou oficialmente dublados.</p>
     </section>
+
+    <div className="section-title"><div><p className="eyebrow">PROGRESSO</p><h2>Visão geral das trilhas</h2></div><span className="muted small">Conclusões são atualizadas após aprovação no quiz.</span></div>
+    <div className="grid grid-4">
+      <TrackProgress label="Cantor Principal" moduleSlugs={vocalLeadSlugs} modules={ms} lessons={ls} progress={ps}/>
+      <TrackProgress label="Backing Vocals" moduleSlugs={backingSlugs} modules={ms} lessons={ls} progress={ps}/>
+      <TrackProgress label="Instrumentos" moduleSlugs={instrumentSlugs} modules={ms} lessons={ls} progress={ps}/>
+      <TrackProgress label="Equipa Técnica" moduleSlugs={technicalSlugs} modules={ms} lessons={ls} progress={ps}/>
+    </div>
 
     <section style={{marginTop:30}}>
       <div className="section-title"><div><p className="eyebrow">TRILHA VOCAL 1</p><h2>Cantor Principal (Lead)</h2></div><span className="muted small">Respiração, controlo, desenvolvimento e aplicação da voz principal.</span></div>
