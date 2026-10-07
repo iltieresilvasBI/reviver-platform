@@ -341,9 +341,11 @@ export async function autoAssignWorshipGroup(formData:FormData){
   if(scheduleError||!schedule) redirect("/worship?message="+encodeURIComponent(scheduleError?.message??"Escala não encontrada."));
   if(!schedule.group_code) redirect("/worship?message="+encodeURIComponent("Define o grupo da escala antes de preencher a equipa."));
 
-  const serviceDate=new Intl.DateTimeFormat("en-CA",{
+  const dateParts=new Intl.DateTimeFormat("en-GB",{
     timeZone:"Europe/Lisbon",year:"numeric",month:"2-digit",day:"2-digit"
-  }).format(new Date(schedule.starts_at));
+  }).formatToParts(new Date(schedule.starts_at));
+  const datePart=(type:string)=>dateParts.find(p=>p.type===type)?.value??"";
+  const serviceDate=`${datePart("year")}-${datePart("month")}-${datePart("day")}`;
 
   const {data:profiles,error:profileError}=await supabase
     .from("worship_member_profiles")
