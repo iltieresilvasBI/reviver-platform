@@ -101,3 +101,4 @@ Each instrument has at least two lessons. The second lessons are guided practica
 2. Review Admin resource delete/upload flow once more.
 3. Run final Supabase Security Advisor.
 4. Mark PR ready only after all checks pass.
+
