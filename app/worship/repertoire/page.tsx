@@ -109,6 +109,7 @@ export default async function WorshipRepertoirePage({
     <div className="button-row" style={{marginBottom:18}}>
       <Link className="button" href="/worship">← Ministério de Louvor</Link>
       {canLead&&<Link className="button" href="/worship/reports">Relatórios</Link>}
+      {canLead&&<Link className="button" href="/worship/themes">Gerir temas</Link>}
       <Link className="button" href="/worship/rotacao">Rotação A/B/C/D</Link>
     </div>
 
