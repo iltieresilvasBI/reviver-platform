@@ -40,7 +40,7 @@ export default async function MediaPage({searchParams}:{searchParams:Promise<{me
   const status=(qs.status??"").trim();
   const type=(qs.type??"").trim();
   const filtered=all.filter(i=>{
-    if(q&&!\`\${i.title} \${i.slug} \${i.summary??""}\`.toLowerCase().includes(q)) return false;
+    if(q&&!`${i.title} ${i.slug} ${i.summary??""}`.toLowerCase().includes(q)) return false;
     if(status&&i.status!==status) return false;
     if(type&&i.content_type!==type) return false;
     return true;
@@ -108,14 +108,14 @@ export default async function MediaPage({searchParams}:{searchParams:Promise<{me
         <div>
           <div className="button-row"><span className="pill">{i.content_type}</span><span className={i.status==="published"?"pill ok":i.status==="in_review"?"pill gold":"pill"}>{statusLabel[i.status]??i.status}</span>{i.featured&&<span className="pill gold">destaque</span>}</div>
           <h3 style={{fontSize:22,margin:"10px 0 4px"}}>{i.title}</h3>
-          <span className="muted small">/{i.slug} · {mediaCount.get(i.id)??0} media{i.scheduled_for?\` · agendado \${new Date(i.scheduled_for).toLocaleString("pt-PT")}\`:""}</span>
+          <span className="muted small">/{i.slug} · {mediaCount.get(i.id)??0} media{i.scheduled_for?` · agendado ${new Date(i.scheduled_for).toLocaleString("pt-PT")}`:""}</span>
           {i.summary&&<p className="muted" style={{marginTop:10,maxWidth:720}}>{i.summary}</p>}
         </div>
         <MediaUpload contentId={i.id}/>
       </div>
       <div className="button-row" style={{marginTop:16}}>
-        <a className="button primary" href={\`/media/preview/\${i.id}\`}>Pré-visualizar</a>
-        <a className="button" href={\`/media/edit/\${i.id}\`}>Editar</a>
+        <a className="button primary" href={`/media/preview/${i.id}`}>Pré-visualizar</a>
+        <a className="button" href={`/media/edit/${i.id}`}>Editar</a>
         {(i.status==="draft"||i.status==="changes_requested")&&<form action={transitionContent}><input type="hidden" name="contentId" value={i.id}/><input type="hidden" name="action" value="submit"/><button className="button">Enviar para revisão</button></form>}
         {canReview&&i.status==="in_review"&&<><form action={transitionContent}><input type="hidden" name="contentId" value={i.id}/><input type="hidden" name="action" value="approve"/><button className="button primary">Aprovar</button></form><form action={transitionContent}><input type="hidden" name="contentId" value={i.id}/><input type="hidden" name="action" value="request_changes"/><input type="hidden" name="note" value="Requer alterações"/><button className="button">Pedir alterações</button></form><form action={transitionContent}><input type="hidden" name="contentId" value={i.id}/><input type="hidden" name="action" value="reject"/><input type="hidden" name="note" value="Rejeitado"/><button className="button danger">Rejeitar</button></form></>}
         {canReview&&i.status==="approved"&&<><form action={transitionContent}><input type="hidden" name="contentId" value={i.id}/><input type="hidden" name="action" value="publish"/><button className="button primary">Publicar agora</button></form><ScheduleForm contentId={i.id}/></>}
