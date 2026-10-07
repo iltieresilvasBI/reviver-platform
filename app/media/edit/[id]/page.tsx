@@ -22,7 +22,7 @@ export default async function EditContent({params,searchParams}:{params:Promise<
   const readonly=item.status==="published";
 
   return <AppShell title="Editar conteúdo" active="/media" email={ctx.email}>
-    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/media">Voltar</Link><Link className="button primary" href={\`/media/preview/\${id}\`}>Pré-visualizar</Link></div>
+    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/media">Voltar</Link><Link className="button primary" href={`/media/preview/${id}`}>Pré-visualizar</Link></div>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     {readonly&&<div className="notice warn" style={{marginBottom:16}}>Conteúdo publicado está bloqueado para edição direta nesta versão. Cria uma nova versão para alterações editoriais.</div>}
 
