@@ -387,6 +387,6 @@ export async function autoAssignWorshipGroup(formData:FormData){
   revalidatePath("/worship");
   redirect("/worship?message="+encodeURIComponent(
     rows.length+" membro"+(rows.length===1?"":"s")+" adicionado"+(rows.length===1?"":"s")+
-    (skippedUnavailable?" · "+skippedUnavailable+" indisponível"+(skippedUnavailable===1?"":"eis")+" ignorado"+(skippedUnavailable===1?"":"s"):"")
+    (skippedUnavailable?" · "+skippedUnavailable+" membro"+(skippedUnavailable===1?"":"s")+" indisponível"+(skippedUnavailable===1?"":"is")+" ignorado"+(skippedUnavailable===1?"":"s"):"")
   ));
 }
