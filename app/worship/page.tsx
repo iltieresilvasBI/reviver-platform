@@ -153,15 +153,32 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       const people=(assignments??[]).filter((a:any)=>a.schedule_id===s.id);
       const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===s.id).sort((a:any,b:any)=>a.position-b.position);
       const mine=people.find((a:any)=>a.membership_id===membership?.id);
+      const confirmed=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="confirmed").length;
+      const declined=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="declined").length;
+      const pending=people.length-confirmed-declined;
+      const linkedRehearsal=(rehearsals??[]).find((r:any)=>r.schedule_id===s.id);
+      const readinessChecks=[
+        {label:"Equipa definida",ok:people.length>0},
+        {label:"Equipa confirmada",ok:people.length>0&&pending===0&&declined===0},
+        {label:"Repertório definido",ok:setlist.length>0},
+        {label:"Ensaio associado",ok:Boolean(linkedRehearsal)},
+      ];
+      const readiness=Math.round(readinessChecks.filter(x=>x.ok).length/readinessChecks.length*100);
       return <details className="card" key={s.id} open={Boolean(mine)}>
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
-            <div><div className="button-row"><span className="pill gold">Grupo {s.group_code??"—"}</span><span className={s.status==="confirmed"?"pill ok":"pill"}>{s.status}</span>{mine&&<span className="pill ok">estou escalado</span>}</div><h3 style={{margin:"10px 0 4px"}}>{s.title}</h3><span className="muted small">{new Date(s.starts_at).toLocaleString("pt-PT")}{s.call_time?` · chegada ${new Date(s.call_time).toLocaleString("pt-PT")}`:""}{s.service_type?` · ${s.service_type}`:""}</span></div>
+            <div><div className="button-row"><span className="pill gold">Grupo {s.group_code??"—"}</span><span className={s.status==="confirmed"?"pill ok":"pill"}>{s.status}</span><span className={readiness===100?"pill ok":readiness>=50?"pill gold":"pill"}>prontidão {readiness}%</span>{mine&&<span className="pill ok">estou escalado</span>}</div><h3 style={{margin:"10px 0 4px"}}>{s.title}</h3><span className="muted small">{new Date(s.starts_at).toLocaleString("pt-PT")}{s.call_time?` · chegada ${new Date(s.call_time).toLocaleString("pt-PT")}`:""}{s.service_type?` · ${s.service_type}`:""}</span></div>
             {mine&&<div><strong>{roleLabel(mine.role)}</strong>{responseByAssignment.get(mine.id)&&<div className="muted small" style={{marginTop:4}}>{(responseByAssignment.get(mine.id) as any).response_status==="confirmed"?"Presença confirmada":"Indisponibilidade registada"}</div>}</div>}
           </div>
         </summary>
 
         {s.notes&&<p className="muted" style={{marginTop:14}}>{s.notes}</p>}
+
+        <div className="card" style={{marginTop:16}}>
+          <p className="eyebrow">PRONTIDÃO DO CULTO</p>
+          <div className="grid grid-4">{readinessChecks.map(check=><div className="metric" key={check.label}><span>{check.label}</span><strong>{check.ok?"✓":"—"}</strong></div>)}</div>
+          <div className="muted small" style={{marginTop:10}}>{confirmed} confirmado{confirmed===1?"":"s"} · {pending} sem resposta · {declined} indisponível{declined===1?"":"is"}{linkedRehearsal?` · ensaio ${new Date(linkedRehearsal.starts_at).toLocaleString("pt-PT")}`:""}</div>
+        </div>
 
         <div className="grid grid-2" style={{marginTop:16}}>
           <div className="card">
