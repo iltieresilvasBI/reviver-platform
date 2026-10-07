@@ -680,3 +680,26 @@ export async function proposeWorshipSubstitute(formData:FormData){
   if(error) redirect("/worship/substitutions?message="+encodeURIComponent(error.message));
   revalidatePath("/worship/substitutions");
 }
+
+
+export async function saveMyWorshipCommunicationPreference(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const optIn=String(formData.get("communicationOptIn")??"false")==="true";
+  const preference=String(formData.get("communicationPreference")??"").trim()||null;
+  const {data:network}=await supabase.from("networks").select("id").eq("slug","worship").maybeSingle();
+  if(!network) redirect("/worship/share?message="+encodeURIComponent("Ministério de Louvor não configurado."));
+  const {data:membership}=await supabase.from("network_memberships").select("id,status").eq("network_id",network.id).eq("user_id",String(uid)).maybeSingle();
+  if(!membership||membership.status!=="active") redirect("/worship/share?message="+encodeURIComponent("Acesso ao Louvor inativo."));
+  const {error}=await supabase.from("worship_member_profiles").upsert({
+    membership_id:membership.id,
+    communication_opt_in:optIn,
+    communication_preference:preference,
+    updated_at:new Date().toISOString()
+  },{onConflict:"membership_id"});
+  if(error) redirect("/worship/share?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/share");
+  redirect("/worship/share?message="+encodeURIComponent("Preferências de comunicação atualizadas."));
+}
