@@ -42,3 +42,117 @@ export async function createWorshipItem(formData:FormData){
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
 }
+
+
+function csvRoles(value:string){
+  return value.split(",").map(v=>v.trim()).filter(Boolean).slice(0,12);
+}
+
+export async function saveWorshipMemberProfile(formData:FormData){
+  const supabase=await createClient();
+  const membershipId=String(formData.get("membershipId")??"");
+  const groupCode=String(formData.get("groupCode")??"").trim()||null;
+  const roles=csvRoles(String(formData.get("roles")??""));
+  const notes=String(formData.get("notes")??"").trim()||null;
+  const {error}=await supabase.from("worship_member_profiles").upsert({
+    membership_id:membershipId,group_code:groupCode,roles,notes,active:true,updated_at:new Date().toISOString()
+  },{onConflict:"membership_id"});
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function createWorshipSong(formData:FormData){
+  const supabase=await createClient();
+  const {data}=await supabase.auth.getClaims(); const uid=data?.claims?.sub;
+  if(!uid) redirect("/login");
+  const title=String(formData.get("title")??"").trim();
+  const artist=String(formData.get("artist")??"").trim()||null;
+  const default_key=String(formData.get("defaultKey")??"").trim()||null;
+  const bpmRaw=String(formData.get("bpm")??"").trim();
+  const bpm=bpmRaw?Number(bpmRaw):null;
+  const youtube_url=String(formData.get("youtubeUrl")??"").trim()||null;
+  const chord_url=String(formData.get("chordUrl")??"").trim()||null;
+  const notes=String(formData.get("notes")??"").trim()||null;
+  const {error}=await supabase.from("worship_songs").insert({title,artist,default_key,bpm,youtube_url,chord_url,notes,created_by:String(uid)});
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function createWorshipSchedule(formData:FormData){
+  const supabase=await createClient();
+  const {data}=await supabase.auth.getClaims(); const uid=data?.claims?.sub;
+  if(!uid) redirect("/login");
+  const title=String(formData.get("title")??"").trim();
+  const starts_at=String(formData.get("startsAt")??"").trim();
+  const call_time=String(formData.get("callTime")??"").trim()||null;
+  const service_type=String(formData.get("serviceType")??"").trim()||null;
+  const group_code=String(formData.get("groupCode")??"").trim()||null;
+  const notes=String(formData.get("notes")??"").trim()||null;
+  const {error}=await supabase.from("worship_schedules").insert({title,service_type,starts_at,call_time,group_code,notes,created_by:String(uid)});
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function updateWorshipScheduleStatus(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("scheduleId")??"");
+  const status=String(formData.get("status")??"planned");
+  if(!["planned","confirmed","completed","cancelled"].includes(status)) redirect("/worship?message="+encodeURIComponent("Estado de escala inválido."));
+  const {error}=await supabase.from("worship_schedules").update({status,updated_at:new Date().toISOString()}).eq("id",id);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function assignWorshipMember(formData:FormData){
+  const supabase=await createClient();
+  const schedule_id=String(formData.get("scheduleId")??"");
+  const membership_id=String(formData.get("membershipId")??"");
+  const role=String(formData.get("role")??"").trim()||null;
+  const notes=String(formData.get("notes")??"").trim()||null;
+  const {error}=await supabase.from("worship_schedule_members").insert({schedule_id,membership_id,role,notes});
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function removeWorshipAssignment(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("assignmentId")??"");
+  const {error}=await supabase.from("worship_schedule_members").delete().eq("id",id);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function addSongToWorshipSchedule(formData:FormData){
+  const supabase=await createClient();
+  const schedule_id=String(formData.get("scheduleId")??"");
+  const song_id=String(formData.get("songId")??"");
+  const position=Math.max(1,Number(formData.get("position")??1)||1);
+  const key_override=String(formData.get("keyOverride")??"").trim()||null;
+  const notes=String(formData.get("notes")??"").trim()||null;
+  const {error}=await supabase.from("worship_schedule_songs").insert({schedule_id,song_id,position,key_override,notes});
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function removeSongFromWorshipSchedule(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("scheduleSongId")??"");
+  const {error}=await supabase.from("worship_schedule_songs").delete().eq("id",id);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function createWorshipRehearsal(formData:FormData){
+  const supabase=await createClient();
+  const {data}=await supabase.auth.getClaims(); const uid=data?.claims?.sub;
+  if(!uid) redirect("/login");
+  const title=String(formData.get("title")??"").trim();
+  const starts_at=String(formData.get("startsAt")??"").trim();
+  const ends_at=String(formData.get("endsAt")??"").trim()||null;
+  const location=String(formData.get("location")??"").trim()||null;
+  const notes=String(formData.get("notes")??"").trim()||null;
+  const schedule_id=String(formData.get("scheduleId")??"").trim()||null;
+  const {error}=await supabase.from("worship_rehearsals").insert({title,starts_at,ends_at,location,notes,schedule_id,created_by:String(uid)});
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
