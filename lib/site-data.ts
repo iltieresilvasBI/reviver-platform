@@ -45,7 +45,8 @@ export async function dynamicPageMetadata(path:string){
 }
 
 export function pathExists(path:string,data:SiteDynamicData){
- if(!path||['eventos','redes','ministerio-de-louvor','midia','campanhas','sobre','contactos'].includes(path))return true;
+ if(!path||['eventos','redes','ministerio-de-louvor','repertorio-da-igreja','midia','campanhas','sobre','contactos'].includes(path))return true;
+ if(path.startsWith('repertorio-da-igreja/'))return true;
  if(['redes/kids','redes/jovens','redes/mulheres','redes/homens'].includes(path))return true;
  if(path.startsWith('eventos/'))return data.events.some(x=>path==='eventos/'+x.slug);
  if(path.startsWith('campanhas/'))return data.campaigns.some(x=>path==='campanhas/'+x.slug);
