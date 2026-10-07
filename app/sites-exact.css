@@ -156,3 +156,46 @@
   }
   .sites-root .hero-image{object-position:58% center !important}
 }
+
+/* Canonical Reviver reference alignment (source package 2026-10-06). */
+.sites-root .brand-filters{position:absolute;pointer-events:none;width:0;height:0}
+.sites-root .header-logo-gold{filter:url(#reviver-gold) !important}
+.sites-root .header-inner{height:134px !important;min-height:134px !important;padding:0 !important}
+.sites-root .header-brand{
+  position:relative !important;
+  display:block !important;
+  width:132px !important;
+  height:116px !important;
+  flex:0 0 132px !important;
+  overflow:hidden !important;
+}
+.sites-root .header-brand img{
+  position:absolute !important;
+  width:220px !important;
+  max-width:none !important;
+  height:auto !important;
+  left:-45px !important;
+  top:-16px !important;
+  object-fit:initial !important;
+  object-position:initial !important;
+  clip-path:none !important;
+  transform:none !important;
+  border-radius:0 !important;
+  filter:url(#reviver-gold) !important;
+}
+.sites-root .hero-image{display:block !important;opacity:1 !important}
+.sites-root .highlight-main{background:#282820 !important}
+.sites-root .network-card{background:#1c1d18 !important}
+.sites-root .network-card:hover{background:#25261f !important}
+.sites-root .worship-card{background:#26241c !important;border-color:#504731 !important}
+.sites-root .academy-brand{background:#23231b !important}
+.sites-root .highlight-main::before,
+.sites-root .network-card::before{display:none !important}
+@media(max-width:850px){
+  .sites-root .header-inner{height:112px !important;min-height:112px !important}
+  .sites-root .header-brand{width:110px !important;height:98px !important;flex-basis:110px !important}
+  .sites-root .header-brand img{width:184px !important;left:-38px !important;top:-13px !important}
+}
+@media(max-width:600px){
+  .sites-root .header-inner{height:105px !important;min-height:105px !important}
+}
