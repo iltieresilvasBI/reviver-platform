@@ -28,9 +28,10 @@
 .sites-root .brand-filters{position:absolute;pointer-events:none}
 .sites-root .header-logo-gold{filter:url(#reviver-gold)}
 
-.sites-root .header-brand{position:relative;width:132px;height:116px;overflow:hidden}
-.sites-root .header-brand img{position:absolute;width:220px;max-width:none;height:auto;left:-45px;top:-16px;border-radius:0}
-@media(max-width:850px){.sites-root .header-brand{width:110px;height:98px}.sites-root .header-brand img{width:184px;left:-38px;top:-13px}}
+.sites-root .header-brand{display:flex;align-items:center;width:auto;height:auto;overflow:visible}
+.sites-root .header-brand img{position:static;width:150px;max-width:100%;height:auto;object-fit:contain;border-radius:0}
+@media(max-width:850px){.sites-root .header-brand img{width:126px}}
+@media(max-width:600px){.sites-root .header-brand img{width:112px}}
 
 /* Compatibility layer for the production Next.js app (no Tailwind runtime). */
 .sites-root .mobile-menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:70;display:flex;justify-content:flex-end}
@@ -53,3 +54,19 @@
 .sites-root .filter-list button.active{background:#d3ad73;color:#161710;border-color:#d3ad73}
 .sites-root .video-empty,.sites-root .empty-state{min-height:285px;border:1px solid var(--line);background:#141511;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;gap:14px}
 .sites-root .video-empty .play-circle{width:58px;height:58px;border:1px solid #5c5548;border-radius:50%;display:grid;place-items:center;color:var(--gold)}
+
+/* Layout polish: preserve full logo artwork and improve narrow-screen rhythm. */
+.sites-root .header-inner{min-height:96px;height:auto;padding:10px 0}
+@media(max-width:850px){.sites-root .header-inner{min-height:84px;height:auto;padding:8px 0}}
+@media(max-width:600px){
+  .sites-root .header-inner{min-height:78px;height:auto;padding:7px 0}
+  .sites-root .hero h1{font-size:clamp(54px,15vw,74px);line-height:1.01}
+}
+@media(max-width:420px){
+  .sites-root .network-grid{grid-template-columns:1fr}
+  .sites-root .network-card,.sites-root .worship-card{min-height:220px;grid-column:auto}
+  .sites-root .footer-grid{grid-template-columns:1fr}
+  .sites-root .footer-grid>div:first-child{grid-column:auto}
+  .sites-root .academy-word{font-size:72px}
+  .sites-root .hero-actions .button{width:100%;flex:0 0 100%}
+}
