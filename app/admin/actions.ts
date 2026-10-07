@@ -32,3 +32,19 @@ export async function grantMediaRoleAdmin(formData:FormData){
   revalidatePath("/media"); revalidatePath("/admin"); revalidatePath("/admin/utilizadores");
   redirect("/admin/utilizadores?message="+encodeURIComponent("Papel de mídia atribuído."));
 }
+
+
+export async function setNetworkMembershipAdmin(formData:FormData){
+  const supabase=await createClient();
+  const email=String(formData.get("email")??"").trim();
+  const networkSlug=String(formData.get("networkSlug")??"").trim();
+  const role=String(formData.get("role")??"member");
+  const status=String(formData.get("status")??"active");
+  const {error}=await supabase.rpc("admin_set_network_membership_by_email",{
+    p_email:email,p_network_slug:networkSlug,p_role:role,p_status:status
+  });
+  if(error) redirect("/admin/ministerios?message="+encodeURIComponent(error.message));
+  revalidatePath("/admin/ministerios");
+  revalidatePath("/worship");
+  redirect("/admin/ministerios?message="+encodeURIComponent("Acesso ministerial atualizado."));
+}
