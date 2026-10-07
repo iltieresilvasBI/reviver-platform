@@ -92,6 +92,7 @@ export default async function AcademyPage() {
   ]);
 
   return <AppShell title="Formação" active="/academy" email={email}>
+    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/academy/resources">Biblioteca de recursos</Link></div>
     <section className="hero-card">
       <p className="eyebrow">REVIVER ACADEMY</p>
       <h2>Formação para voz, instrumentos e equipa técnica</h2>
