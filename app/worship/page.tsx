@@ -135,7 +135,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <p className="eyebrow">REVIVER WORSHIP</p>
       <h2>Escala, repertório e formação no mesmo lugar.</h2>
       <p>Organiza os grupos A/B/C/D, prepara cultos e ensaios, mantém o repertório centralizado e acompanha a evolução da equipa na Academy.</p>
-      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/academy">Abrir Academy</Link><Link className="button" href="/worship/repertoire">Repertório inteligente</Link><Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação A/B/C/D</Link><a className="button" href="/worship/calendar">Exportar meu calendário</a></div>
+      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/academy">Abrir Academy</Link><Link className="button" href="/worship/repertoire">Repertório inteligente</Link><Link className="button" href="/worship/substitutions">Substituições</Link><Link className="button" href="/worship/share">Comunicação</Link>{canLead&&<Link className="button" href="/worship/import">Importar membros</Link>}<Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação A/B/C/D</Link><a className="button" href="/worship/calendar">Exportar meu calendário</a></div>
     </section>
 
     <div className="grid grid-4" style={{marginTop:18}}>
