@@ -70,3 +70,37 @@
   .sites-root .academy-word{font-size:72px}
   .sites-root .hero-actions .button{width:100%;flex:0 0 100%}
 }
+
+/* Reference-design alignment from the original Reviver package. */
+.sites-root .brand-filters{position:absolute;pointer-events:none;width:0;height:0}
+.sites-root .header-logo-gold{filter:url(#reviver-gold)}
+.sites-root .header-inner{min-height:132px;height:auto;padding:10px 0}
+.sites-root .header-brand{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  width:190px;
+  height:112px;
+  overflow:visible;
+  flex:0 0 190px;
+}
+.sites-root .header-brand img{
+  position:static;
+  width:190px;
+  height:auto;
+  max-width:none;
+  object-fit:contain;
+  border-radius:0;
+}
+.sites-root .hero-image{display:block;opacity:1}
+.sites-root .event-art img{display:block}
+@media(max-width:850px){
+  .sites-root .header-inner{min-height:104px;padding:8px 0}
+  .sites-root .header-brand{width:150px;height:88px;flex-basis:150px}
+  .sites-root .header-brand img{width:150px}
+}
+@media(max-width:600px){
+  .sites-root .header-inner{min-height:92px;padding:7px 0}
+  .sites-root .header-brand{width:132px;height:78px;flex-basis:132px}
+  .sites-root .header-brand img{width:132px}
+}
