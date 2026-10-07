@@ -72,6 +72,10 @@ export async function createWorshipSong(formData:FormData){
   const title=String(formData.get("title")??"").trim();
   const artist=String(formData.get("artist")??"").trim()||null;
   const default_key=String(formData.get("defaultKey")??"").trim()||null;
+  const composition_title=String(formData.get("compositionTitle")??"").trim()||title;
+  const version_name=String(formData.get("versionName")??"").trim()||null;
+  const original_key=String(formData.get("originalKey")??"").trim()||null;
+  const recommended_key=String(formData.get("recommendedKey")??"").trim()||default_key;
   const bpmRaw=String(formData.get("bpm")??"").trim();
   const bpm=bpmRaw?Number(bpmRaw):null;
   const youtube_url=String(formData.get("youtubeUrl")??"").trim()||null;
@@ -83,7 +87,7 @@ export async function createWorshipSong(formData:FormData){
   const themes=csvThemes(String(formData.get("themes")??""));
   const notes=String(formData.get("notes")??"").trim()||null;
   const {error}=await supabase.from("worship_songs").insert({
-    title,artist,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,notes,created_by:String(uid)
+    title,artist,composition_title,version_name,original_key,recommended_key,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,notes,created_by:String(uid)
   });
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
@@ -95,6 +99,10 @@ export async function updateWorshipSong(formData:FormData){
   const title=String(formData.get("title")??"").trim();
   const artist=String(formData.get("artist")??"").trim()||null;
   const default_key=String(formData.get("defaultKey")??"").trim()||null;
+  const composition_title=String(formData.get("compositionTitle")??"").trim()||title;
+  const version_name=String(formData.get("versionName")??"").trim()||null;
+  const original_key=String(formData.get("originalKey")??"").trim()||null;
+  const recommended_key=String(formData.get("recommendedKey")??"").trim()||default_key;
   const bpmRaw=String(formData.get("bpm")??"").trim();
   const bpm=bpmRaw?Number(bpmRaw):null;
   const youtube_url=String(formData.get("youtubeUrl")??"").trim()||null;
@@ -106,7 +114,7 @@ export async function updateWorshipSong(formData:FormData){
   const themes=csvThemes(String(formData.get("themes")??""));
   const notes=String(formData.get("notes")??"").trim()||null;
   const {error}=await supabase.from("worship_songs").update({
-    title,artist,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,notes,updated_at:new Date().toISOString()
+    title,artist,composition_title,version_name,original_key,recommended_key,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,notes,updated_at:new Date().toISOString()
   }).eq("id",id);
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
@@ -121,9 +129,12 @@ export async function createWorshipSchedule(formData:FormData){
   const call_time=String(formData.get("callTime")??"").trim()||null;
   const service_type=String(formData.get("serviceType")??"").trim()||null;
   const group_code=String(formData.get("groupCode")??"").trim()||null;
-  const theme=String(formData.get("theme")??"").trim()||null;
+  const themes=csvThemes(String(formData.get("themes")??formData.get("theme")??""));
+  const theme=themes[0]??null;
+  const location=String(formData.get("location")??"").trim()||null;
+  const ends_at=String(formData.get("endsAt")??"").trim()||null;
   const notes=String(formData.get("notes")??"").trim()||null;
-  const {error}=await supabase.from("worship_schedules").insert({title,service_type,starts_at,call_time,group_code,theme,notes,created_by:String(uid)});
+  const {error}=await supabase.from("worship_schedules").insert({title,service_type,starts_at,ends_at,call_time,group_code,theme,themes,location,notes,created_by:String(uid)});
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
 }
@@ -131,11 +142,108 @@ export async function createWorshipSchedule(formData:FormData){
 export async function updateWorshipScheduleTheme(formData:FormData){
   const supabase=await createClient();
   const id=String(formData.get("scheduleId")??"");
-  const theme=String(formData.get("theme")??"").trim()||null;
-  const {error}=await supabase.from("worship_schedules").update({theme,updated_at:new Date().toISOString()}).eq("id",id);
+  const themes=csvThemes(String(formData.get("themes")??formData.get("theme")??""));
+  const theme=themes[0]??null;
+  const {error}=await supabase.from("worship_schedules").update({theme,themes,updated_at:new Date().toISOString()}).eq("id",id);
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
   revalidatePath("/worship/repertoire");
+}
+
+export async function setWorshipSongVisibility(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("songId")??"");
+  const public_visible=String(formData.get("publicVisible")??"false")==="true";
+  const {error}=await supabase.from("worship_songs").update({public_visible,updated_at:new Date().toISOString()}).eq("id",id);
+  if(error) redirect("/worship/repertoire?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/repertoire");
+  revalidatePath("/repertorio-da-igreja");
+}
+
+export async function archiveWorshipSong(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("songId")??"");
+  const archived=String(formData.get("archived")??"true")==="true";
+  const {error}=await supabase.from("worship_songs").update({
+    active:!archived,archived_at:archived?new Date().toISOString():null,updated_at:new Date().toISOString()
+  }).eq("id",id);
+  if(error) redirect("/worship/repertoire?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/repertoire");
+  revalidatePath("/repertorio-da-igreja");
+}
+
+export async function updateWorshipPublication(formData:FormData){
+  const supabase=await createClient();
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const action=String(formData.get("publicationAction")??"");
+  if(!["draft","approve","publish"].includes(action)) redirect("/worship?message="+encodeURIComponent("Ação de publicação inválida."));
+  const now=new Date().toISOString();
+  const patch=action==="draft"
+    ?{publication_state:"draft",approved_at:null,published_at:null}
+    :action==="approve"
+      ?{publication_state:"approved",approved_at:now,published_at:null}
+      :{publication_state:"published",approved_at:now,published_at:now};
+  const {error}=await supabase.from("worship_schedules").update({...patch,updated_at:now}).eq("id",scheduleId);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function setWorshipPublicRepertoire(formData:FormData){
+  const supabase=await createClient();
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const public_repertoire=String(formData.get("publicRepertoire")??"false")==="true";
+  if(public_repertoire){
+    const {data:privateRows,error:privateError}=await supabase
+      .from("worship_schedule_songs")
+      .select("song_id,worship_songs!inner(public_visible)")
+      .eq("schedule_id",scheduleId)
+      .eq("worship_songs.public_visible",false);
+    if(privateError) redirect("/worship?message="+encodeURIComponent(privateError.message));
+    if((privateRows??[]).length) redirect("/worship?message="+encodeURIComponent("Existem músicas privadas neste repertório. Torne-as públicas antes de divulgar o culto."));
+  }
+  const {error}=await supabase.from("worship_schedules").update({public_repertoire,updated_at:new Date().toISOString()}).eq("id",scheduleId);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+  revalidatePath("/repertorio-da-igreja");
+}
+
+export async function confirmWorshipExecutions(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const selected=Array.from(new Set(formData.getAll("songIds").map(v=>String(v)).filter(Boolean)));
+  const {data:planned,error:plannedError}=await supabase
+    .from("worship_schedule_songs")
+    .select("song_id,key_override,worship_songs!inner(version_name,default_key)")
+    .eq("schedule_id",scheduleId);
+  if(plannedError) redirect("/worship?message="+encodeURIComponent(plannedError.message));
+
+  const allowed=new Set((planned??[]).map((r:any)=>r.song_id));
+  const safeSelected=selected.filter(id=>allowed.has(id));
+  const {error:deleteError}=await supabase.from("worship_song_executions").delete().eq("schedule_id",scheduleId);
+  if(deleteError) redirect("/worship?message="+encodeURIComponent(deleteError.message));
+
+  const rows=(planned??[]).filter((r:any)=>safeSelected.includes(r.song_id)).map((r:any)=>({
+    schedule_id:scheduleId,
+    song_id:r.song_id,
+    key_used:r.key_override||(r.worship_songs as any)?.default_key||null,
+    version_used:(r.worship_songs as any)?.version_name||null,
+    confirmed_by:String(uid),
+    confirmed_at:new Date().toISOString()
+  }));
+  if(rows.length){
+    const {error}=await supabase.from("worship_song_executions").insert(rows);
+    if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  }
+  const {error:scheduleError}=await supabase.from("worship_schedules").update({status:"completed",updated_at:new Date().toISOString()}).eq("id",scheduleId);
+  if(scheduleError) redirect("/worship?message="+encodeURIComponent(scheduleError.message));
+  revalidatePath("/worship");
+  revalidatePath("/worship/repertoire");
+  revalidatePath("/worship/reports");
+  revalidatePath("/repertorio-da-igreja");
+  redirect("/worship?message="+encodeURIComponent("Repertório executado confirmado. Os relatórios foram atualizados."));
 }
 
 export async function updateWorshipScheduleStatus(formData:FormData){
