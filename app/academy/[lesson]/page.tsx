@@ -6,6 +6,7 @@ import { submitQuiz } from "../actions";
 const blockedEnglishVideoIds=new Set([
   "YCLyAmXtpfY",
   "nBQH1c20xbs",
+  "N50kF0FE3hM",
 ]);
 
 export default async function LessonPage({params,searchParams}:{params:Promise<{lesson:string}>,searchParams:Promise<{score?:string;passed?:string;xp?:string;quiz?:string}>}) {
