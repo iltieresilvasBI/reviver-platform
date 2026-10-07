@@ -31,6 +31,7 @@ export default async function AdminPage(){
     {title:"Aprovações",text:"Fila editorial com aprovação separada da publicação.",href:"/admin/aprovacoes",cta:"Rever fila"},
     {title:"Reviver Academy",text:"Cursos, módulos, aulas, vídeos e quizzes.",href:"/admin/academy",cta:"Gerir Academy"},
     {title:"Utilizadores",text:"Contas, verificação, admins e papéis de mídia.",href:"/admin/utilizadores",cta:"Gerir acessos"},
+    {title:"Ministérios",text:"Louvor, Mídia, Som, Iluminação, Receção e Infantil; membros e líderes por área.",href:"/admin/ministerios",cta:"Gerir ministérios"},
     {title:"Mensagens",text:"Contactos recebidos pelo site público e respetivo estado.",href:"/admin/mensagens",cta:`${newMessagesCount??0} novas`},
     {title:"Ministério de Louvor",text:"Membros, convites, pedidos, escalas, ensaios e repertório.",href:"/worship",cta:"Gerir Louvor"},
     {title:"Site público",text:"Ver exatamente o que a comunidade está a receber.",href:"/",cta:"Abrir site"},
