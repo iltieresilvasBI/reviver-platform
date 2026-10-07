@@ -81,3 +81,17 @@ Updated: 2026-10-07
 - Instrument/X32 migration: `academy_instrument_technical_tracks`.
 - Lighting migration: `academy_lighting_track`.
 - Frontend now renders these database modules directly instead of static curation cards.
+
+
+## Checkpoint 2026-10-07 — Instrument depth and E2E validation
+- Added second guided lessons for Violão, Guitarra, Baixo, Bateria and Teclado/Piano.
+- All five second lessons include exercises, XP and quizzes.
+- Verified `submit_quiz_attempt` in a transaction using a real authenticated user:
+  - score: 100
+  - passed: true
+  - pass mark: 70
+  - XP awarded: 110
+- Rolled the transaction back and confirmed no quiz attempt, progress row or XP event remained.
+- No-video guided lessons are now presented as complete practical lessons; video is optional/complementary.
+- PR #9 is mergeable and remains draft by design.
+- Vercel runtime-log endpoint returned 403 for this account scope; build/preview status remains the available deployment validation channel.
