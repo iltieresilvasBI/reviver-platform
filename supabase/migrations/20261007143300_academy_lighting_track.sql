@@ -1,10 +1,13 @@
 do $$
 declare
-  v_course uuid := '9d98bce2-a1c1-49ff-a53a-92884bf5236d';
+  v_course uuid;
   v_module uuid;
   v_lesson uuid;
   v_q uuid;
 begin
+  select id into v_course from public.academy_courses where slug='formacao-vocal' limit 1;
+  if v_course is null then raise exception 'academy course formacao-vocal not found'; end if;
+
   select id into v_module from public.academy_modules where course_id=v_course and slug='iluminacao-igreja' limit 1;
   if v_module is null then
     insert into public.academy_modules(course_id,slug,title,description,sort_order)
