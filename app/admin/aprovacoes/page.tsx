@@ -66,7 +66,7 @@ export default async function ApprovalsPage({searchParams}:{searchParams:Promise
           {i.status==="in_review"&&i.submitted_at&&<div className="muted small" style={{marginTop:7}}>Submetido em {new Date(i.submitted_at).toLocaleString("pt-PT")}</div>}
           {i.status==="approved"&&i.approved_at&&<div className="muted small" style={{marginTop:7}}>Aprovado em {new Date(i.approved_at).toLocaleString("pt-PT")}</div>}
         </div>
-        <Link className="button primary" href={\`/media/preview/\${i.id}\`}>Pré-visualizar no site</Link>
+        <Link className="button primary" href={`/media/preview/${i.id}`}>Pré-visualizar no site</Link>
       </div>
 
       <div className="button-row" style={{marginTop:16}}>
