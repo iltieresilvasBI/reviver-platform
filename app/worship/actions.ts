@@ -269,3 +269,20 @@ export async function materializeWorshipRotationMonth(formData:FormData){
   revalidatePath("/worship/rotacao");
   redirect("/worship/rotacao?message="+encodeURIComponent((data??0)+" escalas criadas."));
 }
+
+
+export async function updateWorshipRotationAssignment(formData:FormData){
+  const supabase=await createClient();
+  const assignmentId=String(formData.get("assignmentId")??"");
+  const groupCode=String(formData.get("groupCode")??"");
+  const notes=String(formData.get("notes")??"").trim()||null;
+  if(!["A","B","C","D"].includes(groupCode)){
+    redirect("/worship/rotacao?message="+encodeURIComponent("Grupo inválido."));
+  }
+  const {error}=await supabase
+    .from("worship_rotation_assignments")
+    .update({group_code:groupCode,notes})
+    .eq("id",assignmentId);
+  if(error) redirect("/worship/rotacao?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/rotacao");
+}
