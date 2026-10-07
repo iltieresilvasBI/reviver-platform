@@ -7,6 +7,8 @@ function slugify(v:string){
   return v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
     .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,120);
 }
+const blockedVideoIds=new Set(["YCLyAmXtpfY","nBQH1c20xbs","N50kF0FE3hM"]);
+
 function youtubeId(value:string){
   const v=value.trim();
   if(!v) return null;
@@ -43,7 +45,10 @@ export async function createLesson(formData:FormData){
   const s=await requireAdmin();
   const module_id=String(formData.get("moduleId")??"");
   const title=String(formData.get("title")??"").trim();
-  const youtube_id=youtubeId(String(formData.get("youtube")??""));
+  const youtubeRaw=String(formData.get("youtube")??"").trim();
+  const youtube_id=youtubeId(youtubeRaw);
+  if(youtubeRaw&&!youtube_id) redirect("/admin/academy?message="+encodeURIComponent("Link ou ID do YouTube inválido."));
+  if(youtube_id&&blockedVideoIds.has(youtube_id)) redirect("/admin/academy?message="+encodeURIComponent("Este vídeo foi bloqueado pela curadoria por não cumprir a política de idioma."));
   const payload={
     module_id,title,slug:slugify(String(formData.get("slug")??"")||title),
     summary:String(formData.get("summary")??"").trim()||null,
@@ -63,12 +68,16 @@ export async function createLesson(formData:FormData){
 export async function updateLesson(formData:FormData){
   const s=await requireAdmin(); const id=String(formData.get("lessonId")??"");
   const title=String(formData.get("title")??"").trim();
+  const youtubeRaw=String(formData.get("youtube")??"").trim();
+  const parsedYoutubeId=youtubeId(youtubeRaw);
+  if(youtubeRaw&&!parsedYoutubeId) redirect("/admin/academy?message="+encodeURIComponent("Link ou ID do YouTube inválido."));
+  if(parsedYoutubeId&&blockedVideoIds.has(parsedYoutubeId)) redirect("/admin/academy?message="+encodeURIComponent("Este vídeo foi bloqueado pela curadoria por não cumprir a política de idioma."));
   const payload={
     title,slug:slugify(String(formData.get("slug")??"")||title),
     summary:String(formData.get("summary")??"").trim()||null,
     objectives:String(formData.get("objectives")??"").trim()||null,
     exercise:String(formData.get("exercise")??"").trim()||null,
-    youtube_id:youtubeId(String(formData.get("youtube")??"")),
+    youtube_id:parsedYoutubeId,
     duration_minutes:Number(formData.get("duration")??0)||null,
     xp_reward:Number(formData.get("xp")??100)||100,
     pass_percentage:Number(formData.get("pass")??70)||70,
