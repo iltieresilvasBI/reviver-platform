@@ -392,3 +392,19 @@ export async function autoAssignWorshipGroup(formData:FormData){
     (skippedUnavailable?" · "+skippedUnavailable+" membro"+(skippedUnavailable===1?"":"s")+" "+(skippedUnavailable===1?"indisponível":"indisponíveis")+" ignorado"+(skippedUnavailable===1?"":"s"):"")
   ));
 }
+
+
+export async function markWorshipAttendance(formData:FormData){
+  const supabase=await createClient();
+  const assignmentId=String(formData.get("assignmentId")??"");
+  const attendance=String(formData.get("attendance")??"completed");
+  if(!["assigned","completed"].includes(attendance)){
+    redirect("/worship?message="+encodeURIComponent("Estado de presença inválido."));
+  }
+  const {error}=await supabase
+    .from("worship_schedule_members")
+    .update({attendance_status:attendance})
+    .eq("id",assignmentId);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
