@@ -305,13 +305,13 @@ export async function createWorshipUnavailability(formData:FormData){
     .maybeSingle();
   if(!membership||membership.status!=="active") redirect("/worship?message="+encodeURIComponent("Acesso ao Louvor inativo."));
 
-  const starts_at=String(formData.get("startsAt")??"").trim();
-  const ends_at=String(formData.get("endsAt")??"").trim();
+  const starts_on=String(formData.get("startsOn")??"").trim();
+  const ends_on=String(formData.get("endsOn")??"").trim();
   const reason=String(formData.get("reason")??"").trim()||null;
-  if(!starts_at||!ends_at) redirect("/worship?message="+encodeURIComponent("Indica início e fim da indisponibilidade."));
+  if(!starts_on||!ends_on) redirect("/worship?message="+encodeURIComponent("Indica o primeiro e o último dia da indisponibilidade."));
 
   const {error}=await supabase.from("worship_member_unavailability").insert({
-    membership_id:membership.id,starts_at,ends_at,reason
+    membership_id:membership.id,starts_on,ends_on,reason
   });
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
