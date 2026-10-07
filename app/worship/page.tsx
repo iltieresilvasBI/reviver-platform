@@ -2,9 +2,9 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
 import {
-  acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,createWorshipItem,
-  createWorshipRehearsal,createWorshipSchedule,createWorshipSong,decideWorship,
-  inviteWorship,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
+  acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
+  createWorshipRehearsal,createWorshipSchedule,createWorshipSong,createWorshipUnavailability,decideWorship,
+  deleteWorshipUnavailability,inviteWorship,markWorshipAttendance,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
   respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus
 } from "./actions";
 
@@ -22,6 +22,14 @@ const roleOptions=[
 
 function roleLabel(value:string|null|undefined){
   return roleOptions.find(([v])=>v===value)?.[1]??value??"Função não definida";
+}
+
+function lisbonDateKey(value:string|Date){
+  const parts=new Intl.DateTimeFormat("en-GB",{
+    timeZone:"Europe/Lisbon",year:"numeric",month:"2-digit",day:"2-digit"
+  }).formatToParts(new Date(value));
+  const get=(type:string)=>parts.find(p=>p.type===type)?.value??"";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 export default async function WorshipPage({searchParams}:{searchParams:Promise<{message?:string}>}){
@@ -53,7 +61,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
   const [
     {data:items},{data:memberProfiles},{data:schedules},{data:songs},
-    {data:assignments},{data:scheduleSongs},{data:rehearsals},{data:responses}
+    {data:assignments},{data:scheduleSongs},{data:rehearsals},{data:responses},{data:unavailability}
   ]=await Promise.all([
     ctx.supabase.from("worship_items").select("id,item_type,title,body,starts_at,external_url,created_at").order("starts_at",{ascending:true}).order("created_at",{ascending:false}),
     ctx.supabase.from("worship_member_profiles").select("id,membership_id,group_code,roles,notes,active"),
@@ -63,6 +71,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     ctx.supabase.from("worship_schedule_songs").select("*").order("position"),
     ctx.supabase.from("worship_rehearsals").select("*").order("starts_at",{ascending:true}).limit(50),
     ctx.supabase.from("worship_assignment_responses").select("assignment_id,response_status,note,responded_at"),
+    ctx.supabase.from("worship_member_unavailability").select("id,membership_id,starts_on,ends_on,reason,created_at").order("starts_on"),
   ]);
 
   const now=Date.now();
@@ -70,6 +79,12 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
   const upcomingRehearsals=(rehearsals??[]).filter((r:any)=>new Date(r.starts_at).getTime()>=now);
   const myAssignments=(assignments??[]).filter((a:any)=>a.membership_id===membership?.id);
   const myProfile=(memberProfiles??[]).find((p:any)=>p.membership_id===membership?.id);
+  const todayKey=lisbonDateKey(new Date());
+  const myUnavailability=(unavailability??[]).filter((u:any)=>u.membership_id===membership?.id&&u.ends_on>=todayKey);
+  const conflictsFor=(membershipId:string,scheduleStart:string)=>{
+    const date=lisbonDateKey(scheduleStart);
+    return (unavailability??[]).filter((u:any)=>u.membership_id===membershipId&&u.starts_on<=date&&u.ends_on>=date);
+  };
 
   const directory=canLead?(await ctx.supabase.rpc("worship_member_directory")).data??[]:[];
   const directoryByMembership=new Map((directory??[]).map((m:any)=>[m.membership_id,m]));
@@ -92,7 +107,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     const last=[...(progress??[]).map(p=>p.last_activity_at),...(attempts??[]).map(a=>a.attempted_at),...(practice??[]).map(p=>p.practiced_at)].filter(Boolean).sort().at(-1)??null;
     const practiceMinutes=Math.round((practice??[]).reduce((sum,p)=>sum+(p.duration_seconds??0),0)/60);
     const profile=profilesByMembership.get(m.membership_id) as any;
-    return {...m,profile,completion:Math.round((completed/Math.max(lessonCount??0,1))*100),completed,avg,last,practiceMinutes};
+    const serviceParticipations=(assignments??[]).filter((a:any)=>a.membership_id===m.membership_id&&a.attendance_status==="completed").length;
+    return {...m,profile,completion:Math.round((completed/Math.max(lessonCount??0,1))*100),completed,avg,last,practiceMinutes,serviceParticipations};
   })):[];
 
   return <AppShell title="Ministério de Louvor" active="/worship" email={ctx.email}>
@@ -102,7 +118,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <p className="eyebrow">REVIVER WORSHIP</p>
       <h2>Escala, repertório e formação no mesmo lugar.</h2>
       <p>Organiza os grupos A/B/C/D, prepara cultos e ensaios, mantém o repertório centralizado e acompanha a evolução da equipa na Academy.</p>
-      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/academy">Abrir Academy</Link><Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação A/B/C/D</Link></div>
+      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/academy">Abrir Academy</Link><Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação A/B/C/D</Link><a className="button" href="/worship/calendar">Exportar meu calendário</a></div>
     </section>
 
     <div className="grid grid-4" style={{marginTop:18}}>
@@ -112,20 +128,60 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <article className="card metric"><span>Meu grupo</span><strong>{myProfile?.group_code??"—"}</strong></article>
     </div>
 
+    {membership?.id&&<>
+      <div className="section-title"><div><p className="eyebrow">DISPONIBILIDADE</p><h2>Quando não posso servir</h2></div><span className="muted small">O líder verá conflito ao montar a escala.</span></div>
+      <div className="grid grid-2">
+        <form action={createWorshipUnavailability} className="card form-grid">
+          <div className="grid grid-2">
+            <div className="field"><label>Primeiro dia</label><input name="startsOn" type="date" required/></div>
+            <div className="field"><label>Último dia</label><input name="endsOn" type="date" required/></div>
+          </div>
+          <div className="field"><label>Motivo opcional</label><input name="reason" placeholder="Viagem, trabalho, compromisso..."/></div>
+          <button className="button">Registar indisponibilidade</button>
+        </form>
+        <div className="card">
+          <p className="eyebrow">PRÓXIMOS PERÍODOS</p>
+          <div className="list">{myUnavailability.length===0?<div className="empty">Nenhuma indisponibilidade futura registada.</div>:myUnavailability.map((u:any)=><div className="list-row" key={u.id}>
+            <div><strong>{new Date(u.starts_on+"T00:00:00").toLocaleDateString("pt-PT")} → {new Date(u.ends_on+"T00:00:00").toLocaleDateString("pt-PT")}</strong>{u.reason&&<div className="muted small">{u.reason}</div>}</div>
+            <form action={deleteWorshipUnavailability}><input type="hidden" name="unavailabilityId" value={u.id}/><button className="button danger">Remover</button></form>
+          </div>)}</div>
+        </div>
+      </div>
+    </>}
+
     <div className="section-title"><div><p className="eyebrow">AGENDA</p><h2>Próximas escalas</h2></div><span className="muted small">Grupo, equipa e repertório por culto</span></div>
     <div className="list">{upcomingSchedules.length===0?<div className="empty">Nenhuma escala futura criada.</div>:upcomingSchedules.map((s:any)=>{
       const people=(assignments??[]).filter((a:any)=>a.schedule_id===s.id);
       const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===s.id).sort((a:any,b:any)=>a.position-b.position);
       const mine=people.find((a:any)=>a.membership_id===membership?.id);
+      const confirmed=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="confirmed").length;
+      const declined=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="declined").length;
+      const pending=people.length-confirmed-declined;
+      const linkedRehearsal=(rehearsals??[]).find((r:any)=>r.schedule_id===s.id);
+      const readinessChecks=[
+        {label:"Equipa definida",ok:people.length>0},
+        {label:"Equipa confirmada",ok:people.length>0&&pending===0&&declined===0},
+        {label:"Repertório definido",ok:setlist.length>0},
+        {label:"Ensaio associado",ok:Boolean(linkedRehearsal)},
+      ];
+      const readiness=Math.round(readinessChecks.filter(x=>x.ok).length/readinessChecks.length*100);
+      const readinessMissing=readinessChecks.filter(x=>!x.ok).map(x=>x.label);
       return <details className="card" key={s.id} open={Boolean(mine)}>
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
-            <div><div className="button-row"><span className="pill gold">Grupo {s.group_code??"—"}</span><span className={s.status==="confirmed"?"pill ok":"pill"}>{s.status}</span>{mine&&<span className="pill ok">estou escalado</span>}</div><h3 style={{margin:"10px 0 4px"}}>{s.title}</h3><span className="muted small">{new Date(s.starts_at).toLocaleString("pt-PT")}{s.call_time?` · chegada ${new Date(s.call_time).toLocaleString("pt-PT")}`:""}{s.service_type?` · ${s.service_type}`:""}</span></div>
+            <div><div className="button-row"><span className="pill gold">Grupo {s.group_code??"—"}</span><span className={s.status==="confirmed"?"pill ok":"pill"}>{s.status}</span><span className={readiness===100?"pill ok":readiness>=50?"pill gold":"pill"}>prontidão {readiness}%</span>{mine&&<span className="pill ok">estou escalado</span>}</div><h3 style={{margin:"10px 0 4px"}}>{s.title}</h3><span className="muted small">{new Date(s.starts_at).toLocaleString("pt-PT")}{s.call_time?` · chegada ${new Date(s.call_time).toLocaleString("pt-PT")}`:""}{s.service_type?` · ${s.service_type}`:""}</span></div>
             {mine&&<div><strong>{roleLabel(mine.role)}</strong>{responseByAssignment.get(mine.id)&&<div className="muted small" style={{marginTop:4}}>{(responseByAssignment.get(mine.id) as any).response_status==="confirmed"?"Presença confirmada":"Indisponibilidade registada"}</div>}</div>}
           </div>
         </summary>
 
         {s.notes&&<p className="muted" style={{marginTop:14}}>{s.notes}</p>}
+
+        <div className="card" style={{marginTop:16}}>
+          <p className="eyebrow">PRONTIDÃO DO CULTO</p>
+          <div className="grid grid-4">{readinessChecks.map(check=><div className="metric" key={check.label}><span>{check.label}</span><strong>{check.ok?"✓":"—"}</strong></div>)}</div>
+          <div className="muted small" style={{marginTop:10}}>{confirmed} confirmado{confirmed===1?"":"s"} · {pending} sem resposta · {declined} {declined===1?"indisponível":"indisponíveis"}{linkedRehearsal?` · ensaio ${new Date(linkedRehearsal.starts_at).toLocaleString("pt-PT")}`:""}</div>
+          {readinessMissing.length>0&&<div className="notice warn" style={{marginTop:12}}>Falta: {readinessMissing.join(" · ")}</div>}
+        </div>
 
         <div className="grid grid-2" style={{marginTop:16}}>
           <div className="card">
@@ -134,7 +190,13 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
               ?<div className="list">{people.length===0?<div className="empty">Sem pessoas atribuídas.</div>:people.map((a:any)=>{
                 const person=directoryByMembership.get(a.membership_id) as any;
                 const response=responseByAssignment.get(a.id) as any;
-                return <div className="list-row" key={a.id}><div><strong>{person?.display_name||person?.email||"Membro"}</strong><div className="muted small">{roleLabel(a.role)} · {response?response.response_status==="confirmed"?"confirmado":"não disponível":"sem resposta"}</div>{response?.note&&<div className="muted small">{response.note}</div>}</div><form action={removeWorshipAssignment}><input type="hidden" name="assignmentId" value={a.id}/><button className="button danger">Remover</button></form></div>
+                return <div className="list-row" key={a.id}>
+                  <div><strong>{person?.display_name||person?.email||"Membro"}</strong><div className="muted small">{roleLabel(a.role)} · {response?response.response_status==="confirmed"?"confirmado":"não disponível":"sem resposta"} · {a.attendance_status==="completed"?"presença concluída":"presença pendente"}</div>{response?.note&&<div className="muted small">{response.note}</div>}</div>
+                  <div className="button-row">
+                    <form action={markWorshipAttendance}><input type="hidden" name="assignmentId" value={a.id}/><input type="hidden" name="attendance" value={a.attendance_status==="completed"?"assigned":"completed"}/><button className="button">{a.attendance_status==="completed"?"Reabrir presença":"Marcar presença"}</button></form>
+                    <form action={removeWorshipAssignment}><input type="hidden" name="assignmentId" value={a.id}/><button className="button danger">Remover</button></form>
+                  </div>
+                </div>
               })}</div>
               :mine?<div>
                 <div className="notice">A tua função: <strong>{roleLabel(mine.role)}</strong></div>
@@ -226,6 +288,13 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <div className="section-title"><h2>Configurar escalas</h2></div>
       <div className="list">{upcomingSchedules.length===0?<div className="empty">Cria a primeira escala para configurar equipa e repertório.</div>:upcomingSchedules.map((s:any)=><details className="card" key={s.id}>
         <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
+        <div className="button-row" style={{marginTop:14}}>
+          <form action={autoAssignWorshipGroup}>
+            <input type="hidden" name="scheduleId" value={s.id}/>
+            <button className="button primary" disabled={!s.group_code}>Preencher Grupo {s.group_code??"—"}</button>
+          </form>
+          <span className="muted small">Adiciona membros ativos do grupo, ignora indisponíveis e usa a primeira função configurada como principal.</span>
+        </div>
         <div className="grid grid-3" style={{marginTop:16}}>
           <div className="card">
             <p className="eyebrow">RESPOSTAS DA EQUIPA</p>
@@ -240,7 +309,11 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <form action={assignWorshipMember} className="form-grid">
             <input type="hidden" name="scheduleId" value={s.id}/>
             <p className="eyebrow">ESCALAR PESSOA</p>
-            <div className="field"><label>Membro</label><select name="membershipId" required><option value="">Selecionar</option>{(directory??[]).filter((m:any)=>m.status==="active").map((m:any)=><option value={m.membership_id} key={m.membership_id}>{m.display_name||m.email} · G{(profilesByMembership.get(m.membership_id) as any)?.group_code??"—"}</option>)}</select></div>
+            <div className="field"><label>Membro</label><select name="membershipId" required><option value="">Selecionar</option>{(directory??[]).filter((m:any)=>m.status==="active").map((m:any)=>{
+              const conflicts=conflictsFor(m.membership_id,s.starts_at);
+              return <option value={m.membership_id} key={m.membership_id}>{m.display_name||m.email} · G{(profilesByMembership.get(m.membership_id) as any)?.group_code??"—"}{conflicts.length?" · ⚠ indisponível":""}</option>;
+            })}</select></div>
+            {(()=>{const count=(directory??[]).filter((m:any)=>m.status==="active"&&conflictsFor(m.membership_id,s.starts_at).length>0).length; return count>0?<div className="notice warn">{count} membro{count===1?"":"s"} com indisponibilidade nesta data.</div>:null;})()}
             <div className="field"><label>Função</label><select name="role"><option value="">Sem função</option>{roleOptions.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></div>
             <button className="button">Adicionar à escala</button>
           </form>
@@ -284,7 +357,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             </div>
             <button className="button">Guardar perfil do ministério</button>
           </form>
-          <div className="grid grid-4" style={{marginTop:14}}><div className="metric"><span>Academy</span><strong>{m.completion}%</strong></div><div className="metric"><span>Aulas concluídas</span><strong>{m.completed}</strong></div><div className="metric"><span>Média quizzes</span><strong>{m.avg}%</strong></div><div className="metric"><span>Prática recente</span><strong>{m.practiceMinutes}m</strong></div></div>
+          <div className="grid grid-4" style={{marginTop:14}}><div className="metric"><span>Academy</span><strong>{m.completion}%</strong></div><div className="metric"><span>Aulas concluídas</span><strong>{m.completed}</strong></div><div className="metric"><span>Média quizzes</span><strong>{m.avg}%</strong></div><div className="metric"><span>Participações</span><strong>{m.serviceParticipations}</strong></div></div>
+          <div className="muted small" style={{marginTop:10}}>Prática recente: {m.practiceMinutes}m</div>
           {m.last&&<div className="muted small" style={{marginTop:12}}>Última atividade: {new Date(m.last).toLocaleString("pt-PT")}</div>}
         </>}
       </details>)}</div>

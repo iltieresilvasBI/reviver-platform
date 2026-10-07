@@ -122,3 +122,12 @@ Each instrument has at least two lessons. The second lessons are guided practica
 - Admin can set pending / verified / blocked and save a review note.
 - Curated replacements and confirmations are captured in migration `20261007163000_academy_video_review_state.sql`.
 
+## Checkpoint 2026-10-07 — Worship scheduling release
+- Consolidated in PR #23.
+- Member unavailability uses date ranges with own-row RLS.
+- Schedule assignment UI flags availability conflicts.
+- Group A/B/C/D autofill skips unavailable members and uses the first configured role as primary.
+- Upcoming services expose readiness based on team assignment, confirmations, repertoire and linked rehearsal.
+- Private authenticated ICS export includes only the member's own schedules and relevant rehearsals.
+- CI for the consolidated release passed before this checkpoint.
+
