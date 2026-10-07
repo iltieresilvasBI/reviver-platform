@@ -156,3 +156,20 @@ export async function createWorshipRehearsal(formData:FormData){
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
 }
+
+
+export async function respondToWorshipAssignment(formData:FormData){
+  const supabase=await createClient();
+  const assignment_id=String(formData.get("assignmentId")??"");
+  const response_status=String(formData.get("responseStatus")??"");
+  const note=String(formData.get("note")??"").trim()||null;
+  if(!["confirmed","declined"].includes(response_status)){
+    redirect("/worship?message="+encodeURIComponent("Resposta inválida."));
+  }
+  const {error}=await supabase.from("worship_assignment_responses").upsert({
+    assignment_id,response_status,note,responded_at:new Date().toISOString()
+  },{onConflict:"assignment_id"});
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+  redirect("/worship?message="+encodeURIComponent(response_status==="confirmed"?"Presença confirmada.":"Indisponibilidade registada."));
+}
