@@ -7,7 +7,7 @@ Updated: 2026-10-07
 - Production branch: `main`
 - Safe continuation branch: `reviver-safe-continuation-2026-10-07`
 - Base commit: `1dcaf436683880c7f5d69f0418f440b178d9ad91`
-- Current safe head: `81f5f496b189ac28952c7cae6e92491c2e0db149`
+- Current safe head: `3b94821e6261b84a358ad5951bb04026bb948660`
 - Stack: Next.js 15 / React 19 / Vercel / Supabase Auth + PostgreSQL + Storage
 - Supabase project: `Reviver Platform` (`blyvwsbbrnhpswvxezjt`, eu-west-1)
 - Production alias: `reviver-platform-gamma.vercel.app`
@@ -16,44 +16,41 @@ Updated: 2026-10-07
 - Supabase project: ACTIVE_HEALTHY.
 - 25 public tables; RLS enabled on all 25.
 - CMS, Auth, Academy, quizzes/XP, public site/API, admin, contact inbox and worship workflows are present.
-- Production deployment is READY but currently points to commit `381aa42`, not the latest `main`.
-- Latest `main` Vercel check failed because of `build-rate-limit`, not a reported application compile error.
-- Safe branch preview infrastructure has produced at least one READY deployment.
+- Production remains unchanged and still points to commit `381aa42`.
+- Safe branch has produced multiple READY Vercel previews.
 
 ## Completed on safe branch
-1. CI now runs on `main`, pull requests to `main`, and `reviver-safe-continuation-*` branches.
-2. Academy public view is split into:
+1. CI covers `main`, pull requests to `main`, and `reviver-safe-continuation-*`.
+2. CI npm-cache configuration was fixed so it no longer requires a missing `package-lock.json`.
+3. Academy public view is split into:
    - Cantor Principal (Lead)
    - Backing Vocals
-3. The existing `Worship Team` module is presented as `Harmonia e Backing Vocals`.
-4. Verified English-only Academy videos `YCLyAmXtpfY` and `nBQH1c20xbs` are blocked from playback pending replacement in Portuguese/dubbed.
-5. No production database data was modified for these changes.
+4. The existing `Worship Team` module is presented as `Harmonia e Backing Vocals`.
+5. Academy Admin explicitly requires YouTube content in Portuguese or officially dubbed in Portuguese.
+6. Security migration `20261007141730_security_rpc_identity_hardening.sql` is applied and persisted in Git:
+   - role helper RPCs only return positive results for the authenticated caller's own identity;
+   - probing another user's admin/app/network roles returns false;
+   - anonymous execution of `get_quiz_options(uuid)` is revoked.
+7. Two English-only videos were replaced in the live Academy data:
+   - `Aquecimento vocal essencial` -> `eoU0rHG_7kc` (Portuguese)
+   - `Respiração, afinação e agilidade` -> `J2ZnTPMyp5k` (Portuguese)
+8. The old English IDs remain blocked in the frontend as a defensive fallback.
 
-## Safety findings
-- Supabase Security Advisor reports SECURITY DEFINER exposure warnings.
-- `has_app_role`, `has_network_role`, `is_admin` and `get_quiz_options` are executable by anon today.
-- Auth leaked-password protection is disabled.
-- Supabase will enforce explicit Data API exposure for existing projects on 2026-10-30; new database changes must include deliberate grants and RLS.
-- Do not make production database changes before reviewing grants/policies and verifying them.
-
-## Academy content constraints
-- Academy videos must be Portuguese or Portuguese-dubbed; English-only videos must be removed/replaced.
-- Voice formation must remain separated into:
-  1. Cantor Principal (Lead)
-  2. Backing Vocals
-- Existing lessons `Segunda e terceira voz no louvor` and `Fundamentos de harmonia para equipa de louvor` are classified under Backing Vocals.
+## Security findings still open
+- Supabase Advisor still warns that SECURITY DEFINER functions are externally executable. Several are intentional authenticated RPCs with internal authorization checks; helper functions remain callable because RLS policies depend on them, but cross-user role probing is now blocked.
+- Auth leaked-password protection remains disabled. No authenticated Supabase management action is currently available in this session to toggle it safely.
 
 ## Continuation protocol
-1. Work only on a dedicated branch.
+1. Work only on the safe branch.
 2. One functional block per commit.
-3. Run CI typecheck + Next build on every safe-continuation branch push.
-4. Do not promote or merge to production while CI is red or Vercel is rate-limited.
-5. Database writes require a reviewed migration/change set plus post-change Security Advisor verification.
+3. Require CI typecheck + Next build before merge.
+4. Do not merge/promote while checks are red or pending.
+5. Database changes require immediate verification and Security Advisor review.
 6. Keep this file updated after each completed block.
 
 ## Next blocks
-1. Harden RPC/function exposure without breaking RLS policies.
-2. Complete audit/replacement of all Academy YouTube videos.
-3. Validate Admin/Academy preview and quizzes.
-4. Review the draft PR and preview deployment.
+1. Complete audit/replacement of remaining Academy YouTube videos.
+2. Validate Admin/Academy preview and quizzes.
+3. Review latest preview deployment and CI.
+4. Harden remaining privileged RPC grants where they are not required by RLS/UI.
 5. Merge/promote only after checks pass.
