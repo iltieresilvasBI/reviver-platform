@@ -173,3 +173,99 @@ export async function respondToWorshipAssignment(formData:FormData){
   revalidatePath("/worship");
   redirect("/worship?message="+encodeURIComponent(response_status==="confirmed"?"Presença confirmada.":"Indisponibilidade registada."));
 }
+
+
+export async function createRotationServiceSlot(formData:FormData){
+  const supabase=await createClient();
+  const weekday=Number(formData.get("weekday")??0);
+  const service_type=String(formData.get("serviceType")??"").trim();
+  const service_time=String(formData.get("serviceTime")??"").trim();
+  const call_offset_minutes=Math.max(0,Math.min(360,Number(formData.get("callOffsetMinutes")??60)||60));
+  const sort_order=Number(formData.get("sortOrder")??0)||0;
+  const {error}=await supabase.from("worship_rotation_service_slots").insert({weekday,service_type,service_time,call_offset_minutes,sort_order,active:true});
+  if(error) redirect("/worship/rotacao?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/rotacao");
+}
+
+export async function deleteRotationServiceSlot(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("slotId")??"");
+  const {error}=await supabase.from("worship_rotation_service_slots").delete().eq("id",id);
+  if(error) redirect("/worship/rotacao?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/rotacao");
+}
+
+function monthDateList(monthStart:string){
+  const [year,month]=monthStart.split("-").map(Number);
+  const days=new Date(Date.UTC(year,month,0)).getUTCDate();
+  return Array.from({length:days},(_,i)=>{
+    const d=new Date(Date.UTC(year,month-1,i+1));
+    return {
+      date:d.toISOString().slice(0,10),
+      weekday:d.getUTCDay()
+    };
+  });
+}
+
+export async function generateWorshipRotationMonth(formData:FormData){
+  const supabase=await createClient();
+  const {data}=await supabase.auth.getClaims(); const uid=data?.claims?.sub;
+  if(!uid) redirect("/login");
+  const monthStart=String(formData.get("monthStart")??"").trim();
+  const startingGroup=String(formData.get("startingGroup")??"A");
+  const notes=String(formData.get("notes")??"").trim()||null;
+  if(!/^\d{4}-\d{2}-01$/.test(monthStart)) redirect("/worship/rotacao?message="+encodeURIComponent("Escolhe o primeiro dia do mês."));
+  if(!["A","B","C","D"].includes(startingGroup)) redirect("/worship/rotacao?message="+encodeURIComponent("Grupo inicial inválido."));
+
+  const {data:slots,error:slotError}=await supabase
+    .from("worship_rotation_service_slots")
+    .select("id,weekday,service_time,sort_order")
+    .eq("active",true)
+    .order("weekday")
+    .order("service_time")
+    .order("sort_order");
+  if(slotError) redirect("/worship/rotacao?message="+encodeURIComponent(slotError.message));
+  if(!(slots??[]).length) redirect("/worship/rotacao?message="+encodeURIComponent("Configura pelo menos um culto semanal antes de gerar a rotação."));
+
+  const {data:month,error:monthError}=await supabase
+    .from("worship_rotation_months")
+    .upsert({month_start:monthStart,status:"draft",notes,created_by:String(uid),updated_at:new Date().toISOString()},{onConflict:"month_start"})
+    .select("id")
+    .single();
+  if(monthError||!month) redirect("/worship/rotacao?message="+encodeURIComponent(monthError?.message??"Não foi possível criar o mês."));
+
+  const {error:deleteError}=await supabase.from("worship_rotation_assignments").delete().eq("rotation_month_id",month.id);
+  if(deleteError) redirect("/worship/rotacao?message="+encodeURIComponent(deleteError.message));
+
+  const groups=["A","B","C","D"];
+  let groupIndex=groups.indexOf(startingGroup);
+  const rows:any[]=[];
+  for(const day of monthDateList(monthStart)){
+    const daySlots=(slots??[]).filter((s:any)=>s.weekday===day.weekday);
+    for(const slot of daySlots){
+      rows.push({
+        rotation_month_id:month.id,
+        service_date:day.date,
+        service_slot_id:slot.id,
+        group_code:groups[groupIndex%groups.length],
+      });
+      groupIndex++;
+    }
+  }
+  if(rows.length){
+    const {error}=await supabase.from("worship_rotation_assignments").insert(rows);
+    if(error) redirect("/worship/rotacao?message="+encodeURIComponent(error.message));
+  }
+  revalidatePath("/worship/rotacao");
+  redirect("/worship/rotacao?message="+encodeURIComponent("Plano mensal gerado em rascunho."));
+}
+
+export async function materializeWorshipRotationMonth(formData:FormData){
+  const supabase=await createClient();
+  const rotationId=String(formData.get("rotationId")??"");
+  const {data,error}=await supabase.rpc("materialize_worship_rotation_month",{p_rotation_month_id:rotationId});
+  if(error) redirect("/worship/rotacao?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+  revalidatePath("/worship/rotacao");
+  redirect("/worship/rotacao?message="+encodeURIComponent((data??0)+" escalas criadas."));
+}
