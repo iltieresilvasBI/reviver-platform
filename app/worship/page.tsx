@@ -4,7 +4,7 @@ import { getAccessContext } from "@/lib/auth";
 import {
   acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
   createWorshipRehearsal,createWorshipSchedule,createWorshipSong,createWorshipUnavailability,decideWorship,
-  deleteWorshipUnavailability,inviteWorship,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
+  deleteWorshipUnavailability,inviteWorship,markWorshipAttendance,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
   respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus
 } from "./actions";
 
@@ -107,7 +107,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     const last=[...(progress??[]).map(p=>p.last_activity_at),...(attempts??[]).map(a=>a.attempted_at),...(practice??[]).map(p=>p.practiced_at)].filter(Boolean).sort().at(-1)??null;
     const practiceMinutes=Math.round((practice??[]).reduce((sum,p)=>sum+(p.duration_seconds??0),0)/60);
     const profile=profilesByMembership.get(m.membership_id) as any;
-    return {...m,profile,completion:Math.round((completed/Math.max(lessonCount??0,1))*100),completed,avg,last,practiceMinutes};
+    const serviceParticipations=(assignments??[]).filter((a:any)=>a.membership_id===m.membership_id&&a.attendance_status==="completed").length;
+    return {...m,profile,completion:Math.round((completed/Math.max(lessonCount??0,1))*100),completed,avg,last,practiceMinutes,serviceParticipations};
   })):[];
 
   return <AppShell title="Ministério de Louvor" active="/worship" email={ctx.email}>
@@ -189,7 +190,13 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
               ?<div className="list">{people.length===0?<div className="empty">Sem pessoas atribuídas.</div>:people.map((a:any)=>{
                 const person=directoryByMembership.get(a.membership_id) as any;
                 const response=responseByAssignment.get(a.id) as any;
-                return <div className="list-row" key={a.id}><div><strong>{person?.display_name||person?.email||"Membro"}</strong><div className="muted small">{roleLabel(a.role)} · {response?response.response_status==="confirmed"?"confirmado":"não disponível":"sem resposta"}</div>{response?.note&&<div className="muted small">{response.note}</div>}</div><form action={removeWorshipAssignment}><input type="hidden" name="assignmentId" value={a.id}/><button className="button danger">Remover</button></form></div>
+                return <div className="list-row" key={a.id}>
+                  <div><strong>{person?.display_name||person?.email||"Membro"}</strong><div className="muted small">{roleLabel(a.role)} · {response?response.response_status==="confirmed"?"confirmado":"não disponível":"sem resposta"} · {a.attendance_status==="completed"?"presença concluída":"presença pendente"}</div>{response?.note&&<div className="muted small">{response.note}</div>}</div>
+                  <div className="button-row">
+                    <form action={markWorshipAttendance}><input type="hidden" name="assignmentId" value={a.id}/><input type="hidden" name="attendance" value={a.attendance_status==="completed"?"assigned":"completed"}/><button className="button">{a.attendance_status==="completed"?"Reabrir presença":"Marcar presença"}</button></form>
+                    <form action={removeWorshipAssignment}><input type="hidden" name="assignmentId" value={a.id}/><button className="button danger">Remover</button></form>
+                  </div>
+                </div>
               })}</div>
               :mine?<div>
                 <div className="notice">A tua função: <strong>{roleLabel(mine.role)}</strong></div>
@@ -350,7 +357,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             </div>
             <button className="button">Guardar perfil do ministério</button>
           </form>
-          <div className="grid grid-4" style={{marginTop:14}}><div className="metric"><span>Academy</span><strong>{m.completion}%</strong></div><div className="metric"><span>Aulas concluídas</span><strong>{m.completed}</strong></div><div className="metric"><span>Média quizzes</span><strong>{m.avg}%</strong></div><div className="metric"><span>Prática recente</span><strong>{m.practiceMinutes}m</strong></div></div>
+          <div className="grid grid-4" style={{marginTop:14}}><div className="metric"><span>Academy</span><strong>{m.completion}%</strong></div><div className="metric"><span>Aulas concluídas</span><strong>{m.completed}</strong></div><div className="metric"><span>Média quizzes</span><strong>{m.avg}%</strong></div><div className="metric"><span>Participações</span><strong>{m.serviceParticipations}</strong></div></div>
+          <div className="muted small" style={{marginTop:10}}>Prática recente: {m.practiceMinutes}m</div>
           {m.last&&<div className="muted small" style={{marginTop:12}}>Última atividade: {new Date(m.last).toLocaleString("pt-PT")}</div>}
         </>}
       </details>)}</div>
