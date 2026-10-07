@@ -48,9 +48,18 @@ Updated: 2026-10-07
 5. Database changes require immediate verification and Security Advisor review.
 6. Keep this file updated after each completed block.
 
+## Newly completed
+- Added Academy sections for Violão, Guitarra, Baixo, Bateria, Teclado/Piano, Iluminação de Igreja and Behringer X32.
+- Embedded verified Portuguese content for Baixo, Bateria, Teclado/Piano and X32; Violão, Guitarra and Iluminação remain visibly in curation instead of receiving unverified videos.
+- Added authenticated Academy resource library at `/academy/resources`.
+- Added Admin resource management at `/admin/academy/resources`.
+- Added private upload flow to `academy-documents` (PDF, DOC/DOCX, PPT/PPTX, TXT; 25 MB limit).
+- Student downloads use short-lived signed URLs; the bucket remains private.
+
 ## Next blocks
-1. Complete audit/replacement of remaining Academy YouTube videos.
-2. Validate Admin/Academy preview and quizzes.
-3. Review latest preview deployment and CI.
-4. Harden remaining privileged RPC grants where they are not required by RLS/UI.
-5. Merge/promote only after checks pass.
+1. Validate the current CI/build result and fix any compile issue.
+2. Complete audit/replacement of remaining Academy YouTube videos.
+3. Convert the instrument/technical curation cards into full progress/quiz lessons after content is approved.
+4. Validate Admin/Academy preview, resource upload and quizzes end-to-end.
+5. Harden remaining privileged RPC grants where they are not required by RLS/UI.
+6. Merge/promote only after checks pass.
