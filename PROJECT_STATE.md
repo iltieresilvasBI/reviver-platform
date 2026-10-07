@@ -7,91 +7,96 @@ Updated: 2026-10-07
 - Production branch: `main`
 - Safe continuation branch: `reviver-safe-continuation-2026-10-07`
 - Base commit: `1dcaf436683880c7f5d69f0418f440b178d9ad91`
-- Current safe head: `3b94821e6261b84a358ad5951bb04026bb948660`
+- Current safe head: `c22b1fbb839f2f7c475ba45ee673f2d1778ae81b`
 - Stack: Next.js 15 / React 19 / Vercel / Supabase Auth + PostgreSQL + Storage
 - Supabase project: `Reviver Platform` (`blyvwsbbrnhpswvxezjt`, eu-west-1)
 - Production alias: `reviver-platform-gamma.vercel.app`
 
-## Verified state
-- Supabase project: ACTIVE_HEALTHY.
-- 25 public tables; RLS enabled on all 25.
-- CMS, Auth, Academy, quizzes/XP, public site/API, admin, contact inbox and worship workflows are present.
-- Production remains unchanged and still points to commit `381aa42`.
-- Safe branch has produced multiple READY Vercel previews.
+## Verified platform state
+- Supabase: ACTIVE_HEALTHY.
+- 25 public tables with RLS enabled.
+- CMS, Auth, Academy, quizzes/XP, public API/site, admin, contact inbox and worship workflows are present.
+- PR #9 is open, draft and mergeable.
+- Production has not been promoted from the safe branch.
 
-## Completed on safe branch
-1. CI covers `main`, pull requests to `main`, and `reviver-safe-continuation-*`.
-2. CI npm-cache configuration was fixed so it no longer requires a missing `package-lock.json`.
-3. Academy public view is split into:
-   - Cantor Principal (Lead)
-   - Backing Vocals
-4. The existing `Worship Team` module is presented as `Harmonia e Backing Vocals`.
-5. Academy Admin explicitly requires YouTube content in Portuguese or officially dubbed in Portuguese.
-6. Security migration `20261007141730_security_rpc_identity_hardening.sql` is applied and persisted in Git:
-   - role helper RPCs only return positive results for the authenticated caller's own identity;
-   - probing another user's admin/app/network roles returns false;
-   - anonymous execution of `get_quiz_options(uuid)` is revoked.
-7. Two English-only videos were replaced in the live Academy data:
-   - `Aquecimento vocal essencial` -> `eoU0rHG_7kc` (Portuguese)
-   - `Respiração, afinação e agilidade` -> `J2ZnTPMyp5k` (Portuguese)
-8. The old English IDs remain blocked in the frontend as a defensive fallback.
+## Academy now implemented
+### Vocal
+- Cantor Principal (Lead)
+- Backing Vocals
+- English-only video IDs are defensively blocked.
+- Academy Admin explicitly requires Portuguese or officially dubbed videos.
 
-## Security findings still open
-- Supabase Advisor still warns that SECURITY DEFINER functions are externally executable. Several are intentional authenticated RPCs with internal authorization checks; helper functions remain callable because RLS policies depend on them, but cross-user role probing is now blocked.
-- Auth leaked-password protection remains disabled. No authenticated Supabase management action is currently available in this session to toggle it safely.
+### Instruments
+Each path is a real Academy module with progress, XP and quizzes:
+- Violão
+- Guitarra
+- Baixo
+- Bateria
+- Teclado / Piano
 
-## Continuation protocol
-1. Work only on the safe branch.
-2. One functional block per commit.
-3. Require CI typecheck + Next build before merge.
-4. Do not merge/promote while checks are red or pending.
-5. Database changes require immediate verification and Security Advisor review.
-6. Keep this file updated after each completed block.
+Each instrument has at least two lessons. The second lessons are guided practical content and do not require a video.
 
-## Newly completed
-- Added Academy sections for Violão, Guitarra, Baixo, Bateria, Teclado/Piano, Iluminação de Igreja and Behringer X32.
-- Embedded verified Portuguese content for Baixo, Bateria, Teclado/Piano and X32; Violão, Guitarra and Iluminação remain visibly in curation instead of receiving unverified videos.
-- Added authenticated Academy resource library at `/academy/resources`.
-- Added Admin resource management at `/admin/academy/resources`.
-- Added private upload flow to `academy-documents` (PDF, DOC/DOCX, PPT/PPTX, TXT; 25 MB limit).
-- Student downloads use short-lived signed URLs; the bucket remains private.
+### Technical
+- Behringer X32
+  - Introdução à Behringer X32
+  - Ganho e nível de sinal
+  - Monitores e buses
+- Iluminação de Igreja
+  - Fundamentos de iluminação de igreja
+  - Cenas e DMX na iluminação
 
-## Next blocks
-1. Validate the current CI/build result and fix any compile issue.
-2. Complete audit/replacement of remaining Academy YouTube videos.
-3. Convert the instrument/technical curation cards into full progress/quiz lessons after content is approved.
-4. Validate Admin/Academy preview, resource upload and quizzes end-to-end.
-5. Harden remaining privileged RPC grants where they are not required by RLS/UI.
-6. Merge/promote only after checks pass.
+## Academy UX
+- Main Academy page is grouped by Lead, Backing, Instruments and Technical.
+- A four-card progress overview shows completion percentage by track.
+- Guided lessons without video are treated as complete lessons, with video optional.
+- Quiz approval remains 70% unless changed per lesson.
 
+## Resource library
+- Student route: `/academy/resources`
+- Admin route: `/admin/academy/resources`
+- Private bucket: `academy-documents`
+- Supported: PDF, DOC/DOCX, PPT/PPTX, TXT
+- Limit: 25 MB
+- Student access uses signed URLs.
+- Admin can upload, deactivate, reactivate and delete resources.
 
-## Checkpoint 2026-10-07 — Full Academy modules
-- GitHub CI for commit `abc2a3f`: SUCCESS.
-- Vercel preview for commit `abc2a3f`: READY.
-- Instrument modules now persisted in Supabase with real lessons, XP and quizzes:
-  - Violão
-  - Guitarra
-  - Baixo
-  - Bateria
-  - Teclado / Piano
-- Technical modules now persisted:
-  - Behringer X32
-  - Iluminação de Igreja
-- Lighting has an original text-first foundation lesson with 2 quiz questions and no unverified video.
-- Instrument/X32 migration: `academy_instrument_technical_tracks`.
-- Lighting migration: `academy_lighting_track`.
-- Frontend now renders these database modules directly instead of static curation cards.
+## Security changes
+- Applied and persisted `security_rpc_identity_hardening`.
+- `is_admin`, `has_app_role`, `has_network_role` only return positive results for the authenticated caller's own identity.
+- Cross-user role probing was verified to return false.
+- Anonymous execute on `get_quiz_options(uuid)` is revoked.
+- Security Advisor still flags SECURITY DEFINER exposure structurally; several RPCs intentionally remain authenticated endpoints with internal checks.
+- Supabase leaked-password protection remains disabled and must be enabled separately when account tooling permits.
 
-
-## Checkpoint 2026-10-07 — Instrument depth and E2E validation
-- Added second guided lessons for Violão, Guitarra, Baixo, Bateria and Teclado/Piano.
-- All five second lessons include exercises, XP and quizzes.
-- Verified `submit_quiz_attempt` in a transaction using a real authenticated user:
+## Functional verification
+- GitHub CI has repeatedly passed after CI workflow repair.
+- Latest fully validated checkpoint before current portability cleanup: CI #103 SUCCESS and Vercel preview READY.
+- Quiz flow was tested transactionally with an authenticated user:
   - score: 100
   - passed: true
   - pass mark: 70
   - XP awarded: 110
-- Rolled the transaction back and confirmed no quiz attempt, progress row or XP event remained.
-- No-video guided lessons are now presented as complete practical lessons; video is optional/complementary.
-- PR #9 is mergeable and remains draft by design.
-- Vercel runtime-log endpoint returned 403 for this account scope; build/preview status remains the available deployment validation channel.
+- Test transaction was rolled back.
+- Confirmed afterwards: no test progress, XP event or quiz attempt remained.
+
+## Portability cleanup
+- New Academy migrations now resolve the course by slug `formacao-vocal` instead of relying on a fixed UUID.
+- Migrations fail explicitly if the expected course does not exist.
+
+## Known operational limitation
+- Vercel runtime logs endpoint returned HTTP 403 for the connected account scope. This is a connector permission limitation, not evidence of an application runtime error.
+- CI status and Vercel deployment state remain the available validation channels.
+
+## Release protocol
+1. Work only on the safe branch.
+2. Require latest GitHub CI success.
+3. Require latest Vercel preview READY.
+4. Keep PR draft until final review is clean.
+5. Do not merge or promote to production while checks are pending/red.
+6. After merge, verify production deployment separately.
+
+## Remaining before merge
+1. Validate CI and Vercel preview for the current portability cleanup.
+2. Review Admin resource delete/upload flow once more.
+3. Run final Supabase Security Advisor.
+4. Mark PR ready only after all checks pass.
