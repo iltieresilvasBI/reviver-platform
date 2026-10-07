@@ -4,6 +4,7 @@ import { getAccessContext } from "@/lib/auth";
 import { createLesson,createModule,createQuestion,deactivateLesson,deleteQuestion,updateLesson,updateQuestion } from "./actions";
 
 const blockedVideoIds=new Set(["YCLyAmXtpfY","nBQH1c20xbs","N50kF0FE3hM"]);
+const pendingReviewVideoIds=new Set(["7nIyHuz1LWk","3OjBVoTqlkA","j_DNPhNlC-w","362-gVCXrYc","-URtAQxpU6U","PoDkBUsZ-aU"]);
 
 export default async function AcademyAdmin({searchParams}:{searchParams:Promise<{message?:string}>}){
   const qs=await searchParams; const ctx=await getAccessContext();
@@ -19,7 +20,8 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
   const course=courses?.[0];
   const allLessons=lessons??[];
   const blockedCount=allLessons.filter((l:any)=>l.youtube_id&&blockedVideoIds.has(l.youtube_id)).length;
-  const videoCount=allLessons.filter((l:any)=>l.youtube_id&&!blockedVideoIds.has(l.youtube_id)).length;
+  const pendingReviewCount=allLessons.filter((l:any)=>l.youtube_id&&pendingReviewVideoIds.has(l.youtube_id)).length;
+  const videoCount=allLessons.filter((l:any)=>l.youtube_id&&!blockedVideoIds.has(l.youtube_id)&&!pendingReviewVideoIds.has(l.youtube_id)).length;
   const guidedCount=allLessons.filter((l:any)=>!l.youtube_id).length;
   return <AppShell title="Gestão da Academy" active="/admin" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
@@ -27,10 +29,11 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
     <section className="hero-card"><p className="eyebrow">EDITOR DA FORMAÇÃO</p><h2>Vídeos, aulas e quizzes sem mexer em código.</h2><p>Podes trocar o link do YouTube, criar/desativar aulas e editar perguntas e respostas diretamente aqui. Usa apenas vídeos em português ou oficialmente dublados em português.</p></section>
 
     <div className="section-title"><div><p className="eyebrow">CURADORIA</p><h2>Estado do conteúdo</h2></div><span className="muted small">Aulas sem vídeo continuam válidas como conteúdo guiado.</span></div>
-    <div className="grid grid-3">
-      <article className="card metric"><p className="eyebrow">COM VÍDEO</p><strong>{videoCount}</strong><span>vídeos configurados e não bloqueados</span></article>
+    <div className="grid grid-4">
+      <article className="card metric"><p className="eyebrow">VERIFICADOS</p><strong>{videoCount}</strong><span>vídeos configurados fora da lista pendente/bloqueada</span></article>
+      <article className="card metric"><p className="eyebrow">REVISÃO</p><strong>{pendingReviewCount}</strong><span>vídeos antigos ainda por validar</span></article>
       <article className="card metric"><p className="eyebrow">GUIADAS</p><strong>{guidedCount}</strong><span>aulas completas sem vídeo obrigatório</span></article>
-      <article className="card metric"><p className="eyebrow">BLOQUEADAS</p><strong>{blockedCount}</strong><span>IDs antigos impedidos pela curadoria</span></article>
+      <article className="card metric"><p className="eyebrow">BLOQUEADAS</p><strong>{blockedCount}</strong><span>IDs impedidos pela curadoria</span></article>
     </div>
     {blockedCount>0&&<div className="notice warn" style={{marginTop:16}}>Existem aulas com vídeo bloqueado. Substitui o ID por conteúdo em português/dublado ou remove o vídeo para manter a aula como guiada.</div>}
 
@@ -57,7 +60,7 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
       <div className="list">{(lessons??[]).filter(l=>l.module_id===m.id).map(l=>{
         const qsFor=(questions??[]).filter(q=>q.lesson_id===l.id);
         return <details key={l.id} style={{borderTop:"1px solid var(--border)",paddingTop:14}}>
-          <summary style={{cursor:"pointer",fontWeight:800}}>{l.title} {!l.active&&<span className="pill">inativa</span>} {l.youtube_id?(blockedVideoIds.has(l.youtube_id)?<span className="pill">vídeo bloqueado</span>:<span className="pill ok">vídeo configurado</span>):<span className="pill gold">aula guiada</span>}</summary>
+          <summary style={{cursor:"pointer",fontWeight:800}}>{l.title} {!l.active&&<span className="pill">inativa</span>} {l.youtube_id?(blockedVideoIds.has(l.youtube_id)?<span className="pill">vídeo bloqueado</span>:pendingReviewVideoIds.has(l.youtube_id)?<span className="pill gold">revisão pendente</span>:<span className="pill ok">vídeo verificado</span>):<span className="pill gold">aula guiada</span>}</summary>
           <form action={updateLesson} className="form-grid" style={{marginTop:16}}>
             <input type="hidden" name="lessonId" value={l.id}/>
             <div className="grid grid-3"><div className="field"><label>Título</label><input name="title" defaultValue={l.title}/></div><div className="field"><label>Slug</label><input name="slug" defaultValue={l.slug}/></div><div className="field"><label>Link YouTube ou ID (português/dublado)</label><input name="youtube" defaultValue={l.youtube_id??""}/></div></div>
