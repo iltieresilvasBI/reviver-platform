@@ -309,6 +309,7 @@ export async function createWorshipUnavailability(formData:FormData){
   const ends_on=String(formData.get("endsOn")??"").trim();
   const reason=String(formData.get("reason")??"").trim()||null;
   if(!starts_on||!ends_on) redirect("/worship?message="+encodeURIComponent("Indica o primeiro e o último dia da indisponibilidade."));
+  if(ends_on<starts_on) redirect("/worship?message="+encodeURIComponent("O último dia não pode ser anterior ao primeiro."));
 
   const {error}=await supabase.from("worship_member_unavailability").insert({
     membership_id:membership.id,starts_on,ends_on,reason
