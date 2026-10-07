@@ -326,3 +326,67 @@ export async function deleteWorshipUnavailability(formData:FormData){
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
 }
+
+
+export async function autoAssignWorshipGroup(formData:FormData){
+  const supabase=await createClient();
+  const scheduleId=String(formData.get("scheduleId")??"");
+  if(!scheduleId) redirect("/worship?message="+encodeURIComponent("Escala inválida."));
+
+  const {data:schedule,error:scheduleError}=await supabase
+    .from("worship_schedules")
+    .select("id,group_code,starts_at")
+    .eq("id",scheduleId)
+    .maybeSingle();
+  if(scheduleError||!schedule) redirect("/worship?message="+encodeURIComponent(scheduleError?.message??"Escala não encontrada."));
+  if(!schedule.group_code) redirect("/worship?message="+encodeURIComponent("Define o grupo da escala antes de preencher a equipa."));
+
+  const serviceDate=new Intl.DateTimeFormat("en-CA",{
+    timeZone:"Europe/Lisbon",year:"numeric",month:"2-digit",day:"2-digit"
+  }).format(new Date(schedule.starts_at));
+
+  const {data:profiles,error:profileError}=await supabase
+    .from("worship_member_profiles")
+    .select("membership_id,roles")
+    .eq("group_code",schedule.group_code)
+    .eq("active",true);
+  if(profileError) redirect("/worship?message="+encodeURIComponent(profileError.message));
+
+  const membershipIds=(profiles??[]).map((p:any)=>p.membership_id);
+  if(!membershipIds.length){
+    redirect("/worship?message="+encodeURIComponent("Nenhum membro ativo configurado no Grupo "+schedule.group_code+"."));
+  }
+
+  const [{data:memberships,error:membershipError},{data:unavailable,error:unavailableError},{data:existing,error:existingError}]=await Promise.all([
+    supabase.from("network_memberships").select("id,status").in("id",membershipIds),
+    supabase.from("worship_member_unavailability").select("membership_id,starts_on,ends_on").in("membership_id",membershipIds).lte("starts_on",serviceDate).gte("ends_on",serviceDate),
+    supabase.from("worship_schedule_members").select("membership_id,role").eq("schedule_id",scheduleId)
+  ]);
+  if(membershipError||unavailableError||existingError){
+    redirect("/worship?message="+encodeURIComponent(membershipError?.message??unavailableError?.message??existingError?.message??"Erro ao validar equipa."));
+  }
+
+  const activeIds=new Set((memberships??[]).filter((m:any)=>m.status==="active").map((m:any)=>m.id));
+  const unavailableIds=new Set((unavailable??[]).map((u:any)=>u.membership_id));
+  const existingKeys=new Set((existing??[]).map((e:any)=>e.membership_id+"|"+(e.role??"")));
+
+  const rows=(profiles??[]).flatMap((p:any)=>{
+    if(!activeIds.has(p.membership_id)||unavailableIds.has(p.membership_id)) return [];
+    const primaryRole=(p.roles??[])[0]??null;
+    const key=p.membership_id+"|"+(primaryRole??"");
+    if(existingKeys.has(key)) return [];
+    return [{schedule_id:scheduleId,membership_id:p.membership_id,role:primaryRole}];
+  });
+
+  if(rows.length){
+    const {error}=await supabase.from("worship_schedule_members").insert(rows);
+    if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  }
+
+  const skippedUnavailable=unavailableIds.size;
+  revalidatePath("/worship");
+  redirect("/worship?message="+encodeURIComponent(
+    rows.length+" membro"+(rows.length===1?"":"s")+" adicionado"+(rows.length===1?"":"s")+
+    (skippedUnavailable?" · "+skippedUnavailable+" indisponível"+(skippedUnavailable===1?"":"eis")+" ignorado"+(skippedUnavailable===1?"":"s"):"")
+  ));
+}
