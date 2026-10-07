@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
-import { createRotationServiceSlot,deleteRotationServiceSlot,generateWorshipRotationMonth,materializeWorshipRotationMonth } from "../actions";
+import { createRotationServiceSlot,deleteRotationServiceSlot,generateWorshipRotationMonth,materializeWorshipRotationMonth,updateWorshipRotationAssignment } from "../actions";
 
 const weekdayLabel=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
@@ -106,10 +106,17 @@ export default async function WorshipRotationPage({searchParams}:{searchParams:P
         const slot=slotById.get(a.service_slot_id) as any;
         return <div className="list-row" key={a.id}>
           <div>
-            <div className="button-row"><span className="pill gold">Grupo {a.group_code}</span><span className="pill">{slot?.service_type??"Culto"}</span></div>
+            <div className="button-row"><span className="pill gold">Grupo {a.group_code}</span><span className="pill">{slot?.service_type??"Culto"}</span>{a.notes&&<span className="pill">ajuste manual</span>}</div>
             <h3 style={{margin:"8px 0 4px"}}>{new Date(a.service_date+"T00:00:00").toLocaleDateString("pt-PT",{weekday:"long",day:"2-digit",month:"2-digit"})}</h3>
             <span className="muted small">{slot?String(slot.service_time).slice(0,5):"hora não disponível"}</span>
+            {a.notes&&<div className="muted small" style={{marginTop:6}}>{a.notes}</div>}
           </div>
+          {canLead&&<form action={updateWorshipRotationAssignment} className="button-row">
+            <input type="hidden" name="assignmentId" value={a.id}/>
+            <select name="groupCode" defaultValue={a.group_code} className="inline-input">{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select>
+            <input name="notes" defaultValue={a.notes??""} className="inline-input" placeholder="Motivo opcional"/>
+            <button className="button">Ajustar</button>
+          </form>}
         </div>
       })}</div>
 
