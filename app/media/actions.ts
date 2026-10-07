@@ -142,20 +142,19 @@ export async function deleteContentMedia(formData:FormData){
     .maybeSingle();
   if(readError) redirect("/media/edit/"+contentId+"?message="+encodeURIComponent(readError.message));
 
+  if(row?.storage_path){
+    const {error:storageError}=await supabase.storage.from("reviver-public").remove([row.storage_path]);
+    if(storageError){
+      redirect("/media/edit/"+contentId+"?message="+encodeURIComponent("Não foi possível remover o ficheiro. Apenas Admin ou Líder de Mídia pode eliminar imagens do Storage: "+storageError.message));
+    }
+  }
+
   const {error}=await supabase
     .from("content_media")
     .delete()
     .eq("id",mediaId)
     .eq("content_item_id",contentId);
   if(error) redirect("/media/edit/"+contentId+"?message="+encodeURIComponent(error.message));
-
-  if(row?.storage_path){
-    const {error:storageError}=await supabase.storage.from("reviver-public").remove([row.storage_path]);
-    if(storageError){
-      revalidatePath("/media/edit/"+contentId);
-      redirect("/media/edit/"+contentId+"?message="+encodeURIComponent("Imagem removida do conteúdo, mas o ficheiro precisa de limpeza manual: "+storageError.message));
-    }
-  }
 
   revalidatePath("/media");
   revalidatePath("/media/edit/"+contentId);
