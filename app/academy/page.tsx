@@ -13,7 +13,7 @@ type AcademyModule={
 const vocalLeadSlugs=new Set(["fundamentos","controle","desenvolvimento","aplicacao"]);
 const backingSlugs=new Set(["worship"]);
 const instrumentSlugs=new Set(["violao","guitarra","baixo","bateria","teclado-piano"]);
-const technicalSlugs=new Set(["behringer-x32"]);
+const technicalSlugs=new Set(["behringer-x32","iluminacao-igreja"]);
 
 function ModuleBlock({module,lessons,progress}:{module:AcademyModule;lessons:any[];progress:any[]}){
   const ml=lessons.filter(l=>l.module_id===module.id);
@@ -73,12 +73,6 @@ export default async function AcademyPage() {
     <section style={{marginTop:34}}>
       <div className="section-title"><div><p className="eyebrow">EQUIPA TÉCNICA</p><h2>Som e operação</h2></div><span className="muted small">Treino técnico aplicado a cultos, ensaios e eventos.</span></div>
       {ms.filter(m=>technicalSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
-      <article className="card">
-        <p className="eyebrow">EM CURADORIA</p>
-        <h3 style={{fontSize:22,marginBottom:8}}>Iluminação de Igreja</h3>
-        <p className="muted">Fundamentos de iluminação, cenas, operação segura, organização de palco e introdução ao DMX.</p>
-        <div className="empty" style={{marginTop:16}}>A trilha será publicada quando a aula-base em português estiver validada.</div>
-      </article>
     </section>
   </AppShell>
 }
