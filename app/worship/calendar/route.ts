@@ -51,13 +51,18 @@ export async function GET(){
 
   const ownScheduleIds=new Set(scheduleIds);
   const visibleRehearsals=(rehearsals??[]).filter((r:any)=>!r.schedule_id||ownScheduleIds.has(r.schedule_id));
-  const assignmentBySchedule=new Map((assignments??[]).map((a:any)=>[a.schedule_id,a]));
+  const rolesBySchedule=new Map<string,string[]>();
+  for(const assignment of assignments??[]){
+    const roles=rolesBySchedule.get(assignment.schedule_id)??[];
+    if(assignment.role&&!roles.includes(assignment.role)) roles.push(assignment.role);
+    rolesBySchedule.set(assignment.schedule_id,roles);
+  }
 
   const events:string[]=[];
   for(const schedule of schedules??[]){
-    const assignment=assignmentBySchedule.get(schedule.id) as any;
+    const roles=rolesBySchedule.get(schedule.id)??[];
     const start=schedule.call_time??schedule.starts_at;
-    const end=schedule.starts_at;
+    const end=new Date(new Date(schedule.starts_at).getTime()+2*60*60*1000).toISOString();
     events.push([
       "BEGIN:VEVENT",
       `UID:worship-schedule-${schedule.id}@reviver`,
@@ -65,7 +70,7 @@ export async function GET(){
       `DTSTART:${icsDate(start)}`,
       `DTEND:${icsDate(end)}`,
       `SUMMARY:${escapeIcs(schedule.title)}`,
-      `DESCRIPTION:${escapeIcs([schedule.service_type,assignment?.role?`Função: ${assignment.role}`:null,schedule.group_code?`Grupo ${schedule.group_code}`:null,schedule.notes].filter(Boolean).join(" · "))}`,
+      `DESCRIPTION:${escapeIcs([schedule.service_type,roles.length?`Funções: ${roles.join(", ")}`:null,schedule.group_code?`Grupo ${schedule.group_code}`:null,schedule.notes].filter(Boolean).join(" · "))}`,
       "END:VEVENT"
     ].join("\r\n"));
   }
