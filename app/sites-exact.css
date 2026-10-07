@@ -25,9 +25,6 @@
 @media(max-width:850px){.sites-root .header-inner{height:112px}.sites-root .official-brand img{width:144px}}
 @media(max-width:600px){.sites-root .header-inner{height:105px}.sites-root .official-brand img{width:132px}.sites-root .footer .official-brand img{width:180px}}
 
-.sites-root .brand-filters{position:absolute;pointer-events:none}
-.sites-root .header-logo-gold{filter:url(#reviver-gold)}
-
 .sites-root .header-brand{display:flex;align-items:center;width:auto;height:auto;overflow:visible}
 .sites-root .header-brand img{position:static;width:150px;max-width:100%;height:auto;object-fit:contain;border-radius:0}
 @media(max-width:850px){.sites-root .header-brand img{width:126px}}
@@ -69,4 +66,93 @@
   .sites-root .footer-grid>div:first-child{grid-column:auto}
   .sites-root .academy-word{font-size:72px}
   .sites-root .hero-actions .button{width:100%;flex:0 0 100%}
+}
+
+/* Final public-layout hardening: full logo + visible fallback imagery. */
+.sites-root .header-brand{
+  display:flex !important;
+  align-items:center !important;
+  flex:0 0 auto !important;
+  width:auto !important;
+  height:auto !important;
+  overflow:visible !important;
+}
+.sites-root .header-brand img{
+  display:block !important;
+  position:static !important;
+  width:158px !important;
+  max-width:158px !important;
+  height:auto !important;
+  max-height:none !important;
+  aspect-ratio:auto !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  filter:none !important;
+  clip-path:none !important;
+  transform:none !important;
+  border-radius:0 !important;
+}
+.sites-root .official-brand.header-brand img{aspect-ratio:auto !important}
+.sites-root .hero-image{
+  opacity:1 !important;
+  object-position:center 48% !important;
+}
+.sites-root .hero-shade{
+  background:
+    linear-gradient(90deg,rgba(13,14,12,.70) 0%,rgba(13,14,12,.28) 56%,rgba(13,14,12,.12) 100%),
+    linear-gradient(0deg,#121310 0%,rgba(18,19,16,.15) 42%,transparent 72%) !important;
+}
+.sites-root .highlight-main{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  background:
+    linear-gradient(90deg,rgba(22,22,18,.92),rgba(22,22,18,.58)),
+    url('/images/sanctuary.webp') center/cover no-repeat !important;
+}
+.sites-root .highlight-main>*{position:relative;z-index:1}
+.sites-root .network-card{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  background:
+    linear-gradient(180deg,rgba(20,21,18,.24) 0 31%,rgba(28,29,24,.98) 58%),
+    url('/images/sanctuary.webp') center 38%/cover no-repeat !important;
+}
+.sites-root .network-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.30));
+}
+.sites-root .network-card:nth-child(2){background-position:center 46% !important}
+.sites-root .network-card:nth-child(3){background-position:62% 42% !important}
+.sites-root .network-card:nth-child(4){background-position:40% 44% !important}
+.sites-root .worship-card{
+  background:
+    linear-gradient(180deg,rgba(20,18,13,.20) 0 30%,rgba(38,36,28,.98) 58%),
+    url('/images/sanctuary.webp') 70% 45%/cover no-repeat !important;
+}
+.sites-root .academy-brand{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  background:
+    linear-gradient(90deg,rgba(35,35,27,.95),rgba(35,35,27,.68)),
+    url('/images/sanctuary.webp') 58% center/cover no-repeat !important;
+}
+.sites-root .academy-brand>*{position:relative;z-index:1}
+@media(max-width:850px){
+  .sites-root .header-brand img{
+    width:132px !important;
+    max-width:132px !important;
+  }
+}
+@media(max-width:600px){
+  .sites-root .header-brand img{
+    width:116px !important;
+    max-width:116px !important;
+  }
+  .sites-root .hero-image{object-position:58% center !important}
 }
