@@ -128,6 +128,16 @@ export async function createWorshipSchedule(formData:FormData){
   revalidatePath("/worship");
 }
 
+export async function updateWorshipScheduleTheme(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("scheduleId")??"");
+  const theme=String(formData.get("theme")??"").trim()||null;
+  const {error}=await supabase.from("worship_schedules").update({theme,updated_at:new Date().toISOString()}).eq("id",id);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+  revalidatePath("/worship/repertoire");
+}
+
 export async function updateWorshipScheduleStatus(formData:FormData){
   const supabase=await createClient();
   const id=String(formData.get("scheduleId")??"");
