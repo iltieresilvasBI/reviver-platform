@@ -10,7 +10,7 @@ type AcademyModule={
   sort_order:number;
 };
 
-const tracks=[
+const vocalTracks=[
   {
     key:"lead",
     eyebrow:"TRILHA 1",
@@ -25,8 +25,62 @@ const tracks=[
   },
 ] as const;
 
+const instrumentTracks=[
+  {
+    title:"Violão",
+    description:"Acordes, ritmo, transposição, levadas e acompanhamento de louvor.",
+    status:"Curadoria em andamento",
+  },
+  {
+    title:"Guitarra",
+    description:"Base, timbres, dinâmica, riffs, ambientação e linguagem para ministério de louvor.",
+    status:"Curadoria em andamento",
+  },
+  {
+    title:"Baixo",
+    description:"Fundamentos, postura, afinação, digitação, groove e construção de linhas para louvor.",
+    status:"Conteúdo em português selecionado",
+    videoId:"6xIgTuBqpIM",
+  },
+  {
+    title:"Bateria",
+    description:"Primeiros ritmos, condução, viradas, dinâmica e aplicação em contexto de igreja.",
+    status:"Conteúdo em português selecionado",
+    videoId:"UqdUcZ1AK_k",
+  },
+  {
+    title:"Teclado / Piano",
+    description:"Acordes, inversões, cifras, ambiência, pads e acompanhamento de louvores.",
+    status:"Conteúdo em português selecionado",
+    videoId:"Kmtff3WkU38",
+  },
+] as const;
+
+const technicalTracks=[
+  {
+    title:"Iluminação de Igreja",
+    description:"Fundamentos de iluminação, cenas, operação segura, organização de palco e introdução ao DMX.",
+    status:"Curadoria em andamento",
+  },
+  {
+    title:"Behringer X32",
+    description:"Fluxo de sinal, canais, buses, monitores, efeitos, cenas e operação prática da X32.",
+    status:"Conteúdo em português selecionado",
+    videoId:"DUW9eiutCLY",
+  },
+] as const;
+
 function trackForModule(module:AcademyModule){
   return module.slug==="worship"?"backing":"lead";
+}
+
+function CuratedTrackCard({title,description,status,videoId}:{title:string;description:string;status:string;videoId?:string}){
+  return <article className="card">
+    <p className="eyebrow">{status}</p>
+    <h3 style={{fontSize:22,marginBottom:8}}>{title}</h3>
+    <p className="muted" style={{lineHeight:1.65}}>{description}</p>
+    {videoId?<div className="video-wrap" style={{marginTop:16}}><iframe src={`https://www.youtube-nocookie.com/embed/${videoId}`} title={title} allowFullScreen /></div>:<div className="empty" style={{marginTop:16}}>Aulas em curadoria. Só serão publicados vídeos em português ou oficialmente dublados.</div>}
+  </article>
 }
 
 export default async function AcademyPage() {
@@ -40,11 +94,12 @@ export default async function AcademyPage() {
   return <AppShell title="Formação" active="/academy" email={email}>
     <section className="hero-card">
       <p className="eyebrow">REVIVER ACADEMY</p>
-      <h2>Formação vocal por função no louvor</h2>
-      <p>Escolhe a trilha de Cantor Principal (Lead) ou Backing Vocals. Para avançar oficialmente, o quiz de cada aula exige pelo menos 70%.</p>
+      <h2>Formação para voz, instrumentos e equipa técnica</h2>
+      <p>Trilhas progressivas para Cantor Principal, Backing Vocals, músicos e equipa técnica. Os vídeos publicados na Academy devem estar em português ou oficialmente dublados.</p>
     </section>
 
-    {tracks.map(track=>{
+    <div className="section-title"><div><p className="eyebrow">FORMAÇÃO VOCAL</p><h2>Voz no ministério de louvor</h2></div><span className="muted small">Progresso e quizzes continuam ativos nas aulas vocais.</span></div>
+    {vocalTracks.map(track=>{
       const trackModules=(modules??[]).filter(m=>trackForModule(m as AcademyModule)===track.key);
       return <section key={track.key} style={{marginTop:30}}>
         <div className="section-title">
@@ -74,5 +129,15 @@ export default async function AcademyPage() {
         })}
       </section>
     })}
+
+    <section style={{marginTop:34}}>
+      <div className="section-title"><div><p className="eyebrow">INSTRUMENTOS</p><h2>Formação para músicos</h2></div><span className="muted small">Base técnica aplicada ao contexto de louvor.</span></div>
+      <div className="grid grid-2">{instrumentTracks.map(track=><CuratedTrackCard key={track.title} {...track}/>)}</div>
+    </section>
+
+    <section style={{marginTop:34}}>
+      <div className="section-title"><div><p className="eyebrow">EQUIPA TÉCNICA</p><h2>Som e iluminação</h2></div><span className="muted small">Operação prática para cultos, ensaios e eventos.</span></div>
+      <div className="grid grid-2">{technicalTracks.map(track=><CuratedTrackCard key={track.title} {...track}/>)}</div>
+    </section>
   </AppShell>
 }
