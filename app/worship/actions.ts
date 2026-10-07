@@ -48,6 +48,10 @@ function csvRoles(value:string){
   return value.split(",").map(v=>v.trim()).filter(Boolean).slice(0,12);
 }
 
+function csvThemes(value:string){
+  return Array.from(new Set(value.split(",").map(v=>v.trim()).filter(Boolean))).slice(0,20);
+}
+
 export async function saveWorshipMemberProfile(formData:FormData){
   const supabase=await createClient();
   const membershipId=String(formData.get("membershipId")??"");
@@ -71,9 +75,39 @@ export async function createWorshipSong(formData:FormData){
   const bpmRaw=String(formData.get("bpm")??"").trim();
   const bpm=bpmRaw?Number(bpmRaw):null;
   const youtube_url=String(formData.get("youtubeUrl")??"").trim()||null;
+  const spotify_url=String(formData.get("spotifyUrl")??"").trim()||null;
+  const apple_music_url=String(formData.get("appleMusicUrl")??"").trim()||null;
+  const deezer_url=String(formData.get("deezerUrl")??"").trim()||null;
   const chord_url=String(formData.get("chordUrl")??"").trim()||null;
+  const lyrics_url=String(formData.get("lyricsUrl")??"").trim()||null;
+  const themes=csvThemes(String(formData.get("themes")??""));
   const notes=String(formData.get("notes")??"").trim()||null;
-  const {error}=await supabase.from("worship_songs").insert({title,artist,default_key,bpm,youtube_url,chord_url,notes,created_by:String(uid)});
+  const {error}=await supabase.from("worship_songs").insert({
+    title,artist,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,notes,created_by:String(uid)
+  });
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function updateWorshipSong(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("songId")??"");
+  const title=String(formData.get("title")??"").trim();
+  const artist=String(formData.get("artist")??"").trim()||null;
+  const default_key=String(formData.get("defaultKey")??"").trim()||null;
+  const bpmRaw=String(formData.get("bpm")??"").trim();
+  const bpm=bpmRaw?Number(bpmRaw):null;
+  const youtube_url=String(formData.get("youtubeUrl")??"").trim()||null;
+  const spotify_url=String(formData.get("spotifyUrl")??"").trim()||null;
+  const apple_music_url=String(formData.get("appleMusicUrl")??"").trim()||null;
+  const deezer_url=String(formData.get("deezerUrl")??"").trim()||null;
+  const chord_url=String(formData.get("chordUrl")??"").trim()||null;
+  const lyrics_url=String(formData.get("lyricsUrl")??"").trim()||null;
+  const themes=csvThemes(String(formData.get("themes")??""));
+  const notes=String(formData.get("notes")??"").trim()||null;
+  const {error}=await supabase.from("worship_songs").update({
+    title,artist,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,notes,updated_at:new Date().toISOString()
+  }).eq("id",id);
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
 }
@@ -87,8 +121,9 @@ export async function createWorshipSchedule(formData:FormData){
   const call_time=String(formData.get("callTime")??"").trim()||null;
   const service_type=String(formData.get("serviceType")??"").trim()||null;
   const group_code=String(formData.get("groupCode")??"").trim()||null;
+  const theme=String(formData.get("theme")??"").trim()||null;
   const notes=String(formData.get("notes")??"").trim()||null;
-  const {error}=await supabase.from("worship_schedules").insert({title,service_type,starts_at,call_time,group_code,notes,created_by:String(uid)});
+  const {error}=await supabase.from("worship_schedules").insert({title,service_type,starts_at,call_time,group_code,theme,notes,created_by:String(uid)});
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
 }
