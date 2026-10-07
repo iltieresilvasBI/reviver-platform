@@ -667,3 +667,16 @@ export async function decideWorshipSubstitution(formData:FormData){
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
 }
+
+
+export async function proposeWorshipSubstitute(formData:FormData){
+  const supabase=await createClient();
+  const requestId=String(formData.get("requestId")??"");
+  const proposedMembershipId=String(formData.get("proposedMembershipId")??"");
+  if(!requestId||!proposedMembershipId) redirect("/worship/substitutions?message="+encodeURIComponent("Seleciona um substituto."));
+  const {error}=await supabase.from("worship_substitution_requests").update({
+    proposed_membership_id:proposedMembershipId,status:"requested",accepted_at:null,substitute_note:null,updated_at:new Date().toISOString()
+  }).eq("id",requestId);
+  if(error) redirect("/worship/substitutions?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/substitutions");
+}
