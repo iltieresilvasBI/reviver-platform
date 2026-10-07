@@ -25,12 +25,12 @@ export default async function LessonPage({params,searchParams}:{params:Promise<{
     {qs.score&&<div className={qs.passed==="1"?"notice ok":"notice warn"} style={{marginTop:12}}>Resultado: {qs.score}% · {qs.passed==="1"?"Aprovado":"Ainda não atingiu a nota de aprovação"}{Number(qs.xp)>0?` · +${qs.xp} XP`:""}</div>}
     <div className="grid grid-2" style={{marginTop:18}}>
       <div>
-        {videoApproved?<div className="video-wrap"><iframe src={`https://www.youtube-nocookie.com/embed/${lesson.youtube_id}`} title={lesson.title} allowFullScreen /></div>:<div className="empty">{lesson.youtube_id?"Vídeo removido temporariamente: conteúdo em inglês. A substituição em português ou dublada está em curadoria.":"Vídeo em curadoria."}</div>}
+        {videoApproved?<div className="video-wrap"><iframe src={`https://www.youtube-nocookie.com/embed/${lesson.youtube_id}`} title={lesson.title} allowFullScreen /></div>:<div className="empty">{lesson.youtube_id?"Vídeo removido temporariamente: conteúdo em inglês. A substituição em português ou dublada está em curadoria.":"Aula prática disponível em formato guiado. O vídeo é complementar e poderá ser adicionado depois."}</div>}
         <div className="card" style={{marginTop:16}}><p className="eyebrow">RESUMO</p><p>{lesson.summary}</p><p className="muted">{lesson.objectives}</p></div>
       </div>
       <div className="card">
         <p className="eyebrow">EXERCÍCIO</p><p style={{lineHeight:1.65}}>{lesson.exercise}</p>
-        <p className="muted small">Interrompe se sentires dor ou desconforto persistente.</p>
+        <p className="muted small">Executa o exercício de forma segura, sem forçar voz, postura, audição ou equipamento.</p>
         <hr style={{border:0,borderTop:"1px solid var(--border)",margin:"22px 0"}} />
         <p className="eyebrow">QUIZ · APROVAÇÃO {lesson.pass_percentage}%</p>
         {(questions??[]).length===0?<div className="empty">Quiz em preparação.</div>:<form action={submitQuiz} className="form-grid">
