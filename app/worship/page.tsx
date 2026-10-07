@@ -3,8 +3,8 @@ import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
 import {
   acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,createWorshipItem,
-  createWorshipRehearsal,createWorshipSchedule,createWorshipSong,decideWorship,
-  inviteWorship,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
+  createWorshipRehearsal,createWorshipSchedule,createWorshipSong,createWorshipUnavailability,decideWorship,
+  deleteWorshipUnavailability,inviteWorship,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
   respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus
 } from "./actions";
 
@@ -22,6 +22,14 @@ const roleOptions=[
 
 function roleLabel(value:string|null|undefined){
   return roleOptions.find(([v])=>v===value)?.[1]??value??"Função não definida";
+}
+
+function lisbonDateKey(value:string|Date){
+  const parts=new Intl.DateTimeFormat("en-GB",{
+    timeZone:"Europe/Lisbon",year:"numeric",month:"2-digit",day:"2-digit"
+  }).formatToParts(new Date(value));
+  const get=(type:string)=>parts.find(p=>p.type===type)?.value??"";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 export default async function WorshipPage({searchParams}:{searchParams:Promise<{message?:string}>}){
@@ -53,7 +61,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
   const [
     {data:items},{data:memberProfiles},{data:schedules},{data:songs},
-    {data:assignments},{data:scheduleSongs},{data:rehearsals},{data:responses}
+    {data:assignments},{data:scheduleSongs},{data:rehearsals},{data:responses},{data:unavailability}
   ]=await Promise.all([
     ctx.supabase.from("worship_items").select("id,item_type,title,body,starts_at,external_url,created_at").order("starts_at",{ascending:true}).order("created_at",{ascending:false}),
     ctx.supabase.from("worship_member_profiles").select("id,membership_id,group_code,roles,notes,active"),
@@ -63,6 +71,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     ctx.supabase.from("worship_schedule_songs").select("*").order("position"),
     ctx.supabase.from("worship_rehearsals").select("*").order("starts_at",{ascending:true}).limit(50),
     ctx.supabase.from("worship_assignment_responses").select("assignment_id,response_status,note,responded_at"),
+    ctx.supabase.from("worship_member_unavailability").select("id,membership_id,starts_on,ends_on,reason,created_at").order("starts_on"),
   ]);
 
   const now=Date.now();
@@ -70,6 +79,12 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
   const upcomingRehearsals=(rehearsals??[]).filter((r:any)=>new Date(r.starts_at).getTime()>=now);
   const myAssignments=(assignments??[]).filter((a:any)=>a.membership_id===membership?.id);
   const myProfile=(memberProfiles??[]).find((p:any)=>p.membership_id===membership?.id);
+  const todayKey=lisbonDateKey(new Date());
+  const myUnavailability=(unavailability??[]).filter((u:any)=>u.membership_id===membership?.id&&u.ends_on>=todayKey);
+  const conflictsFor=(membershipId:string,scheduleStart:string)=>{
+    const date=lisbonDateKey(scheduleStart);
+    return (unavailability??[]).filter((u:any)=>u.membership_id===membershipId&&u.starts_on<=date&&u.ends_on>=date);
+  };
 
   const directory=canLead?(await ctx.supabase.rpc("worship_member_directory")).data??[]:[];
   const directoryByMembership=new Map((directory??[]).map((m:any)=>[m.membership_id,m]));
@@ -111,6 +126,27 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <article className="card metric"><span>Repertório ativo</span><strong>{(songs??[]).length}</strong></article>
       <article className="card metric"><span>Meu grupo</span><strong>{myProfile?.group_code??"—"}</strong></article>
     </div>
+
+    {membership?.id&&<>
+      <div className="section-title"><div><p className="eyebrow">DISPONIBILIDADE</p><h2>Quando não posso servir</h2></div><span className="muted small">O líder verá conflito ao montar a escala.</span></div>
+      <div className="grid grid-2">
+        <form action={createWorshipUnavailability} className="card form-grid">
+          <div className="grid grid-2">
+            <div className="field"><label>Primeiro dia</label><input name="startsOn" type="date" required/></div>
+            <div className="field"><label>Último dia</label><input name="endsOn" type="date" required/></div>
+          </div>
+          <div className="field"><label>Motivo opcional</label><input name="reason" placeholder="Viagem, trabalho, compromisso..."/></div>
+          <button className="button">Registar indisponibilidade</button>
+        </form>
+        <div className="card">
+          <p className="eyebrow">PRÓXIMOS PERÍODOS</p>
+          <div className="list">{myUnavailability.length===0?<div className="empty">Nenhuma indisponibilidade futura registada.</div>:myUnavailability.map((u:any)=><div className="list-row" key={u.id}>
+            <div><strong>{new Date(u.starts_on+"T00:00:00").toLocaleDateString("pt-PT")} → {new Date(u.ends_on+"T00:00:00").toLocaleDateString("pt-PT")}</strong>{u.reason&&<div className="muted small">{u.reason}</div>}</div>
+            <form action={deleteWorshipUnavailability}><input type="hidden" name="unavailabilityId" value={u.id}/><button className="button danger">Remover</button></form>
+          </div>)}</div>
+        </div>
+      </div>
+    </>}
 
     <div className="section-title"><div><p className="eyebrow">AGENDA</p><h2>Próximas escalas</h2></div><span className="muted small">Grupo, equipa e repertório por culto</span></div>
     <div className="list">{upcomingSchedules.length===0?<div className="empty">Nenhuma escala futura criada.</div>:upcomingSchedules.map((s:any)=>{
@@ -240,7 +276,11 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <form action={assignWorshipMember} className="form-grid">
             <input type="hidden" name="scheduleId" value={s.id}/>
             <p className="eyebrow">ESCALAR PESSOA</p>
-            <div className="field"><label>Membro</label><select name="membershipId" required><option value="">Selecionar</option>{(directory??[]).filter((m:any)=>m.status==="active").map((m:any)=><option value={m.membership_id} key={m.membership_id}>{m.display_name||m.email} · G{(profilesByMembership.get(m.membership_id) as any)?.group_code??"—"}</option>)}</select></div>
+            <div className="field"><label>Membro</label><select name="membershipId" required><option value="">Selecionar</option>{(directory??[]).filter((m:any)=>m.status==="active").map((m:any)=>{
+              const conflicts=conflictsFor(m.membership_id,s.starts_at);
+              return <option value={m.membership_id} key={m.membership_id}>{m.display_name||m.email} · G{(profilesByMembership.get(m.membership_id) as any)?.group_code??"—"}{conflicts.length?" · ⚠ indisponível":""}</option>;
+            })}</select></div>
+            {(()=>{const count=(directory??[]).filter((m:any)=>m.status==="active"&&conflictsFor(m.membership_id,s.starts_at).length>0).length; return count>0?<div className="notice warn">{count} membro{count===1?"":"s"} com indisponibilidade nesta data.</div>:null;})()}
             <div className="field"><label>Função</label><select name="role"><option value="">Sem função</option>{roleOptions.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></div>
             <button className="button">Adicionar à escala</button>
           </form>
