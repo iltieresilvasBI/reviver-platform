@@ -7,7 +7,7 @@ Updated: 2026-10-07
 - Production branch: `main`
 - Safe continuation branch: `reviver-safe-continuation-2026-10-07`
 - Base commit: `1dcaf436683880c7f5d69f0418f440b178d9ad91`
-- Current safe head: `c22b1fbb839f2f7c475ba45ee673f2d1778ae81b`
+- Current safe head: `a12068eceb6cb571fc9565f174231e950dcbf1e4`
 - Stack: Next.js 15 / React 19 / Vercel / Supabase Auth + PostgreSQL + Storage
 - Supabase project: `Reviver Platform` (`blyvwsbbrnhpswvxezjt`, eu-west-1)
 - Production alias: `reviver-platform-gamma.vercel.app`
@@ -65,7 +65,8 @@ Each instrument has at least two lessons. The second lessons are guided practica
 - `is_admin`, `has_app_role`, `has_network_role` only return positive results for the authenticated caller's own identity.
 - Cross-user role probing was verified to return false.
 - Anonymous execute on `get_quiz_options(uuid)` is revoked.
-- Security Advisor still flags SECURITY DEFINER exposure structurally; several RPCs intentionally remain authenticated endpoints with internal checks.
+- Anonymous EXECUTE access to authorization helpers has been removed by revoking PUBLIC and granting authenticated explicitly.
+- Security Advisor no longer reports anonymous SECURITY DEFINER helper exposure; remaining warnings are authenticated RPCs that require review by intended use.
 - Supabase leaked-password protection remains disabled and must be enabled separately when account tooling permits.
 
 ## Functional verification
