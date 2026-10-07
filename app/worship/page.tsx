@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
 import {
-  acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,createWorshipItem,
+  acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
   createWorshipRehearsal,createWorshipSchedule,createWorshipSong,createWorshipUnavailability,decideWorship,
   deleteWorshipUnavailability,inviteWorship,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
   respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus
@@ -262,6 +262,13 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <div className="section-title"><h2>Configurar escalas</h2></div>
       <div className="list">{upcomingSchedules.length===0?<div className="empty">Cria a primeira escala para configurar equipa e repertório.</div>:upcomingSchedules.map((s:any)=><details className="card" key={s.id}>
         <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
+        <div className="button-row" style={{marginTop:14}}>
+          <form action={autoAssignWorshipGroup}>
+            <input type="hidden" name="scheduleId" value={s.id}/>
+            <button className="button primary" disabled={!s.group_code}>Preencher Grupo {s.group_code??"—"}</button>
+          </form>
+          <span className="muted small">Adiciona membros ativos do grupo, ignora indisponíveis e usa a primeira função configurada como principal.</span>
+        </div>
         <div className="grid grid-3" style={{marginTop:16}}>
           <div className="card">
             <p className="eyebrow">RESPOSTAS DA EQUIPA</p>
