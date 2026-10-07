@@ -10,79 +10,30 @@ type AcademyModule={
   sort_order:number;
 };
 
-const vocalTracks=[
-  {
-    key:"lead",
-    eyebrow:"TRILHA 1",
-    title:"Cantor Principal (Lead)",
-    description:"Fundamentos, controlo e aplicação para quem conduz a melodia principal.",
-  },
-  {
-    key:"backing",
-    eyebrow:"TRILHA 2",
-    title:"Backing Vocals",
-    description:"Harmonia, segunda e terceira voz e integração vocal com a equipa de louvor.",
-  },
-] as const;
+const vocalLeadSlugs=new Set(["fundamentos","controle","desenvolvimento","aplicacao"]);
+const backingSlugs=new Set(["worship"]);
+const instrumentSlugs=new Set(["violao","guitarra","baixo","bateria","teclado-piano"]);
+const technicalSlugs=new Set(["behringer-x32"]);
 
-const instrumentTracks=[
-  {
-    title:"Violão",
-    description:"Acordes, ritmo, transposição, levadas e acompanhamento de louvor.",
-    status:"Conteúdo em português selecionado",
-    videoId:"2Rsz3JEbw0Y",
-  },
-  {
-    title:"Guitarra",
-    description:"Base, timbres, dinâmica, riffs, ambientação e linguagem para ministério de louvor.",
-    status:"Conteúdo em português selecionado",
-    videoId:"dbnHejO00QI",
-  },
-  {
-    title:"Baixo",
-    description:"Fundamentos, postura, afinação, digitação, groove e construção de linhas para louvor.",
-    status:"Conteúdo em português selecionado",
-    videoId:"6xIgTuBqpIM",
-  },
-  {
-    title:"Bateria",
-    description:"Primeiros ritmos, condução, viradas, dinâmica e aplicação em contexto de igreja.",
-    status:"Conteúdo em português selecionado",
-    videoId:"UqdUcZ1AK_k",
-  },
-  {
-    title:"Teclado / Piano",
-    description:"Acordes, inversões, cifras, ambiência, pads e acompanhamento de louvores.",
-    status:"Conteúdo em português selecionado",
-    videoId:"Kmtff3WkU38",
-  },
-] as const;
-
-const technicalTracks=[
-  {
-    title:"Iluminação de Igreja",
-    description:"Fundamentos de iluminação, cenas, operação segura, organização de palco e introdução ao DMX.",
-    status:"Curadoria em andamento",
-  },
-  {
-    title:"Behringer X32",
-    description:"Fluxo de sinal, canais, buses, monitores, efeitos, cenas e operação prática da X32.",
-    status:"Conteúdo em português selecionado",
-    videoId:"DUW9eiutCLY",
-  },
-] as const;
-
-function trackForModule(module:AcademyModule){
-  return module.slug==="worship"?"backing":"lead";
-}
-
-function CuratedTrackCard({title,description,status,videoId}:{title:string;description:string;status:string;videoId?:string}){
-  return <article className="card">
-    <p className="eyebrow">{status}</p>
-    <h3 style={{fontSize:22,marginBottom:8}}>{title}</h3>
-    <p className="muted" style={{lineHeight:1.65}}>{description}</p>
-    {videoId?<div className="video-wrap" style={{marginTop:16}}><iframe src={`https://www.youtube-nocookie.com/embed/${videoId}`} title={title} allowFullScreen /></div>:<div className="empty" style={{marginTop:16}}>Aulas em curadoria. Só serão publicados vídeos em português ou oficialmente dublados.</div>}
-  </article>
+function ModuleBlock({module,lessons,progress}:{module:AcademyModule;lessons:any[];progress:any[]}){
+  const ml=lessons.filter(l=>l.module_id===module.id);
+  const displayTitle=module.slug==="worship"?"Harmonia e Backing Vocals":module.title;
+  return <section className="card" style={{marginBottom:18}}>
+    <div className="section-title" style={{marginTop:0}}>
+      <div><p className="eyebrow">ETAPA {module.sort_order}</p><h2>{displayTitle}</h2></div>
+      <span className="muted small">{module.description}</span>
+    </div>
+    {ml.length===0?<div className="empty">Conteúdo deste módulo está em curadoria.</div>:<div className="list">{ml.map(l=>{
+      const p=progress.find(x=>x.lesson_id===l.id);
+      return <Link className="list-row" href={`/academy/${l.slug}`} key={l.id}>
+        <div><h3>{l.title}</h3><span className="muted small">{l.summary}</span></div>
+        <div style={{textAlign:"right"}}>
+          <span className={p?.status==="completed"?"pill ok":"pill gold"}>{p?.status==="completed"?"Concluída":"Disponível"}</span>
+          <div className="muted small" style={{marginTop:6}}>{l.duration_minutes??"—"} min · {l.xp_reward} XP</div>
+        </div>
+      </Link>
+    })}</div>}
+  </section>
 }
 
 export default async function AcademyPage() {
@@ -92,55 +43,42 @@ export default async function AcademyPage() {
     supabase.from("academy_lessons").select("id,module_id,slug,title,summary,duration_minutes,xp_reward,sort_order").eq("active",true).order("sort_order"),
     supabase.from("lesson_progress").select("lesson_id,status,best_score_percentage").eq("user_id",userId)
   ]);
+  const ms=(modules??[]) as AcademyModule[];
+  const ls=lessons??[];
+  const ps=progress??[];
 
   return <AppShell title="Formação" active="/academy" email={email}>
     <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/academy/resources">Biblioteca de recursos</Link></div>
     <section className="hero-card">
       <p className="eyebrow">REVIVER ACADEMY</p>
       <h2>Formação para voz, instrumentos e equipa técnica</h2>
-      <p>Trilhas progressivas para Cantor Principal, Backing Vocals, músicos e equipa técnica. Os vídeos publicados na Academy devem estar em português ou oficialmente dublados.</p>
+      <p>Trilhas com aulas, exercícios, quizzes e progresso. Os vídeos publicados devem estar em português ou oficialmente dublados.</p>
     </section>
 
-    <div className="section-title"><div><p className="eyebrow">FORMAÇÃO VOCAL</p><h2>Voz no ministério de louvor</h2></div><span className="muted small">Progresso e quizzes continuam ativos nas aulas vocais.</span></div>
-    {vocalTracks.map(track=>{
-      const trackModules=(modules??[]).filter(m=>trackForModule(m as AcademyModule)===track.key);
-      return <section key={track.key} style={{marginTop:30}}>
-        <div className="section-title">
-          <div><p className="eyebrow">{track.eyebrow}</p><h2>{track.title}</h2></div>
-          <span className="muted small">{track.description}</span>
-        </div>
+    <section style={{marginTop:30}}>
+      <div className="section-title"><div><p className="eyebrow">TRILHA VOCAL 1</p><h2>Cantor Principal (Lead)</h2></div><span className="muted small">Respiração, controlo, desenvolvimento e aplicação da voz principal.</span></div>
+      {ms.filter(m=>vocalLeadSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
+    </section>
 
-        {trackModules.length===0?<div className="empty">Conteúdo desta trilha está em curadoria.</div>:trackModules.map(m=>{
-          const ml=(lessons??[]).filter(l=>l.module_id===m.id);
-          const displayTitle=m.slug==="worship"?"Harmonia e Backing Vocals":m.title;
-          return <section key={m.id} className="card" style={{marginBottom:18}}>
-            <div className="section-title" style={{marginTop:0}}>
-              <div><p className="eyebrow">ETAPA {m.sort_order}</p><h2>{displayTitle}</h2></div>
-              <span className="muted small">{m.description}</span>
-            </div>
-            {ml.length===0?<div className="empty">Conteúdo deste módulo está em curadoria.</div>:<div className="list">{ml.map(l=>{
-              const p=(progress??[]).find(x=>x.lesson_id===l.id);
-              return <Link className="list-row" href={`/academy/${l.slug}`} key={l.id}>
-                <div><h3>{l.title}</h3><span className="muted small">{l.summary}</span></div>
-                <div style={{textAlign:"right"}}>
-                  <span className={p?.status==="completed"?"pill ok":"pill gold"}>{p?.status==="completed"?"Concluída":"Disponível"}</span>
-                  <div className="muted small" style={{marginTop:6}}>{l.duration_minutes??"—"} min · {l.xp_reward} XP</div>
-                </div>
-              </Link>
-            })}</div>}
-          </section>
-        })}
-      </section>
-    })}
-
-    <section style={{marginTop:34}}>
-      <div className="section-title"><div><p className="eyebrow">INSTRUMENTOS</p><h2>Formação para músicos</h2></div><span className="muted small">Base técnica aplicada ao contexto de louvor.</span></div>
-      <div className="grid grid-2">{instrumentTracks.map(track=><CuratedTrackCard key={track.title} {...track}/>)}</div>
+    <section style={{marginTop:30}}>
+      <div className="section-title"><div><p className="eyebrow">TRILHA VOCAL 2</p><h2>Backing Vocals</h2></div><span className="muted small">Harmonia, segunda e terceira voz e integração com o cantor principal.</span></div>
+      {ms.filter(m=>backingSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
     </section>
 
     <section style={{marginTop:34}}>
-      <div className="section-title"><div><p className="eyebrow">EQUIPA TÉCNICA</p><h2>Som e iluminação</h2></div><span className="muted small">Operação prática para cultos, ensaios e eventos.</span></div>
-      <div className="grid grid-2">{technicalTracks.map(track=><CuratedTrackCard key={track.title} {...track}/>)}</div>
+      <div className="section-title"><div><p className="eyebrow">INSTRUMENTOS</p><h2>Formação para músicos</h2></div><span className="muted small">Cada percurso já participa no sistema de XP, progresso e quiz.</span></div>
+      {ms.filter(m=>instrumentSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
+    </section>
+
+    <section style={{marginTop:34}}>
+      <div className="section-title"><div><p className="eyebrow">EQUIPA TÉCNICA</p><h2>Som e operação</h2></div><span className="muted small">Treino técnico aplicado a cultos, ensaios e eventos.</span></div>
+      {ms.filter(m=>technicalSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
+      <article className="card">
+        <p className="eyebrow">EM CURADORIA</p>
+        <h3 style={{fontSize:22,marginBottom:8}}>Iluminação de Igreja</h3>
+        <p className="muted">Fundamentos de iluminação, cenas, operação segura, organização de palco e introdução ao DMX.</p>
+        <div className="empty" style={{marginTop:16}}>A trilha será publicada quando a aula-base em português estiver validada.</div>
+      </article>
     </section>
   </AppShell>
 }
