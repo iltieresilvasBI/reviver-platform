@@ -118,7 +118,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <p className="eyebrow">REVIVER WORSHIP</p>
       <h2>Escala, repertório e formação no mesmo lugar.</h2>
       <p>Organiza os grupos A/B/C/D, prepara cultos e ensaios, mantém o repertório centralizado e acompanha a evolução da equipa na Academy.</p>
-      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/academy">Abrir Academy</Link><Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação A/B/C/D</Link><a className="button" href="/worship/calendar">Exportar meu calendário</a></div>
+      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/academy">Abrir Academy</Link><Link className="button" href="/worship/repertoire">Repertório inteligente</Link><Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação A/B/C/D</Link><a className="button" href="/worship/calendar">Exportar meu calendário</a></div>
     </section>
 
     <div className="grid grid-4" style={{marginTop:18}}>
@@ -246,7 +246,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         <form action={createWorshipSchedule} className="card form-grid">
           <p className="eyebrow">NOVA ESCALA</p>
           <div className="field"><label>Título</label><input name="title" required placeholder="Culto de domingo"/></div>
-          <div className="grid grid-2"><div className="field"><label>Tipo</label><input name="serviceType" placeholder="Celebração / manhã / noite"/></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div></div>
+          <div className="grid grid-3"><div className="field"><label>Tipo</label><input name="serviceType" placeholder="Celebração / manhã / noite"/></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div><div className="field"><label>Tema do culto</label><input name="theme" placeholder="Graça / Família / Missões"/></div></div>
           <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Chegada</label><input name="callTime" type="datetime-local"/></div></div>
           <div className="field"><label>Notas</label><textarea name="notes"/></div>
           <button className="button primary">Criar escala</button>
@@ -287,7 +287,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
       <div className="section-title"><h2>Configurar escalas</h2></div>
       <div className="list">{upcomingSchedules.length===0?<div className="empty">Cria a primeira escala para configurar equipa e repertório.</div>:upcomingSchedules.map((s:any)=><details className="card" key={s.id}>
-        <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
+        <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"}{s.theme?" · Tema "+s.theme:""} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
         <div className="button-row" style={{marginTop:14}}>
           <form action={autoAssignWorshipGroup}>
             <input type="hidden" name="scheduleId" value={s.id}/>
@@ -321,7 +321,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <form action={addSongToWorshipSchedule} className="form-grid">
             <input type="hidden" name="scheduleId" value={s.id}/>
             <p className="eyebrow">ADICIONAR MÚSICA</p>
-            <div className="field"><label>Música</label><select name="songId" required><option value="">Selecionar</option>{(songs??[]).map((song:any)=><option value={song.id} key={song.id}>{song.title}</option>)}</select></div>
+            <div className="field"><label>Música{s.theme?" · tema "+s.theme:""}</label><select name="songId" required><option value="">Selecionar</option>{(songs??[]).filter((song:any)=>!s.theme||(Array.isArray(song.themes)&&song.themes.some((theme:string)=>theme.toLocaleLowerCase("pt-PT")===String(s.theme).toLocaleLowerCase("pt-PT")))).map((song:any)=><option value={song.id} key={song.id}>{song.title}</option>)}</select></div>
+            {s.theme&&<div className="muted small">A lista mostra apenas músicas marcadas com o tema “{s.theme}”. Gere e edite temas no Repertório Inteligente.</div>}
             <div className="grid grid-2"><div className="field"><label>Posição</label><input name="position" type="number" min="1" defaultValue="1"/></div><div className="field"><label>Tom</label><input name="keyOverride"/></div></div>
             <button className="button">Adicionar ao culto</button>
           </form>
