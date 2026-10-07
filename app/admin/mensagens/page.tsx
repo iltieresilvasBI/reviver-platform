@@ -26,7 +26,7 @@ export default async function MessagesAdmin({searchParams}:{searchParams:Promise
   const status=(qs.status??"").trim();
   const filtered=all.filter((m:any)=>{
     if(status&&m.status!==status) return false;
-    if(q&&!\`\${m.name} \${m.email} \${m.subject} \${m.message}\`.toLowerCase().includes(q)) return false;
+    if(q&&!`${m.name} ${m.email} ${m.subject} ${m.message}`.toLowerCase().includes(q)) return false;
     return true;
   });
 
