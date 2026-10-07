@@ -29,12 +29,14 @@ const instrumentTracks=[
   {
     title:"Violão",
     description:"Acordes, ritmo, transposição, levadas e acompanhamento de louvor.",
-    status:"Curadoria em andamento",
+    status:"Conteúdo em português selecionado",
+    videoId:"2Rsz3JEbw0Y",
   },
   {
     title:"Guitarra",
     description:"Base, timbres, dinâmica, riffs, ambientação e linguagem para ministério de louvor.",
-    status:"Curadoria em andamento",
+    status:"Conteúdo em português selecionado",
+    videoId:"dbnHejO00QI",
   },
   {
     title:"Baixo",
