@@ -286,3 +286,42 @@ export async function updateWorshipRotationAssignment(formData:FormData){
   if(error) redirect("/worship/rotacao?message="+encodeURIComponent(error.message));
   revalidatePath("/worship/rotacao");
 }
+
+
+export async function createWorshipUnavailability(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+
+  const {data:network}=await supabase.from("networks").select("id").eq("slug","worship").maybeSingle();
+  if(!network) redirect("/worship?message="+encodeURIComponent("Ministério de Louvor não configurado."));
+
+  const {data:membership}=await supabase
+    .from("network_memberships")
+    .select("id,status")
+    .eq("network_id",network.id)
+    .eq("user_id",String(uid))
+    .maybeSingle();
+  if(!membership||membership.status!=="active") redirect("/worship?message="+encodeURIComponent("Acesso ao Louvor inativo."));
+
+  const starts_at=String(formData.get("startsAt")??"").trim();
+  const ends_at=String(formData.get("endsAt")??"").trim();
+  const reason=String(formData.get("reason")??"").trim()||null;
+  if(!starts_at||!ends_at) redirect("/worship?message="+encodeURIComponent("Indica início e fim da indisponibilidade."));
+
+  const {error}=await supabase.from("worship_member_unavailability").insert({
+    membership_id:membership.id,starts_at,ends_at,reason
+  });
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+  redirect("/worship?message="+encodeURIComponent("Indisponibilidade registada."));
+}
+
+export async function deleteWorshipUnavailability(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("unavailabilityId")??"");
+  const {error}=await supabase.from("worship_member_unavailability").delete().eq("id",id);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
