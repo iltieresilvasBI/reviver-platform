@@ -63,3 +63,21 @@ Updated: 2026-10-07
 4. Validate Admin/Academy preview, resource upload and quizzes end-to-end.
 5. Harden remaining privileged RPC grants where they are not required by RLS/UI.
 6. Merge/promote only after checks pass.
+
+
+## Checkpoint 2026-10-07 — Full Academy modules
+- GitHub CI for commit `abc2a3f`: SUCCESS.
+- Vercel preview for commit `abc2a3f`: READY.
+- Instrument modules now persisted in Supabase with real lessons, XP and quizzes:
+  - Violão
+  - Guitarra
+  - Baixo
+  - Bateria
+  - Teclado / Piano
+- Technical modules now persisted:
+  - Behringer X32
+  - Iluminação de Igreja
+- Lighting has an original text-first foundation lesson with 2 quiz questions and no unverified video.
+- Instrument/X32 migration: `academy_instrument_technical_tracks`.
+- Lighting migration: `academy_lighting_track`.
+- Frontend now renders these database modules directly instead of static curation cards.
