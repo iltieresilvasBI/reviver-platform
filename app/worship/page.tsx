@@ -164,6 +164,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         {label:"Ensaio associado",ok:Boolean(linkedRehearsal)},
       ];
       const readiness=Math.round(readinessChecks.filter(x=>x.ok).length/readinessChecks.length*100);
+      const readinessMissing=readinessChecks.filter(x=>!x.ok).map(x=>x.label);
       return <details className="card" key={s.id} open={Boolean(mine)}>
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
@@ -178,6 +179,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <p className="eyebrow">PRONTIDÃO DO CULTO</p>
           <div className="grid grid-4">{readinessChecks.map(check=><div className="metric" key={check.label}><span>{check.label}</span><strong>{check.ok?"✓":"—"}</strong></div>)}</div>
           <div className="muted small" style={{marginTop:10}}>{confirmed} confirmado{confirmed===1?"":"s"} · {pending} sem resposta · {declined} {declined===1?"indisponível":"indisponíveis"}{linkedRehearsal?` · ensaio ${new Date(linkedRehearsal.starts_at).toLocaleString("pt-PT")}`:""}</div>
+          {readinessMissing.length>0&&<div className="notice warn" style={{marginTop:12}}>Falta: {readinessMissing.join(" · ")}</div>}
         </div>
 
         <div className="grid grid-2" style={{marginTop:16}}>
