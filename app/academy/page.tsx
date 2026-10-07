@@ -2,6 +2,54 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/auth";
 
+type AcademyModule={
+  id:string;
+  slug:string;
+  title:string;
+  description:string|null;
+  sort_order:number;
+};
+
+const vocalLeadSlugs=new Set(["fundamentos","controle","desenvolvimento","aplicacao"]);
+const backingSlugs=new Set(["worship"]);
+const instrumentSlugs=new Set(["violao","guitarra","baixo","bateria","teclado-piano"]);
+const technicalSlugs=new Set(["behringer-x32","iluminacao-igreja"]);
+
+function TrackProgress({label,moduleSlugs,modules,lessons,progress}:{label:string;moduleSlugs:Set<string>;modules:AcademyModule[];lessons:any[];progress:any[]}){
+  const moduleIds=new Set(modules.filter(m=>moduleSlugs.has(m.slug)).map(m=>m.id));
+  const trackLessons=lessons.filter(l=>moduleIds.has(l.module_id));
+  const completed=trackLessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.status==="completed")).length;
+  const total=trackLessons.length;
+  const percent=total?Math.round((completed/total)*100):0;
+  return <article className="card metric">
+    <p className="eyebrow">{label}</p>
+    <strong>{percent}%</strong>
+    <span>{completed} de {total} aulas concluídas</span>
+    <div className="progress" style={{marginTop:14}}><span style={{width:`${percent}%`}} /></div>
+  </article>
+}
+
+function ModuleBlock({module,lessons,progress}:{module:AcademyModule;lessons:any[];progress:any[]}){
+  const ml=lessons.filter(l=>l.module_id===module.id);
+  const displayTitle=module.slug==="worship"?"Harmonia e Backing Vocals":module.title;
+  return <section className="card" style={{marginBottom:18}}>
+    <div className="section-title" style={{marginTop:0}}>
+      <div><p className="eyebrow">ETAPA {module.sort_order}</p><h2>{displayTitle}</h2></div>
+      <span className="muted small">{module.description}</span>
+    </div>
+    {ml.length===0?<div className="empty">Conteúdo deste módulo está em curadoria.</div>:<div className="list">{ml.map(l=>{
+      const p=progress.find(x=>x.lesson_id===l.id);
+      return <Link className="list-row" href={`/academy/${l.slug}`} key={l.id}>
+        <div><h3>{l.title}</h3><span className="muted small">{l.summary}</span></div>
+        <div style={{textAlign:"right"}}>
+          <span className={p?.status==="completed"?"pill ok":"pill gold"}>{p?.status==="completed"?"Concluída":"Disponível"}</span>
+          <div className="muted small" style={{marginTop:6}}>{l.duration_minutes??"—"} min · {l.xp_reward} XP</div>
+        </div>
+      </Link>
+    })}</div>}
+  </section>
+}
+
 export default async function AcademyPage() {
   const {supabase,userId,email}=await requireUser();
   const [{data:modules},{data:lessons},{data:progress}]=await Promise.all([
@@ -9,20 +57,44 @@ export default async function AcademyPage() {
     supabase.from("academy_lessons").select("id,module_id,slug,title,summary,duration_minutes,xp_reward,sort_order").eq("active",true).order("sort_order"),
     supabase.from("lesson_progress").select("lesson_id,status,best_score_percentage").eq("user_id",userId)
   ]);
+  const ms=(modules??[]) as AcademyModule[];
+  const ls=lessons??[];
+  const ps=progress??[];
+
   return <AppShell title="Formação" active="/academy" email={email}>
-    <section className="hero-card"><p className="eyebrow">REVIVER ACADEMY</p><h2>Formação vocal progressiva</h2><p>Da respiração à aplicação em equipa. Para avançar oficialmente, o quiz de cada aula exige pelo menos 70%.</p></section>
-    {(modules??[]).map(m=>{
-      const ml=(lessons??[]).filter(l=>l.module_id===m.id);
-      return <section key={m.id}>
-        <div className="section-title"><div><p className="eyebrow">MÓDULO {m.sort_order}</p><h2>{m.title}</h2></div><span className="muted small">{m.description}</span></div>
-        {ml.length===0?<div className="empty">Conteúdo deste módulo está em curadoria.</div>:<div className="list">{ml.map(l=>{
-          const p=(progress??[]).find(x=>x.lesson_id===l.id);
-          return <Link className="list-row" href={`/academy/${l.slug}`} key={l.id}>
-            <div><h3>{l.title}</h3><span className="muted small">{l.summary}</span></div>
-            <div style={{textAlign:"right"}}><span className={p?.status==="completed"?"pill ok":"pill gold"}>{p?.status==="completed"?"Concluída":"Disponível"}</span><div className="muted small" style={{marginTop:6}}>{l.duration_minutes??"—"} min · {l.xp_reward} XP</div></div>
-          </Link>
-        })}</div>}
-      </section>
-    })}
+    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/academy/resources">Biblioteca de recursos</Link></div>
+    <section className="hero-card">
+      <p className="eyebrow">REVIVER ACADEMY</p>
+      <h2>Formação para voz, instrumentos e equipa técnica</h2>
+      <p>Trilhas com aulas, exercícios, quizzes e progresso. Os vídeos publicados devem estar em português ou oficialmente dublados.</p>
+    </section>
+
+    <div className="section-title"><div><p className="eyebrow">PROGRESSO</p><h2>Visão geral das trilhas</h2></div><span className="muted small">Conclusões são atualizadas após aprovação no quiz.</span></div>
+    <div className="grid grid-4">
+      <TrackProgress label="Cantor Principal" moduleSlugs={vocalLeadSlugs} modules={ms} lessons={ls} progress={ps}/>
+      <TrackProgress label="Backing Vocals" moduleSlugs={backingSlugs} modules={ms} lessons={ls} progress={ps}/>
+      <TrackProgress label="Instrumentos" moduleSlugs={instrumentSlugs} modules={ms} lessons={ls} progress={ps}/>
+      <TrackProgress label="Equipa Técnica" moduleSlugs={technicalSlugs} modules={ms} lessons={ls} progress={ps}/>
+    </div>
+
+    <section style={{marginTop:30}}>
+      <div className="section-title"><div><p className="eyebrow">TRILHA VOCAL 1</p><h2>Cantor Principal (Lead)</h2></div><span className="muted small">Respiração, controlo, desenvolvimento e aplicação da voz principal.</span></div>
+      {ms.filter(m=>vocalLeadSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
+    </section>
+
+    <section style={{marginTop:30}}>
+      <div className="section-title"><div><p className="eyebrow">TRILHA VOCAL 2</p><h2>Backing Vocals</h2></div><span className="muted small">Harmonia, segunda e terceira voz e integração com o cantor principal.</span></div>
+      {ms.filter(m=>backingSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
+    </section>
+
+    <section style={{marginTop:34}}>
+      <div className="section-title"><div><p className="eyebrow">INSTRUMENTOS</p><h2>Formação para músicos</h2></div><span className="muted small">Cada percurso já participa no sistema de XP, progresso e quiz.</span></div>
+      {ms.filter(m=>instrumentSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
+    </section>
+
+    <section style={{marginTop:34}}>
+      <div className="section-title"><div><p className="eyebrow">EQUIPA TÉCNICA</p><h2>Som e operação</h2></div><span className="muted small">Treino técnico aplicado a cultos, ensaios e eventos.</span></div>
+      {ms.filter(m=>technicalSlugs.has(m.slug)).map(m=><ModuleBlock key={m.id} module={m} lessons={ls} progress={ps}/>)}
+    </section>
   </AppShell>
 }

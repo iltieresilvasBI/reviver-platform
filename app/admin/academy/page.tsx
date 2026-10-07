@@ -17,8 +17,8 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
   const course=courses?.[0];
   return <AppShell title="Gestão da Academy" active="/admin" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
-    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/admin">Admin</Link><Link className="button primary" href="/academy">Ver Academy como aluno</Link></div>
-    <section className="hero-card"><p className="eyebrow">EDITOR DA FORMAÇÃO</p><h2>Vídeos, aulas e quizzes sem mexer em código.</h2><p>Podes trocar o link do YouTube, criar/desativar aulas e editar perguntas e respostas diretamente aqui.</p></section>
+    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/admin">Admin</Link><Link className="button primary" href="/academy">Ver Academy como aluno</Link><Link className="button" href="/admin/academy/resources">Repositório de documentos</Link></div>
+    <section className="hero-card"><p className="eyebrow">EDITOR DA FORMAÇÃO</p><h2>Vídeos, aulas e quizzes sem mexer em código.</h2><p>Podes trocar o link do YouTube, criar/desativar aulas e editar perguntas e respostas diretamente aqui. Usa apenas vídeos em português ou oficialmente dublados em português.</p></section>
 
     <div className="section-title"><h2>Novo módulo</h2></div>
     {course&&<form action={createModule} className="card form-grid">
@@ -29,7 +29,7 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
 
     <div className="section-title"><h2>Nova aula</h2></div>
     <form action={createLesson} className="card form-grid">
-      <div className="grid grid-3"><div className="field"><label>Módulo</label><select name="moduleId" required>{(modules??[]).map(m=><option key={m.id} value={m.id}>{m.title}</option>)}</select></div><div className="field"><label>Título</label><input name="title" required/></div><div className="field"><label>Link YouTube ou ID</label><input name="youtube" placeholder="https://youtube.com/watch?v=..."/></div></div>
+      <div className="grid grid-3"><div className="field"><label>Módulo</label><select name="moduleId" required>{(modules??[]).map(m=><option key={m.id} value={m.id}>{m.title}</option>)}</select></div><div className="field"><label>Título</label><input name="title" required/></div><div className="field"><label>Link YouTube ou ID (português/dublado)</label><input name="youtube" placeholder="https://youtube.com/watch?v=..."/></div></div>
       <div className="field"><label>Resumo</label><textarea name="summary"/></div>
       <div className="field"><label>Objetivos</label><textarea name="objectives"/></div>
       <div className="field"><label>Exercício</label><textarea name="exercise"/></div>
@@ -46,7 +46,7 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
           <summary style={{cursor:"pointer",fontWeight:800}}>{l.title} {!l.active&&<span className="pill">inativa</span>}</summary>
           <form action={updateLesson} className="form-grid" style={{marginTop:16}}>
             <input type="hidden" name="lessonId" value={l.id}/>
-            <div className="grid grid-3"><div className="field"><label>Título</label><input name="title" defaultValue={l.title}/></div><div className="field"><label>Slug</label><input name="slug" defaultValue={l.slug}/></div><div className="field"><label>Link YouTube ou ID</label><input name="youtube" defaultValue={l.youtube_id??""}/></div></div>
+            <div className="grid grid-3"><div className="field"><label>Título</label><input name="title" defaultValue={l.title}/></div><div className="field"><label>Slug</label><input name="slug" defaultValue={l.slug}/></div><div className="field"><label>Link YouTube ou ID (português/dublado)</label><input name="youtube" defaultValue={l.youtube_id??""}/></div></div>
             <div className="field"><label>Resumo</label><textarea name="summary" defaultValue={l.summary??""}/></div>
             <div className="field"><label>Objetivos</label><textarea name="objectives" defaultValue={l.objectives??""}/></div>
             <div className="field"><label>Exercício</label><textarea name="exercise" defaultValue={l.exercise??""}/></div>

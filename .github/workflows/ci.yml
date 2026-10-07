@@ -1,13 +1,25 @@
 name: CI
+
 on:
   push:
-    branches: ["feature/full-reviver-mvp"]
+    branches:
+      - main
+      - "reviver-safe-continuation-*"
   pull_request:
-    branches: ["main"]
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reviver-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://blyvwsbbrnhpswvxezjt.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_4rlp2NXYO9blpvsrRS-C7A_VX6ssJAi
