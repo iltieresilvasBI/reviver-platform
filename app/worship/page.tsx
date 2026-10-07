@@ -177,7 +177,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         <div className="card" style={{marginTop:16}}>
           <p className="eyebrow">PRONTIDÃO DO CULTO</p>
           <div className="grid grid-4">{readinessChecks.map(check=><div className="metric" key={check.label}><span>{check.label}</span><strong>{check.ok?"✓":"—"}</strong></div>)}</div>
-          <div className="muted small" style={{marginTop:10}}>{confirmed} confirmado{confirmed===1?"":"s"} · {pending} sem resposta · {declined} indisponível{declined===1?"":"is"}{linkedRehearsal?` · ensaio ${new Date(linkedRehearsal.starts_at).toLocaleString("pt-PT")}`:""}</div>
+          <div className="muted small" style={{marginTop:10}}>{confirmed} confirmado{confirmed===1?"":"s"} · {pending} sem resposta · {declined} {declined===1?"indisponível":"indisponíveis"}{linkedRehearsal?` · ensaio ${new Date(linkedRehearsal.starts_at).toLocaleString("pt-PT")}`:""}</div>
         </div>
 
         <div className="grid grid-2" style={{marginTop:16}}>
