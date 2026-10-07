@@ -7,6 +7,7 @@ Updated: 2026-10-07
 - Production branch: `main`
 - Safe continuation branch: `reviver-safe-continuation-2026-10-07`
 - Base commit: `1dcaf436683880c7f5d69f0418f440b178d9ad91`
+- Current safe head: `81f5f496b189ac28952c7cae6e92491c2e0db149`
 - Stack: Next.js 15 / React 19 / Vercel / Supabase Auth + PostgreSQL + Storage
 - Supabase project: `Reviver Platform` (`blyvwsbbrnhpswvxezjt`, eu-west-1)
 - Production alias: `reviver-platform-gamma.vercel.app`
@@ -17,6 +18,16 @@ Updated: 2026-10-07
 - CMS, Auth, Academy, quizzes/XP, public site/API, admin, contact inbox and worship workflows are present.
 - Production deployment is READY but currently points to commit `381aa42`, not the latest `main`.
 - Latest `main` Vercel check failed because of `build-rate-limit`, not a reported application compile error.
+- Safe branch preview infrastructure has produced at least one READY deployment.
+
+## Completed on safe branch
+1. CI now runs on `main`, pull requests to `main`, and `reviver-safe-continuation-*` branches.
+2. Academy public view is split into:
+   - Cantor Principal (Lead)
+   - Backing Vocals
+3. The existing `Worship Team` module is presented as `Harmonia e Backing Vocals`.
+4. Verified English-only Academy videos `YCLyAmXtpfY` and `nBQH1c20xbs` are blocked from playback pending replacement in Portuguese/dubbed.
+5. No production database data was modified for these changes.
 
 ## Safety findings
 - Supabase Security Advisor reports SECURITY DEFINER exposure warnings.
@@ -27,14 +38,10 @@ Updated: 2026-10-07
 
 ## Academy content constraints
 - Academy videos must be Portuguese or Portuguese-dubbed; English-only videos must be removed/replaced.
-- Voice formation must be separated into two tracks:
+- Voice formation must remain separated into:
   1. Cantor Principal (Lead)
   2. Backing Vocals
-- Current module `Worship Team` contains:
-  - Segunda e terceira voz no louvor
-  - Fundamentos de harmonia para equipa de louvor
-  These belong under Backing Vocals unless later reclassified.
-- Current video `YCLyAmXtpfY` is an English-language 5-minute vocal warm-up and should not remain in the final Portuguese-only Academy.
+- Existing lessons `Segunda e terceira voz no louvor` and `Fundamentos de harmonia para equipa de louvor` are classified under Backing Vocals.
 
 ## Continuation protocol
 1. Work only on a dedicated branch.
@@ -46,7 +53,7 @@ Updated: 2026-10-07
 
 ## Next blocks
 1. Harden RPC/function exposure without breaking RLS policies.
-2. Restructure Academy into Lead and Backing Vocals tracks.
-3. Audit/replace English-only YouTube lesson videos.
-4. Validate Admin/Academy preview and quizzes.
-5. Create preview deployment, test, then merge/promote only after checks pass.
+2. Complete audit/replacement of all Academy YouTube videos.
+3. Validate Admin/Academy preview and quizzes.
+4. Review the draft PR and preview deployment.
+5. Merge/promote only after checks pass.
