@@ -99,3 +99,67 @@ export async function updateContent(formData:FormData){
   revalidatePath("/media"); refreshPublic();
   redirect("/media?message="+encodeURIComponent("Conteúdo atualizado."));
 }
+
+
+export async function setCoverMedia(formData:FormData){
+  const supabase=await createClient();
+  const mediaId=String(formData.get("mediaId")??"");
+  const contentId=String(formData.get("contentId")??"");
+  if(!mediaId||!contentId) redirect("/media?message="+encodeURIComponent("Imagem inválida."));
+
+  const {error:resetError}=await supabase
+    .from("content_media")
+    .update({media_type:"image"})
+    .eq("content_item_id",contentId)
+    .eq("media_type","cover");
+  if(resetError) redirect("/media/edit/"+contentId+"?message="+encodeURIComponent(resetError.message));
+
+  const {error}=await supabase
+    .from("content_media")
+    .update({media_type:"cover"})
+    .eq("id",mediaId)
+    .eq("content_item_id",contentId);
+  if(error) redirect("/media/edit/"+contentId+"?message="+encodeURIComponent(error.message));
+
+  revalidatePath("/media");
+  revalidatePath("/media/edit/"+contentId);
+  revalidatePath("/media/preview/"+contentId);
+  refreshPublic();
+  redirect("/media/edit/"+contentId+"?message="+encodeURIComponent("Imagem definida como capa."));
+}
+
+export async function deleteContentMedia(formData:FormData){
+  const supabase=await createClient();
+  const mediaId=String(formData.get("mediaId")??"");
+  const contentId=String(formData.get("contentId")??"");
+  if(!mediaId||!contentId) redirect("/media?message="+encodeURIComponent("Imagem inválida."));
+
+  const {data:row,error:readError}=await supabase
+    .from("content_media")
+    .select("storage_path")
+    .eq("id",mediaId)
+    .eq("content_item_id",contentId)
+    .maybeSingle();
+  if(readError) redirect("/media/edit/"+contentId+"?message="+encodeURIComponent(readError.message));
+
+  const {error}=await supabase
+    .from("content_media")
+    .delete()
+    .eq("id",mediaId)
+    .eq("content_item_id",contentId);
+  if(error) redirect("/media/edit/"+contentId+"?message="+encodeURIComponent(error.message));
+
+  if(row?.storage_path){
+    const {error:storageError}=await supabase.storage.from("reviver-public").remove([row.storage_path]);
+    if(storageError){
+      revalidatePath("/media/edit/"+contentId);
+      redirect("/media/edit/"+contentId+"?message="+encodeURIComponent("Imagem removida do conteúdo, mas o ficheiro precisa de limpeza manual: "+storageError.message));
+    }
+  }
+
+  revalidatePath("/media");
+  revalidatePath("/media/edit/"+contentId);
+  revalidatePath("/media/preview/"+contentId);
+  refreshPublic();
+  redirect("/media/edit/"+contentId+"?message="+encodeURIComponent("Imagem removida."));
+}
