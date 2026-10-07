@@ -1,15 +1,15 @@
 create table if not exists public.worship_member_unavailability (
   id uuid primary key default gen_random_uuid(),
   membership_id uuid not null references public.network_memberships(id) on delete cascade,
-  starts_at timestamptz not null,
-  ends_at timestamptz not null,
+  starts_on date not null,
+  ends_on date not null,
   reason text,
   created_at timestamptz not null default now(),
-  check (ends_at > starts_at)
+  check (ends_on >= starts_on)
 );
 
 create index if not exists worship_member_unavailability_membership_idx
-on public.worship_member_unavailability(membership_id,starts_at);
+on public.worship_member_unavailability(membership_id,starts_on);
 
 alter table public.worship_member_unavailability enable row level security;
 
