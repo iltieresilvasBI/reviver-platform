@@ -17,7 +17,7 @@ export default async function AcademyAdmin({searchParams}:{searchParams:Promise<
   const course=courses?.[0];
   return <AppShell title="Gestão da Academy" active="/admin" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
-    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/admin">Admin</Link><Link className="button primary" href="/academy">Ver Academy como aluno</Link></div>
+    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/admin">Admin</Link><Link className="button primary" href="/academy">Ver Academy como aluno</Link><Link className="button" href="/admin/academy/resources">Repositório de documentos</Link></div>
     <section className="hero-card"><p className="eyebrow">EDITOR DA FORMAÇÃO</p><h2>Vídeos, aulas e quizzes sem mexer em código.</h2><p>Podes trocar o link do YouTube, criar/desativar aulas e editar perguntas e respostas diretamente aqui. Usa apenas vídeos em português ou oficialmente dublados em português.</p></section>
 
     <div className="section-title"><h2>Novo módulo</h2></div>
