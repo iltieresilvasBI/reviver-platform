@@ -6,6 +6,7 @@ function localDate(iso:string|null){return iso?new Date(iso).toISOString().slice
 function localTime(iso:string|null){return iso?new Date(iso).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Lisbon'}):'A confirmar'}
 function categoryFor(slug?:string|null){return slug==='kids'?'Kids':slug==='youth'?'Jovens':slug==='women'?'Mulheres':slug==='men'?'Homens':slug==='worship'?'Louvor':'Geral'}
 function videoCategory(slug?:string|null){return slug==='worship'?'Louvor':'Especiais'}
+function publicNetworkSlug(slug?:string|null){return slug==='youth'?'jovens':slug==='women'?'mulheres':slug==='men'?'homens':slug??null}
 function period(start:string|null,end:string|null){
   if(!start&&!end)return 'Período a confirmar';
   const f=(v:string)=>new Date(v).toLocaleDateString('pt-PT',{timeZone:'Europe/Lisbon'});
@@ -36,7 +37,7 @@ export async function getSiteDynamicData():Promise<SiteDynamicData>{
     ctaLabel:x.cta_label||'Saber mais',ctaUrl:x.cta_url||'/contactos',featured:Boolean(x.featured),priority:Number(x.priority||0)
   }));
   const galleries=(items??[]).filter(x=>x.content_type==='gallery').map(x=>({
-    id:x.id,slug:x.slug,title:x.title,summary:x.summary||x.body||'',network:networkByItem.get(x.id)||null,
+    id:x.id,slug:x.slug,title:x.title,summary:x.summary||x.body||'',network:publicNetworkSlug(networkByItem.get(x.id)),
     images:itemMedia(x.id).filter((m:any)=>m.external_url).map((m:any)=>({url:m.external_url,alt:m.alt_text||x.title}))
   }));
   const events=(items??[]).filter(x=>x.content_type==='event').map(x=>({slug:x.slug,name:x.title,date:localDate(x.event_start),time:localTime(x.event_start),location:x.event_location||'Local a confirmar',description:x.summary||x.body||'',category:categoryFor(networkByItem.get(x.id)),image:image(x.id),demo:false}));
