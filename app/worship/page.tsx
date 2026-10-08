@@ -96,6 +96,20 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     const memberSongsById=new Map((songs??[]).map((song:any)=>[song.id,song]));
     const memberResponseByAssignment=new Map((responses??[]).map((row:any)=>[row.assignment_id,row]));
     const relevantRehearsals=upcomingRehearsals.filter((r:any)=>!r.schedule_id||memberScheduleIds.has(r.schedule_id));
+    const memberReminders:any[]=[];
+    for(const schedule of memberSchedules){
+      const assignment=myAssignments.find((a:any)=>a.schedule_id===schedule.id);
+      const response=assignment?memberResponseByAssignment.get(assignment.id) as any:null;
+      const hoursUntil=(new Date(schedule.starts_at).getTime()-Date.now())/3600000;
+      const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===schedule.id);
+      if(assignment&&!response) memberReminders.push({kind:"action",title:"Confirmação pendente",body:schedule.title+" · responde se podes servir.",href:"#schedule-"+schedule.id});
+      if(hoursUntil>=0&&hoursUntil<=48) memberReminders.push({kind:"soon",title:"Culto nas próximas 48h",body:schedule.title+" · "+new Date(schedule.starts_at).toLocaleString("pt-PT"),href:"#schedule-"+schedule.id});
+      if(setlist.length===0) memberReminders.push({kind:"info",title:"Repertório ainda não publicado",body:schedule.title+" ainda não tem músicas definidas.",href:"#schedule-"+schedule.id});
+    }
+    for(const rehearsal of relevantRehearsals){
+      const hoursUntil=(new Date(rehearsal.starts_at).getTime()-Date.now())/3600000;
+      if(hoursUntil>=0&&hoursUntil<=48) memberReminders.push({kind:"soon",title:"Ensaio nas próximas 48h",body:rehearsal.title+" · "+new Date(rehearsal.starts_at).toLocaleString("pt-PT"),href:"#rehearsals"});
+    }
 
     return <AppShell title="Meu Louvor" active="/worship" email={ctx.email} variant="worship-member">
       {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
@@ -117,8 +131,13 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <article className="card metric"><span>Minhas próximas escalas</span><strong>{memberSchedules.length}</strong></article>
           <article className="card metric"><span>Ensaios futuros</span><strong>{relevantRehearsals.length}</strong></article>
           <article className="card metric"><span>Meu grupo</span><strong>{myProfile?.group_code??"—"}</strong></article>
-          <article className="card metric"><span>Avisos</span><strong>{(items??[]).length}</strong></article>
+          <article className="card metric"><span>Lembretes</span><strong>{memberReminders.length}</strong></article>
         </div>
+
+        {memberReminders.length>0&&<>
+          <div className="section-title"><div><p className="eyebrow">LEMBRETES</p><h2>Precisa da tua atenção</h2></div><span className="muted small">Atualizado automaticamente ao abrir o portal.</span></div>
+          <div className="grid grid-3">{memberReminders.slice(0,6).map((reminder:any,index:number)=><a className="card" href={reminder.href} key={reminder.title+"-"+index}><span className={reminder.kind==="action"?"pill gold":"pill"}>{reminder.kind==="action"?"ação":reminder.kind==="soon"?"próximo":"info"}</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p></a>)}</div>
+        </>}
 
         <div className="section-title"><div><p className="eyebrow">ESCALAS</p><h2>Minhas próximas participações</h2></div><span className="muted small">Definidas pela gestão do Louvor</span></div>
         <div className="list">{memberSchedules.length===0?<div className="empty">Não tens nenhuma escala futura atribuída.</div>:memberSchedules.map((schedule:any)=>{
@@ -126,7 +145,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           const response=assignment?memberResponseByAssignment.get(assignment.id) as any:null;
           const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===schedule.id).sort((a:any,b:any)=>a.position-b.position);
           const rehearsal=(rehearsals??[]).find((r:any)=>r.schedule_id===schedule.id);
-          return <article className="card" key={schedule.id}>
+          return <article className="card" id={"schedule-"+schedule.id} key={schedule.id}>
             <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
               <div>
                 <div className="button-row"><span className="pill gold">Grupo {schedule.group_code??myProfile?.group_code??"—"}</span><span className="pill ok">{roleLabel(assignment?.role)}</span></div>
@@ -185,7 +204,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           </div>
         </div>
 
-        <div className="section-title"><div><p className="eyebrow">ENSAIOS</p><h2>Próximos encontros</h2></div></div>
+        <div id="rehearsals" className="section-title"><div><p className="eyebrow">ENSAIOS</p><h2>Próximos encontros</h2></div></div>
         <div className="grid grid-3">{relevantRehearsals.length===0?<div className="empty">Nenhum ensaio futuro publicado.</div>:relevantRehearsals.map((r:any)=><article className="card" key={r.id}><span className="pill gold">ensaio</span><h3>{r.title}</h3><p className="muted">{new Date(r.starts_at).toLocaleString("pt-PT")}{r.location?" · "+r.location:""}</p>{r.notes&&<p>{r.notes}</p>}</article>)}</div>
 
         <div className="section-title"><div><p className="eyebrow">AVISOS</p><h2>Informações da liderança</h2></div></div>
@@ -256,6 +275,17 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
   });
   const activeMemberMetrics=memberMetrics.filter((m:any)=>m.status==="active");
   const groupCounts=Object.fromEntries(["A","B","C","D"].map(group=>[group,activeMemberMetrics.filter((m:any)=>m.profile?.group_code===group).length]));
+  const leaderReminders:any[]=[];
+  for(const schedule of upcomingSchedules){
+    const people=(assignments??[]).filter((a:any)=>a.schedule_id===schedule.id);
+    const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===schedule.id);
+    const pendingResponses=people.filter((a:any)=>!responseByAssignment.get(a.id)).length;
+    const rehearsal=(rehearsals??[]).find((r:any)=>r.schedule_id===schedule.id);
+    if(people.length===0) leaderReminders.push({title:"Equipa por definir",body:schedule.title+" ainda não tem ninguém escalado."});
+    if(setlist.length===0) leaderReminders.push({title:"Repertório por definir",body:schedule.title+" ainda não tem músicas."});
+    if(pendingResponses>0) leaderReminders.push({title:"Respostas pendentes",body:schedule.title+" · "+pendingResponses+" pessoa"+(pendingResponses===1?"":"s")+" sem resposta."});
+    if(!rehearsal) leaderReminders.push({title:"Ensaio não associado",body:schedule.title+" ainda não tem ensaio vinculado."});
+  }
 
   return <AppShell title="Ministério de Louvor" active="/worship" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
@@ -271,8 +301,12 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <article className="card metric"><span>Próximas escalas</span><strong>{upcomingSchedules.length}</strong></article>
       <article className="card metric"><span>Ensaios futuros</span><strong>{upcomingRehearsals.length}</strong></article>
       <article className="card metric"><span>Repertório ativo</span><strong>{(songs??[]).length}</strong></article>
-      <article className="card metric"><span>Meu grupo</span><strong>{myProfile?.group_code??"—"}</strong></article>
+      <article className="card metric"><span>Pendências</span><strong>{leaderReminders.length}</strong></article>
     </div>
+    {leaderReminders.length>0&&<>
+      <div className="section-title"><div><p className="eyebrow">PENDÊNCIAS AUTOMÁTICAS</p><h2>O que falta fechar</h2></div><span className="muted small">Gerado a partir das próximas escalas.</span></div>
+      <div className="grid grid-3">{leaderReminders.slice(0,9).map((reminder:any,index:number)=><article className="card" key={reminder.title+"-"+index}><span className="pill gold">atenção</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p></article>)}</div>
+    </>}
 
     {membership?.id&&<>
       <div className="section-title"><div><p className="eyebrow">DISPONIBILIDADE</p><h2>Quando não posso servir</h2></div><span className="muted small">O líder verá conflito ao montar a escala.</span></div>
