@@ -172,7 +172,7 @@ export default async function WorshipReportsPage({
     {(overloaded.length>0||underloaded.length>0)&&<div className="notice warn" style={{marginTop:14}}>
       {overloaded.length>0&&<span>{overloaded.length} membro{overloaded.length===1?"":"s"} com carga acima da média. </span>}
       {underloaded.length>0&&<span>{underloaded.length} membro{underloaded.length===1?"":"s"} ativo{underloaded.length===1?"":"s"} sem escala no período.</span>}
-    </div>
+    </div>}
 
     <div className="section-title"><div><p className="eyebrow">ALTA ROTAÇÃO</p><h2>Repetição nos últimos 30 dias</h2></div><span className="muted small">Sinaliza músicas executadas 2× ou mais no recorte recente.</span></div>
     <div className="grid grid-3">{highRotation.length===0?<div className="empty">Nenhuma música com repetição elevada nos últimos 30 dias.</div>:highRotation.map((r:any)=><article className="card" key={r.title+"-"+r.artist}><span className="pill gold">{r.recent30}× / 30 dias</span><h3>{r.title}</h3><p className="muted">{r.artist||"Artista não informado"}</p><p className="small muted">{r.count}× no período filtrado{r.last?" · última "+new Date(r.last).toLocaleDateString("pt-PT"):""}</p></article>)}</div>
