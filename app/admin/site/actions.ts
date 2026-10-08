@@ -34,10 +34,11 @@ export async function saveSiteVisual(formData:FormData){
   if(!key) redirect("/admin/site?message="+encodeURIComponent("Campo visual inválido."));
 
   const file=formData.get("image");
+  const reset=String(formData.get("reset")??"")==="1";
   const typedUrl=String(formData.get("url")??"").trim();
-  let finalUrl=typedUrl;
+  let finalUrl=reset?"":typedUrl;
 
-  if(file instanceof File && file.size>0){
+  if(!reset && file instanceof File && file.size>0){
     const allowed=new Set(["image/jpeg","image/png","image/webp","image/avif","image/svg+xml"]);
     if(!allowed.has(file.type)) redirect("/admin/site?message="+encodeURIComponent("Formato de imagem não permitido."));
     if(file.size>8*1024*1024) redirect("/admin/site?message="+encodeURIComponent("A imagem deve ter no máximo 8 MB."));
