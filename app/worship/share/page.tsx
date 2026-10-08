@@ -61,7 +61,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
 
     {canLead&&<>
       <div className="section-title"><div><p className="eyebrow">PARTILHAR ESCALA</p><h2>Mensagens individuais</h2></div></div>
-      <form method="get" className="card form-grid"><div className="field"><label>Culto</label><select name="schedule" defaultValue={selectedId}>{(schedules??[]).map((s:any)=><option key={s.id} value={s.id}>{s.title} · {new Date(s.starts_at).toLocaleString("pt-PT")}</option>)}</select></div><button className="button">Carregar escala</button></form>
+      <form method="get" className="card form-grid"><div className="field"><label>Culto</label><select name="schedule" defaultValue={selectedId}>{(schedules??[]).map((s:any)=><option key={s.id} value={s.id}>{s.title} · {new Date(s.starts_at).toLocaleString("pt-PT")}</option>)}</select></div><div className="button-row"><button className="button">Carregar escala</button>{selected&&<a className="button" href={"/api/worship/schedule-card/"+selected.id} target="_blank" rel="noreferrer">Abrir imagem da escala</a>}{selected&&<Link className="button" href={"/worship/run-sheet/"+selected.id}>Abrir roteiro</Link>}</div></form>
       {selected&&<div className="list" style={{marginTop:16}}>{assignments.length===0?<div className="empty">Nenhum participante escalado.</div>:assignments.map((a:any)=>{
         const person=personByMembership.get(a.membership_id) as any;
         const pref=profileByMembership.get(a.membership_id) as any;
