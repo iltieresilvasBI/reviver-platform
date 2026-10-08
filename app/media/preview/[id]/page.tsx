@@ -8,6 +8,9 @@ import { PublicSiteShell } from "@/components/public-site-shell";
 function categoryFor(slug?:string|null){
   return slug==="kids"?"Kids":slug==="youth"?"Jovens":slug==="women"?"Mulheres":slug==="men"?"Homens":slug==="worship"?"Louvor":"Geral";
 }
+function publicNetworkSlug(slug?:string|null){
+  return slug==="youth"?"jovens":slug==="women"?"mulheres":slug==="men"?"homens":slug??null;
+}
 function localDate(iso:string|null){return iso?new Date(iso).toISOString().slice(0,10):null}
 function localTime(iso:string|null){return iso?new Date(iso).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Lisbon"}):"A confirmar"}
 function period(start:string|null,end:string|null){
@@ -63,11 +66,11 @@ export default async function ContentPreview({params}:{params:Promise<{id:string
     previewPath="";
   }else if(item.content_type==="gallery"){
     data.galleries=[{
-      id:item.id,slug:item.slug,title:item.title,summary:item.summary||item.body||"",network:networkSlug,
+      id:item.id,slug:item.slug,title:item.title,summary:item.summary||item.body||"",network:publicNetworkSlug(networkSlug),
       images:(media??[]).filter((m:any)=>m.external_url).map((m:any)=>({url:m.external_url,alt:m.alt_text||item.title}))
     },...data.galleries.filter(x=>x.id!==item.id)];
-    previewPath=networkSlug&&["kids","youth","women","men"].includes(networkSlug)
-      ?"redes/"+(networkSlug==="youth"?"jovens":networkSlug==="women"?"mulheres":networkSlug==="men"?"homens":networkSlug)
+    previewPath=publicNetworkSlug(networkSlug)&&["kids","jovens","mulheres","homens"].includes(publicNetworkSlug(networkSlug)!)
+      ?"redes/"+publicNetworkSlug(networkSlug)
       :"midia";
   }else{
     return <PublicSiteShell>
