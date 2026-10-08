@@ -31,7 +31,7 @@ export default async function ContentPreview({params}:{params:Promise<{id:string
   const networkSlug=(links?.[0] as any)?.networks?.slug??null;
   const cover=(media??[]).find((m:any)=>m.media_type==="cover")??media?.[0];
   const image=cover?.external_url??"";
-  const data:SiteDynamicData={events:[...base.events],campaigns:[...base.campaigns],news:[...base.news],videos:[...base.videos]};
+  const data:SiteDynamicData={events:[...base.events],campaigns:[...base.campaigns],news:[...base.news],videos:[...base.videos],visuals:base.visuals};
   let previewPath="";
 
   if(item.content_type==="event"){

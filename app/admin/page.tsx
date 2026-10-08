@@ -27,7 +27,8 @@ export default async function AdminPage(){
   ]);
 
   const areas=[
-    {title:"Conteúdo e site",text:"Eventos, campanhas, notícias, vídeos, imagens, revisão e publicação.",href:"/media",cta:"Abrir CMS"},
+    {title:"Conteúdo e site",text:"Eventos, campanhas, notícias, vídeos, revisão e publicação.",href:"/media",cta:"Abrir CMS"},
+    {title:"Visual do site",text:"Imagem principal, imagens das redes/ministérios e logos, sem editar código.",href:"/admin/site",cta:"Editar imagens"},
     {title:"Aprovações",text:"Fila editorial com aprovação separada da publicação.",href:"/admin/aprovacoes",cta:"Rever fila"},
     {title:"Reviver Academy",text:"Cursos, módulos, aulas, vídeos e quizzes.",href:"/admin/academy",cta:"Gerir Academy"},
     {title:"Utilizadores",text:"Contas, verificação, admins e papéis de mídia.",href:"/admin/utilizadores",cta:"Gerir acessos"},

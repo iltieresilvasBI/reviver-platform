@@ -63,3 +63,13 @@ body[data-worship-theme="light"] .hero-card{background:radial-gradient(circle at
 .song-art-placeholder{display:grid;place-items:center;color:var(--gold);font-size:22px}
 .song-candidate span:nth-child(2){display:grid;gap:2px;min-width:0}.song-candidate small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .member-readonly .readonly-note{border-left:3px solid var(--gold);padding-left:12px}
+
+.auth-brand{grid-template-columns:92px 1fr}
+.auth-brand img{width:92px;height:92px;object-fit:contain;border-radius:0;background:transparent;padding:4px}
+.site-visual-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.site-visual-card{display:grid;gap:16px}
+.site-visual-preview{overflow:hidden;border-radius:14px;border:1px solid var(--border);background:#0b0c0e;display:grid;place-items:center}
+.site-visual-preview img{width:100%;height:100%;object-fit:cover}
+.site-visual-card:nth-last-child(-n+2) .site-visual-preview img{object-fit:contain;padding:14px}
+@media(max-width:850px){.site-visual-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.auth-brand{grid-template-columns:68px 1fr}.auth-brand img{width:68px;height:68px}}

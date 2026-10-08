@@ -49,6 +49,14 @@ jobs:
             echo "$location" | grep -q "/login"
           done
 
+      - name: Song search requires authenticated management
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/song-search.json -w "%{http_code}" "$BASE_URL/api/worship/search-song?q=Oceans")
+          echo "/api/worship/search-song -> $code"
+          test "$code" = "401"
+
       - name: Security headers sanity
         shell: bash
         run: |
