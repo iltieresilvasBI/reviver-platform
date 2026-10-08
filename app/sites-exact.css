@@ -329,3 +329,19 @@
 .sites-root .about-logo{max-width:330px!important;width:100%!important;height:auto!important;object-fit:contain!important;background:transparent!important}
 @media(max-width:850px){.sites-root .header-brand{width:94px!important;height:78px!important;flex-basis:94px!important}.sites-root .header-brand img{width:78px!important;max-width:78px!important;height:76px!important;max-height:76px!important}}
 @media(max-width:600px){.sites-root .header-brand{width:82px!important;height:68px!important;flex-basis:82px!important}.sites-root .header-brand img{width:67px!important;max-width:67px!important;height:66px!important;max-height:66px!important}.sites-root .footer .official-brand{width:160px!important}.sites-root .footer .official-brand img{width:145px!important;max-width:145px!important}}
+
+/* Dynamic ministry/network imagery from site_settings. */
+.sites-root .network-card,
+.sites-root .network-card:nth-child(1),
+.sites-root .network-card:nth-child(2),
+.sites-root .network-card:nth-child(3),
+.sites-root .network-card:nth-child(4){
+  background:
+    linear-gradient(180deg,rgba(18,19,16,.10) 0 30%,rgba(28,29,24,.97) 68%),
+    var(--network-image) center/cover no-repeat !important;
+}
+.sites-root .network-card.worship-card{
+  background:
+    linear-gradient(180deg,rgba(19,17,13,.08) 0 28%,rgba(38,36,28,.97) 70%),
+    var(--network-image) center/cover no-repeat !important;
+}
