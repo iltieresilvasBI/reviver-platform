@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { SongAutoFillFields } from "./repertoire/song-autofill";
 import { getAccessContext } from "@/lib/auth";
 import {
   acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
@@ -322,52 +323,46 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     </>}
 
     {canLead&&<>
-      <div className="section-title"><div><p className="eyebrow">OPERAÇÃO</p><h2>Gestão do Louvor</h2></div><span className="muted small">Admin/Líder</span></div>
+      <div className="section-title"><div><p className="eyebrow">OPERAÇÃO</p><h2>Configurar escalas</h2></div><span className="muted small">Admin/Líder</span></div>
 
-      <div className="grid grid-2">
-        <form action={createWorshipSchedule} className="card form-grid">
-          <p className="eyebrow">NOVA ESCALA</p>
-          <div className="field"><label>Título</label><input name="title" required placeholder="Culto de domingo"/></div>
-          <div className="grid grid-3"><div className="field"><label>Tipo</label><input name="serviceType" placeholder="Celebração / manhã / noite"/></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div><div className="field"><label>Temas do culto</label><input name="themes" placeholder="Graça, Família, Missões"/></div></div>
-          <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Chegada</label><input name="callTime" type="datetime-local"/></div></div>
-          <div className="field"><label>Notas</label><textarea name="notes"/></div>
-          <button className="button primary">Criar escala</button>
-        </form>
+      <div className="grid grid-3" style={{marginBottom:18}}>
+        <details className="card">
+          <summary style={{cursor:"pointer",fontWeight:800}}>+ Criar nova escala</summary>
+          <form action={createWorshipSchedule} className="form-grid" style={{marginTop:16}}>
+            <p className="eyebrow">NOVA ESCALA</p>
+            <div className="field"><label>Título</label><input name="title" required placeholder="Culto de domingo"/></div>
+            <div className="grid grid-3"><div className="field"><label>Tipo</label><input name="serviceType" placeholder="Celebração / manhã / noite"/></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div><div className="field"><label>Temas do culto</label><input name="themes" placeholder="Graça, Família, Missões"/></div></div>
+            <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Chegada</label><input name="callTime" type="datetime-local"/></div></div>
+            <div className="field"><label>Notas</label><textarea name="notes"/></div>
+            <button className="button primary">Criar escala</button>
+          </form>
+        </details>
 
-        <form action={createWorshipRehearsal} className="card form-grid">
-          <p className="eyebrow">NOVO ENSAIO</p>
-          <div className="field"><label>Título</label><input name="title" required placeholder="Ensaio geral"/></div>
-          <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Fim</label><input name="endsAt" type="datetime-local"/></div></div>
-          <div className="field"><label>Local</label><input name="location"/></div>
-          <div className="field"><label>Vincular a escala</label><select name="scheduleId"><option value="">Sem vínculo</option>{upcomingSchedules.map((s:any)=><option value={s.id} key={s.id}>{s.title}</option>)}</select></div>
-          <div className="field"><label>Notas</label><textarea name="notes"/></div>
-          <button className="button primary">Criar ensaio</button>
-        </form>
+        <details className="card">
+          <summary style={{cursor:"pointer",fontWeight:800}}>+ Adicionar música ao repertório</summary>
+          <form action={createWorshipSong} className="form-grid" style={{marginTop:16}}>
+            <p className="eyebrow">REPERTÓRIO</p>
+            <SongAutoFillFields/>
+            <button className="button primary">Adicionar música</button>
+          </form>
+        </details>
+
+        <details className="card">
+          <summary style={{cursor:"pointer",fontWeight:800}}>+ Criar ensaio</summary>
+          <form action={createWorshipRehearsal} className="form-grid" style={{marginTop:16}}>
+            <p className="eyebrow">NOVO ENSAIO</p>
+            <div className="field"><label>Título</label><input name="title" required placeholder="Ensaio geral"/></div>
+            <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Fim</label><input name="endsAt" type="datetime-local"/></div></div>
+            <div className="field"><label>Local</label><input name="location"/></div>
+            <div className="field"><label>Vincular a escala</label><select name="scheduleId"><option value="">Sem vínculo</option>{upcomingSchedules.map((s:any)=><option value={s.id} key={s.id}>{s.title}</option>)}</select></div>
+            <div className="field"><label>Notas</label><textarea name="notes"/></div>
+            <button className="button primary">Criar ensaio</button>
+          </form>
+        </details>
       </div>
 
-      <div className="grid grid-2" style={{marginTop:18}}>
-        <form action={createWorshipSong} className="card form-grid">
-          <p className="eyebrow">ADICIONAR AO REPERTÓRIO</p>
-          <div className="field"><label>Música</label><input name="title" required/></div>
-          <div className="field"><label>Artista</label><input name="artist"/></div>
-          <div className="grid grid-2"><div className="field"><label>Tom padrão</label><input name="defaultKey" placeholder="G"/></div><div className="field"><label>BPM</label><input name="bpm" type="number" min="30" max="300"/></div></div>
-          <div className="field"><label>YouTube</label><input name="youtubeUrl" type="url"/></div>
-          <div className="field"><label>Cifra</label><input name="chordUrl" type="url"/></div>
-          <div className="field"><label>Notas</label><textarea name="notes"/></div>
-          <button className="button">Adicionar música</button>
-        </form>
+      <div className="notice" style={{marginBottom:18}}>Crie a escala, associe ou encontre músicas do repertório e marque o ensaio dentro do mesmo fluxo de configuração.</div>
 
-        <form action={createWorshipItem} className="card form-grid">
-          <p className="eyebrow">AVISO / FICHEIRO</p>
-          <div className="field"><label>Tipo</label><select name="item_type"><option value="notice">Aviso</option><option value="file">Ficheiro</option></select></div>
-          <div className="field"><label>Título</label><input name="title" required/></div>
-          <div className="field"><label>Descrição</label><textarea name="body"/></div>
-          <div className="field"><label>Link externo</label><input name="external_url" type="url"/></div>
-          <button className="button">Guardar recurso</button>
-        </form>
-      </div>
-
-      <div className="section-title"><h2>Configurar escalas</h2></div>
       <div className="list">{upcomingSchedules.length===0?<div className="empty">Cria a primeira escala para configurar equipa e repertório.</div>:upcomingSchedules.map((s:any)=><details className="card" key={s.id}>
         <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"}{(s.themes??[]).length?" · "+(s.themes??[]).join(" / "):s.theme?" · "+s.theme:""} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
         <div className="button-row" style={{marginTop:14}}>
@@ -503,6 +498,16 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <Link className="button primary" href="/academy">Abrir formação</Link>
         </div>
       </div>
+
+      <div className="section-title"><div><p className="eyebrow">RECURSOS</p><h2>Avisos e ficheiros</h2></div></div>
+      <form action={createWorshipItem} className="card form-grid">
+        <p className="eyebrow">AVISO / FICHEIRO</p>
+        <div className="field"><label>Tipo</label><select name="item_type"><option value="notice">Aviso</option><option value="file">Ficheiro</option></select></div>
+        <div className="field"><label>Título</label><input name="title" required/></div>
+        <div className="field"><label>Descrição</label><textarea name="body"/></div>
+        <div className="field"><label>Link externo</label><input name="external_url" type="url"/></div>
+        <button className="button">Guardar recurso</button>
+      </form>
     </>}
   </AppShell>
 }
