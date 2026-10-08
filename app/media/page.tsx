@@ -60,6 +60,7 @@ export default async function MediaPage({searchParams}:{searchParams:Promise<{me
       <p className="eyebrow">REVIVER CMS</p>
       <h2>Conteúdo público com fluxo editorial claro.</h2>
       <p>Cria, pré-visualiza, submete, aprova e publica sem misturar aprovação com publicação.</p>
+      {ctx.isAdmin&&<div className="button-row" style={{marginTop:16}}><a className="button" href="/admin/site">Editar imagens do site</a></div>}
     </section>
 
     <div className="grid grid-4" style={{marginTop:18}}>
