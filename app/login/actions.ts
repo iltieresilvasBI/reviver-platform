@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-const PROD_URL = "https://reviver-platform-gamma.vercel.app";
+const PROD_URL = "https://reviver-platform.iltieresilvas.workers.dev";
 
 function safeNext(value:FormDataEntryValue|null){
   const next=String(value??"");
@@ -21,8 +21,8 @@ async function getAppOrigin(){
     const proto=forwardedProto??(host.includes("localhost")?"http":"https");
     return `${proto}://${host}`;
   }
-  const vercelUrl=process.env.VERCEL_PROJECT_PRODUCTION_URL??process.env.VERCEL_URL;
-  if(vercelUrl) return vercelUrl.startsWith("http")?vercelUrl:`https://${vercelUrl}`;
+  const configuredUrl=process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if(configuredUrl) return configuredUrl.replace(/\/$/,"");
   return PROD_URL;
 }
 
