@@ -8,7 +8,7 @@ import {
   createWorshipRehearsal,createWorshipSchedule,createWorshipSong,createWorshipUnavailability,decideWorship,
   deleteWorshipUnavailability,inviteWorship,markWorshipAttendance,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
   respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus,updateWorshipScheduleTheme,
-  updateWorshipPublication,setWorshipPublicRepertoire,confirmWorshipExecutions
+  updateWorshipPublication,setWorshipPublicRepertoire,finalizeWorshipService
 } from "./actions";
 
 const roleOptions=[
@@ -561,16 +561,29 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         </div>
       </details>)}</div>
 
-      <div className="section-title"><div><p className="eyebrow">PÓS-CULTO</p><h2>Confirmar repertório executado</h2></div><span className="muted small">Só estas confirmações entram nos relatórios.</span></div>
+      <div className="section-title"><div><p className="eyebrow">PÓS-CULTO</p><h2>Fechar culto</h2></div><span className="muted small">Confirma repertório e presenças numa única operação.</span></div>
       <div className="list">{recentPastSchedules.length===0?<div className="empty">Nenhum culto anterior para confirmar.</div>:recentPastSchedules.map((s:any)=>{
         const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===s.id).sort((a:any,b:any)=>a.position-b.position);
+        const people=(assignments??[]).filter((a:any)=>a.schedule_id===s.id);
         return <details className="card" key={"executed-"+s.id}>
           <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · {new Date(s.starts_at).toLocaleString("pt-PT")} · {s.status}</summary>
-          <form action={confirmWorshipExecutions} className="form-grid" style={{marginTop:14}}>
+          <form action={finalizeWorshipService} className="form-grid" style={{marginTop:14}}>
             <input type="hidden" name="scheduleId" value={s.id}/>
-            <p className="muted small">Marque apenas as músicas efetivamente cantadas. Guardar novamente substitui a confirmação anterior deste culto.</p>
-            {setlist.length===0?<div className="empty">Este culto não tem repertório planeado. Adicione primeiro as músicas realizadas.</div>:setlist.map((x:any)=>{const song=songsById.get(x.song_id) as any;return <label className="list-row" key={x.id} style={{cursor:"pointer"}}><span><strong>{song?.title??"Música"}</strong><span className="muted small"> · tom {x.key_override||song?.default_key||"—"}{song?.version_name?" · "+song.version_name:""}</span></span><input type="checkbox" name="songIds" value={x.song_id} defaultChecked={executionKeys.has(s.id+"|"+x.song_id)}/></label>})}
-            {setlist.length>0&&<button className="button primary">Confirmar execução e concluir culto</button>}
+            <div className="notice">
+              Ao concluir, o sistema atualiza o repertório executado, as presenças da equipa e o estado do culto. Guardar novamente substitui a confirmação anterior.
+            </div>
+            <div>
+              <p className="eyebrow">MÚSICAS EXECUTADAS</p>
+              {setlist.length===0?<div className="empty">Este culto não tem repertório planeado.</div>:setlist.map((x:any)=>{const song=songsById.get(x.song_id) as any;return <label className="list-row" key={x.id} style={{cursor:"pointer"}}><span><strong>{song?.title??"Música"}</strong><span className="muted small"> · tom {x.key_override||song?.default_key||"—"}{song?.version_name?" · "+song.version_name:""}</span></span><input type="checkbox" name="songIds" value={x.song_id} defaultChecked={executionKeys.has(s.id+"|"+x.song_id)}/></label>})}
+            </div>
+            <div>
+              <p className="eyebrow">QUEM SERVIU</p>
+              {people.length===0?<div className="empty">Nenhum membro foi escalado neste culto.</div>:people.map((a:any)=>{const person=directoryByMembership.get(a.membership_id) as any;const response=responseByAssignment.get(a.id) as any;return <label className="list-row" key={a.id} style={{cursor:"pointer"}}><span><strong>{person?.display_name||person?.email||"Membro"}</strong><span className="muted small"> · {roleLabel(a.role)}{response?.response_status==="confirmed"?" · confirmou presença":response?.response_status==="declined"?" · tinha indicado indisponibilidade":""}</span></span><input type="checkbox" name="presentAssignmentIds" value={a.id} defaultChecked={a.attendance_status==="completed"||response?.response_status==="confirmed"}/></label>})}
+            </div>
+            <div className="button-row">
+              <button className="button primary">Concluir culto e atualizar relatórios</button>
+              <Link className="button" href="/worship/reports">Ver relatórios</Link>
+            </div>
           </form>
         </details>
       })}</div>
