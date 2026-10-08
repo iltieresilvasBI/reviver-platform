@@ -15,13 +15,29 @@ export async function acceptWorshipInvite(){
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship"); redirect("/worship?message=Convite aceite.");
 }
-export async function inviteWorship(formData:FormData){
+export async function createWorshipMember(formData:FormData){
   const supabase=await createClient();
-  const email=String(formData.get("email")??"");
+  const email=String(formData.get("email")??"").trim();
   const role=String(formData.get("role")??"member");
-  const {error}=await supabase.rpc("invite_worship_by_email",{p_email:email,p_role:role});
+  const groupCode=String(formData.get("groupCode")??"").trim()||null;
+  const roles=csvRoles(String(formData.get("roles")??""));
+  const notes=String(formData.get("notes")??"").trim()||null;
+  const {data,error}=await supabase.rpc("create_worship_member_by_email",{p_email:email,p_role:role});
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
-  revalidatePath("/worship"); redirect("/worship?message=Convite criado.");
+  const membershipId=(data as any)?.id;
+  if(membershipId){
+    const {error:profileError}=await supabase.from("worship_member_profiles").upsert({
+      membership_id:membershipId,
+      group_code:groupCode,
+      roles,
+      notes,
+      active:true,
+      updated_at:new Date().toISOString()
+    },{onConflict:"membership_id"});
+    if(profileError) redirect("/worship?message="+encodeURIComponent(profileError.message));
+  }
+  revalidatePath("/worship");
+  redirect("/worship?message="+encodeURIComponent("Membro criado e ativado no Ministério de Louvor."));
 }
 export async function decideWorship(formData:FormData){
   const supabase=await createClient();

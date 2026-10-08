@@ -6,7 +6,7 @@ import { getAccessContext } from "@/lib/auth";
 import {
   acceptWorshipInvite,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
   createWorshipRehearsal,createWorshipSchedule,createWorshipSong,createWorshipUnavailability,decideWorship,
-  deleteWorshipUnavailability,inviteWorship,markWorshipAttendance,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
+  deleteWorshipUnavailability,createWorshipMember,markWorshipAttendance,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
   respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus,updateWorshipScheduleTheme,
   updateWorshipPublication,setWorshipPublicRepertoire,finalizeWorshipService
 } from "./actions";
@@ -637,11 +637,18 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
       <div className="grid grid-2" style={{marginTop:18}}>
         <div className="card">
-          <p className="eyebrow">CONVIDAR MEMBRO</p>
-          <form action={inviteWorship} className="form-grid">
-            <div className="field"><label>Email de uma conta já criada</label><input name="email" type="email" required/></div>
-            <div className="field"><label>Papel</label><select name="role"><option value="member">Membro</option>{ctx.isAdmin&&<option value="leader">Líder</option>}</select></div>
-            <button className="button">Convidar</button>
+          <p className="eyebrow">CRIAR MEMBRO</p>
+          <h3>Adicionar diretamente ao Ministério de Louvor</h3>
+          <p className="muted small">O membro fica ativo imediatamente. Para participar das escalas e aceder ao portal, selecione uma conta já existente.</p>
+          <form action={createWorshipMember} className="form-grid">
+            <div className="field"><label>Conta do portal</label><input name="email" type="email" required placeholder="email@exemplo.com"/><span className="muted small">Use o email da conta já criada no Portal Reviver.</span></div>
+            <div className="grid grid-2">
+              <div className="field"><label>Papel</label><select name="role"><option value="member">Membro</option>{ctx.isAdmin&&<option value="leader">Líder</option>}</select></div>
+              <div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div>
+            </div>
+            <div className="field"><label>Funções</label><input name="roles" placeholder="Ex.: cantor_principal, backing_vocal, teclado"/></div>
+            <div className="field"><label>Notas</label><input name="notes" placeholder="Observações internas opcionais"/></div>
+            <button className="button primary">Criar membro</button>
           </form>
         </div>
         <div className="card">
