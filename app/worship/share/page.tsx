@@ -43,7 +43,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
   const h=await headers();
   const protocol=h.get("x-forwarded-proto")||"https";
   const host=h.get("x-forwarded-host")||h.get("host")||"reviver-platform.iltieresilvas.workers.dev";
-  const portalUrl=protocol+"://"+host+"/worship";
+  const portalUrl=protocol+"://"+host+"/worship"+(selected?"#schedule-"+selected.id:"");
 
   return <AppShell title="Comunicação do Louvor" active="/worship" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
