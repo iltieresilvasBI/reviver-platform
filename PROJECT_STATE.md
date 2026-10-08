@@ -1,6 +1,6 @@
 # Reviver Platform — Project State
 
-Updated: 2026-10-07
+Updated: 2026-10-08
 
 ## Stable base
 - Repository: `iltieresilvasBI/reviver-platform`
@@ -173,3 +173,37 @@ Each instrument has at least two lessons. The second lessons are guided practica
 - New SECURITY DEFINER RPCs have anon EXECUTE explicitly revoked.
 - Supabase leaked-password protection remains disabled and requires account-level configuration.
 - Vercel preview/production builds are currently blocked by the account daily build limit (`api-deployments-free-per-day` / `build-rate-limit`). GitHub CI remains the available code validation gate until that quota resets.
+
+
+## Checkpoint 2026-10-08 — V1 security and production hardening
+- Production branch: `main`.
+- Latest production commit at this checkpoint: `5f70006e5fe207853023d0ab9fe56e64b90ebc3f`.
+- Production alias `reviver-platform-gamma.vercel.app` is READY.
+- Dependency security hardening completed in PR #32:
+  - CI now runs `npm audit --audit-level=high`;
+  - vulnerable `xlsx` / SheetJS npm package removed;
+  - Excel import migrated to `read-excel-file`;
+  - CSV import remains supported with local parsing;
+  - PostCSS pinned to patched 8.5.23 through npm overrides;
+  - `package-lock.json` is now committed;
+  - npm audit, TypeScript and Next.js build all pass.
+- Performance hardening completed in PR #33:
+  - targeted foreign-key indexes added to Worship and Ministry operational tables;
+  - no business data or authorization rules changed.
+- Supabase Security Advisor:
+  - no anonymous EXECUTE exposure on the reviewed SECURITY DEFINER RPCs;
+  - 18/19 authenticated SECURITY DEFINER RPCs contain explicit identity/admin/network-role checks;
+  - `get_quiz_options(uuid)` intentionally returns only quiz option identifiers/labels/order and does not expose correctness;
+  - leaked-password protection remains disabled and must be enabled in Supabase Auth settings (Pro plan or above).
+- Production/runtime validation:
+  - GitHub CI green;
+  - Vercel preview READY before merge;
+  - production deployment READY after merge;
+  - Vercel runtime error/log APIs still return connector-scope HTTP 403, so deployment state + CI remain the available automated runtime validation channels.
+- Live data note:
+  - at this checkpoint there are no active `worship` network memberships in production;
+  - member/leader end-to-end UI homologation therefore requires adding real ministry users before those role-specific flows can be exercised without synthetic identities.
+- External integrations still intentionally pending:
+  - official WhatsApp Business API credentials/templates for automatic sending and real sent/delivered/read states;
+  - automated outbound reminder delivery;
+  - Supabase leaked-password protection toggle.
