@@ -73,3 +73,7 @@ jobs:
           curl -sS -I "$BASE_URL/" > /tmp/headers
           grep -qi '^content-type:' /tmp/headers
 
+
+      - name: Extended UI regression
+        shell: bash
+        run: bash tests/live-ui-smoke.sh
