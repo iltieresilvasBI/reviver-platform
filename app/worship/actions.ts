@@ -85,12 +85,14 @@ export async function createWorshipSong(formData:FormData){
   const chord_url=String(formData.get("chordUrl")??"").trim()||null;
   const lyrics_url=String(formData.get("lyricsUrl")??"").trim()||null;
   const themes=csvThemes(String(formData.get("themes")??""));
+  const service_types=csvThemes(String(formData.get("serviceTypes")??""));
   const notes=String(formData.get("notes")??"").trim()||null;
   const {error}=await supabase.from("worship_songs").insert({
-    title,artist,composition_title,version_name,original_key,recommended_key,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,notes,created_by:String(uid)
+    title,artist,composition_title,version_name,original_key,recommended_key,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,service_types,notes,created_by:String(uid)
   });
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
+  revalidatePath("/worship/repertoire");
 }
 
 export async function updateWorshipSong(formData:FormData){
@@ -112,12 +114,14 @@ export async function updateWorshipSong(formData:FormData){
   const chord_url=String(formData.get("chordUrl")??"").trim()||null;
   const lyrics_url=String(formData.get("lyricsUrl")??"").trim()||null;
   const themes=csvThemes(String(formData.get("themes")??""));
+  const service_types=csvThemes(String(formData.get("serviceTypes")??""));
   const notes=String(formData.get("notes")??"").trim()||null;
   const {error}=await supabase.from("worship_songs").update({
-    title,artist,composition_title,version_name,original_key,recommended_key,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,notes,updated_at:new Date().toISOString()
+    title,artist,composition_title,version_name,original_key,recommended_key,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,service_types,notes,updated_at:new Date().toISOString()
   }).eq("id",id);
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
+  revalidatePath("/worship/repertoire");
 }
 
 export async function createWorshipSchedule(formData:FormData){
