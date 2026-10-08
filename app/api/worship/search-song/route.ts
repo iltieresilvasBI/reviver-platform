@@ -23,6 +23,14 @@ function normalise(value:string){
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 }
 
+function splitVersion(value:string){
+  const match=value.match(/\s*[\[(]([^\])]+)[\])]\s*$/);
+  if(!match)return {composition:value.trim(),version:""};
+  const version=match[1].trim();
+  const composition=value.slice(0,match.index).trim();
+  return {composition:composition||value.trim(),version};
+}
+
 export async function GET(request:Request){
   const url=new URL(request.url);
   const q=(url.searchParams.get("q")??"").trim();
@@ -58,6 +66,8 @@ export async function GET(request:Request){
     const deezerResults=await Promise.all(deezerTracks.map(async(track,index)=>{
       const title=track.title_short??track.title??q;
       const artist=track.artist?.name??"";
+      const fullTitle=track.title??title;
+      const parsed=splitVersion(fullTitle);
       const baseQuery=[title,artist].filter(Boolean).join(" ");
       let links:any={deezer:track.link??"",youtubeSearch:youtubeSearch(baseQuery)};
       if(index<5&&track.link){
@@ -76,7 +86,7 @@ export async function GET(request:Request){
         }catch{}
       }
       return {
-        title,artist,compositionTitle:title,versionName:"",
+        title,artist,compositionTitle:parsed.composition||title,versionName:parsed.version,
         album:track.album?.title??"",releaseYear:null,genre:"",
         artwork:track.album?.cover_big??track.album?.cover_medium??"",
         previewUrl:track.preview??"",duration:track.duration??null,
@@ -88,6 +98,7 @@ export async function GET(request:Request){
     const itunesResults=await Promise.all(itunesTracks.map(async(track,index)=>{
       const title=track.trackName??q;
       const artist=track.artistName??"";
+      const parsed=splitVersion(title);
       const baseQuery=[title,artist].filter(Boolean).join(" ");
       let links:any={appleMusic:track.trackViewUrl??"",youtubeSearch:youtubeSearch(baseQuery)};
       if(index<3&&track.trackViewUrl){
@@ -106,7 +117,7 @@ export async function GET(request:Request){
         }catch{}
       }
       return {
-        title,artist,compositionTitle:title,versionName:"",
+        title,artist,compositionTitle:parsed.composition||title,versionName:parsed.version,
         album:track.collectionName??"",
         releaseYear:track.releaseDate?new Date(track.releaseDate).getUTCFullYear():null,
         genre:track.primaryGenreName??"",

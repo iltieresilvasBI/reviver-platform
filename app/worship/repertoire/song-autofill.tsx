@@ -9,7 +9,7 @@ type Candidate={
 };
 
 const empty={
-  title:"",artist:"",compositionTitle:"",versionName:"",themes:"",originalKey:"",recommendedKey:"",bpm:"",
+  title:"",artist:"",compositionTitle:"",versionName:"",themes:"",serviceTypes:"",originalKey:"",recommendedKey:"",bpm:"",
   youtubeUrl:"",spotifyUrl:"",appleMusicUrl:"",deezerUrl:"",chordUrl:"",lyricsUrl:"",notes:""
 };
 
@@ -19,34 +19,42 @@ export function SongAutoFillFields(){
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState("");
   const [sources,setSources]=useState<{deezer:number;itunes:number}>({deezer:0,itunes:0});
-  const lastAuto=useRef("");
+  const selectedTitle=useRef("");
 
   function change(key:keyof typeof empty,value:string){
     setFields(current=>({...current,[key]:value}));
   }
 
-  function apply(item:Candidate,auto=false){
+  function apply(item:Candidate){
+    selectedTitle.current=item.title;
+    const sourceDetails=[
+      item.album?"Álbum: "+item.album:"",
+      item.releaseYear?"Ano: "+item.releaseYear:"",
+      item.genre?"Género: "+item.genre:"",
+    ].filter(Boolean).join(" · ");
     setFields(current=>({
       ...current,
       title:item.title||current.title,
       artist:item.artist||current.artist,
       compositionTitle:item.compositionTitle||current.compositionTitle||item.title,
-      versionName:current.versionName,
+      versionName:item.versionName||current.versionName,
       youtubeUrl:item.links.youtube||item.links.youtubeSearch||current.youtubeUrl,
       spotifyUrl:item.links.spotify||current.spotifyUrl,
       appleMusicUrl:item.links.appleMusic||current.appleMusicUrl,
       deezerUrl:item.links.deezer||current.deezerUrl,
       chordUrl:item.links.chord||current.chordUrl,
       lyricsUrl:item.links.lyrics||current.lyricsUrl,
+      notes:current.notes||sourceDetails,
     }));
-    setMessage(auto
-      ?"Dados encontrados e preenchidos automaticamente. Confirme se é a versão correta."
-      :"Versão selecionada. Confirme os dados antes de adicionar.");
+    setResults([]);
+    setSources({deezer:0,itunes:0});
+    setMessage("Música selecionada. Os dados disponíveis foram preenchidos; complete apenas o que faltar.");
   }
 
   useEffect(()=>{
     const q=fields.title.trim();
     if(q.length<3){setResults([]);setSources({deezer:0,itunes:0});setMessage("");return}
+    if(selectedTitle.current===q)return;
     const timer=window.setTimeout(async()=>{
       setBusy(true);setMessage("");
       try{
@@ -56,12 +64,7 @@ export function SongAutoFillFields(){
         const list=(body.results??[]) as Candidate[];
         setResults(list);
         setSources(body.sources??{deezer:0,itunes:0});
-        if(list[0]&&lastAuto.current!==q){
-          lastAuto.current=q;
-          apply(list[0],true);
-        }else if(!list.length){
-          setMessage("Nenhuma correspondência encontrada. Pode preencher manualmente.");
-        }
+        if(!list.length)setMessage("Nenhuma correspondência encontrada. Pode preencher manualmente.");
       }catch{setMessage("Não foi possível pesquisar agora. Pode preencher manualmente.");}
       finally{setBusy(false)}
     },700);
@@ -88,7 +91,7 @@ export function SongAutoFillFields(){
         <button type="button" className="song-candidate-main" onClick={()=>apply(item)}>
           {item.artwork?<img src={item.artwork} alt="" loading="lazy"/>:<span className="song-art-placeholder">♪</span>}
           <span><strong>{item.title}</strong><small>{item.artist}{item.album?" · "+item.album:""}{item.releaseYear?" · "+item.releaseYear:""}</small><small className="muted">{item.source==="deezer"?"Deezer":"Apple/iTunes"}{item.duration?" · "+Math.floor(item.duration/60)+":"+String(item.duration%60).padStart(2,"0"):""}</small></span>
-          <span className="pill gold">usar</span>
+          <span className="pill gold">Selecionar</span>
         </button>
         <div className="button-row song-candidate-links">
           {item.links.deezer&&<a className="button small" href={item.links.deezer} target="_blank" rel="noreferrer">Deezer</a>}
@@ -104,6 +107,25 @@ export function SongAutoFillFields(){
       <div className="field"><label>Composição</label><input name="compositionTitle" value={fields.compositionTitle} onChange={e=>change("compositionTitle",e.target.value)} placeholder="Nome da composição"/></div>
       <div className="field"><label>Versão / arranjo</label><input name="versionName" value={fields.versionName} onChange={e=>change("versionName",e.target.value)} placeholder="Original / Ao vivo / Reviver"/></div>
       <div className="field"><label>Temas</label><input name="themes" value={fields.themes} onChange={e=>change("themes",e.target.value)} placeholder="Adoração, Gratidão, Missões"/></div>
+    </div>
+
+    <div className="field">
+      <label>Tipo de culto / pasta</label>
+      <input name="serviceTypes" list="worship-service-type-suggestions" value={fields.serviceTypes} onChange={e=>change("serviceTypes",e.target.value)} placeholder="Domingo, Ceia, Jovens, Vigília"/>
+      <datalist id="worship-service-type-suggestions">
+        <option value="Culto de domingo"/>
+        <option value="Ceia"/>
+        <option value="Jovens"/>
+        <option value="Mulheres"/>
+        <option value="Homens"/>
+        <option value="Kids"/>
+        <option value="Vigília"/>
+        <option value="Oração"/>
+        <option value="Evangelístico"/>
+        <option value="Conferência"/>
+        <option value="Especial"/>
+      </datalist>
+      <span className="muted small">Pode indicar mais de uma pasta separando por vírgulas.</span>
     </div>
 
     <div className="grid grid-3">
