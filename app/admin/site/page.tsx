@@ -56,7 +56,7 @@ export default async function SiteVisualEditor({searchParams}:{searchParams:Prom
             <input type="hidden" name="key" value={card.key}/>
             <div className="field"><label>Enviar imagem</label><input name="image" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/svg+xml"/></div>
             <div className="field"><label>Ou usar URL</label><input name="url" type="url" placeholder="https://..." defaultValue={(row[card.field as keyof Row] as string|null)??""}/></div>
-            <div className="button-row"><button className="button primary">Guardar</button><button className="button" name="url" value="">Usar padrão</button></div>
+            <div className="button-row"><button className="button primary">Guardar</button><button className="button" name="reset" value="1" formNoValidate>Usar padrão</button></div>
           </form>
         </article>;
       })}
