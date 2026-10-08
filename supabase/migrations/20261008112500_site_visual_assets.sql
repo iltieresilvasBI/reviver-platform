@@ -8,3 +8,5 @@ alter table public.site_settings
   add column if not exists campaign_image_url text,
   add column if not exists header_logo_url text,
   add column if not exists footer_logo_url text;
+
+create index if not exists site_settings_updated_by_idx on public.site_settings(updated_by);
