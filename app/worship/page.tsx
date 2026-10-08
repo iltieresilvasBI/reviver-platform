@@ -96,7 +96,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     const memberResponseByAssignment=new Map((responses??[]).map((row:any)=>[row.assignment_id,row]));
     const relevantRehearsals=upcomingRehearsals.filter((r:any)=>!r.schedule_id||memberScheduleIds.has(r.schedule_id));
 
-    return <AppShell title="Meu Louvor" active="/worship" email={ctx.email}>
+    return <AppShell title="Meu Louvor" active="/worship" email={ctx.email} variant="worship-member">
       {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
       <div className="member-readonly">
         <section className="hero-card">
