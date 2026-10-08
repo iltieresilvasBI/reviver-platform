@@ -52,9 +52,11 @@ export function SongAutoFillFields(){
   }
 
   useEffect(()=>{
-    const q=fields.title.trim();
-    if(q.length<3){setResults([]);setSources({deezer:0,itunes:0});setMessage("");return}
-    if(selectedTitle.current===q)return;
+    const title=fields.title.trim();
+    const artist=fields.artist.trim();
+    const q=[title,artist].filter(Boolean).join(" ");
+    if(title.length<3){setResults([]);setSources({deezer:0,itunes:0});setMessage("");return}
+    if(selectedTitle.current===title)return;
     const timer=window.setTimeout(async()=>{
       setBusy(true);setMessage("");
       try{
@@ -70,7 +72,7 @@ export function SongAutoFillFields(){
     },700);
     return ()=>window.clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[fields.title]);
+  },[fields.title,fields.artist]);
 
   return <>
     <div className="grid grid-2">
@@ -98,7 +100,7 @@ export function SongAutoFillFields(){
           {item.links.youtube&&<a className="button small" href={item.links.youtube} target="_blank" rel="noreferrer">YouTube</a>}
           {!item.links.youtube&&item.links.youtubeSearch&&<a className="button small" href={item.links.youtubeSearch} target="_blank" rel="noreferrer">Procurar no YouTube</a>}
           {item.links.spotify&&<a className="button small" href={item.links.spotify} target="_blank" rel="noreferrer">Spotify</a>}
-          {item.previewUrl&&<a className="button small" href={item.previewUrl} target="_blank" rel="noreferrer">Prévia</a>}
+          {item.previewUrl&&<audio controls preload="none" src={item.previewUrl} style={{height:32,maxWidth:220}} aria-label={"Prévia de "+item.title}/>} 
         </div>
       </div>)}</div>}
     </div>}
