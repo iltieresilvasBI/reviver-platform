@@ -11,7 +11,7 @@ function roleLabel(value:string|null|undefined){
   return map[value??""]??value??"Função";
 }
 
-export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
+export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
   const {id}=await params;
   const ctx=await getAccessContext();
   const {data:network}=await ctx.supabase.from("networks").select("id").eq("slug","worship").maybeSingle();
@@ -64,5 +64,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   }
   y+=35;parts.push(`<line x1="90" y1="${y-18}" x2="1110" y2="${y-18}" stroke="#343840" stroke-width="2"/>`);parts.push(line("Confirmações e alterações: Portal Reviver",90,y,20,400));
   parts.push("</svg>");
-  return new Response(parts.join(""),{headers:{"Content-Type":"image/svg+xml; charset=utf-8","Content-Disposition":'inline; filename="escala-reviver.svg"',"Cache-Control":"no-store"}});
+  const download=new URL(request.url).searchParams.get("download")==="1";
+  const disposition=(download?"attachment":"inline")+'; filename="escala-reviver.svg"';
+  return new Response(parts.join(""),{headers:{"Content-Type":"image/svg+xml; charset=utf-8","Content-Disposition":disposition,"Cache-Control":"no-store"}});
 }
