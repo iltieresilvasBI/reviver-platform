@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { SiteDynamicData } from '@/components/site-exact';
+import { site } from '@/lib/site-static';
 
 function localDate(iso:string|null){return iso?new Date(iso).toISOString().slice(0,10):null}
 function localTime(iso:string|null){return iso?new Date(iso).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Lisbon'}):'A confirmar'}
@@ -13,8 +14,12 @@ function period(start:string|null,end:string|null){
 export async function getSiteDynamicData():Promise<SiteDynamicData>{
  try{
   const s=await createClient();
-  const {data:items,error}=await s.from('content_items').select('id,content_type,title,slug,summary,body,event_start,event_end,event_location,campaign_start,campaign_end,cta_label,cta_url,youtube_id,featured,priority,published_at').eq('status','published').lte('published_at',new Date().toISOString()).order('priority',{ascending:false}).order('published_at',{ascending:false});
+  const [{data:items,error},{data:settings,error:settingsError}]=await Promise.all([
+    s.from('content_items').select('id,content_type,title,slug,summary,body,event_start,event_end,event_location,campaign_start,campaign_end,cta_label,cta_url,youtube_id,featured,priority,published_at').eq('status','published').lte('published_at',new Date().toISOString()).order('priority',{ascending:false}).order('published_at',{ascending:false}),
+    s.from('site_settings').select('hero_image_url,worship_image_url,kids_image_url,youth_image_url,women_image_url,men_image_url,campaign_image_url,header_logo_url,footer_logo_url').eq('id',1).maybeSingle(),
+  ]);
   if(error) throw error;
+  if(settingsError) throw settingsError;
   const ids=(items??[]).map(x=>x.id);
   const [{data:media,error:mediaError},{data:links,error:linksError}]=ids.length?await Promise.all([
     s.from('content_media').select('content_item_id,media_type,external_url,alt_text,sort_order').in('content_item_id',ids).order('sort_order'),
@@ -29,10 +34,27 @@ export async function getSiteDynamicData():Promise<SiteDynamicData>{
   const campaigns=(items??[]).filter(x=>x.content_type==='campaign').map(x=>({slug:x.slug,name:x.title,description:x.summary||x.body||'',period:period(x.campaign_start,x.campaign_end),status:(x.campaign_end&&new Date(x.campaign_end)<new Date()?'encerrada':'ativa') as 'ativa'|'encerrada',image:image(x.id),cta:x.cta_label||'Conhecer a campanha',demo:false,featured:Boolean(x.featured)}));
   const news=(items??[]).filter(x=>x.content_type==='post').map(x=>({slug:x.slug,title:x.title,category:categoryFor(networkByItem.get(x.id)),text:x.summary||x.body||''}));
   const videos=(items??[]).filter(x=>x.content_type==='video'&&x.youtube_id).map(x=>({id:x.youtube_id!,title:x.title,category:videoCategory(networkByItem.get(x.id)),description:x.summary||x.body||''}));
-  return {events,campaigns,news,videos};
+  const visuals={
+    hero:settings?.hero_image_url||site.heroImage,
+    worship:settings?.worship_image_url||site.worshipImage,
+    campaign:settings?.campaign_image_url||site.campaignImage,
+    networks:{
+      kids:settings?.kids_image_url||site.communityImage,
+      jovens:settings?.youth_image_url||site.worshipImage,
+      mulheres:settings?.women_image_url||site.campaignImage,
+      homens:settings?.men_image_url||site.communityImage,
+    },
+    headerLogo:settings?.header_logo_url||'/images/reviver-gold.svg',
+    footerLogo:settings?.footer_logo_url||'/images/reviver-official.svg',
+  };
+  return {events,campaigns,news,videos,visuals};
  }catch(error){
   console.error("public-site dynamic data unavailable",error);
-  return {events:[],campaigns:[],news:[],videos:[]};
+  return {events:[],campaigns:[],news:[],videos:[],visuals:{
+    hero:site.heroImage,worship:site.worshipImage,campaign:site.campaignImage,
+    networks:{kids:site.communityImage,jovens:site.worshipImage,mulheres:site.campaignImage,homens:site.communityImage},
+    headerLogo:'/images/reviver-gold.svg',footerLogo:'/images/reviver-official.svg'
+  }};
  }
 }
 
