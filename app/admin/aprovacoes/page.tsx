@@ -22,6 +22,25 @@ export default async function ApprovalsPage({searchParams}:{searchParams:Promise
     .order("updated_at",{ascending:true});
 
   const all=items??[];
+  const itemIds=all.map((item:any)=>item.id);
+  const {data:auditRows}=itemIds.length
+    ?await ctx.supabase.from("content_audit_log")
+      .select("id,content_item_id,actor_user_id,action,from_status,to_status,note,created_at")
+      .in("content_item_id",itemIds)
+      .order("created_at",{ascending:false})
+    :{data:[] as any[]};
+  const actorIds=Array.from(new Set((auditRows??[]).map((row:any)=>row.actor_user_id).filter(Boolean)));
+  const {data:actors}=actorIds.length
+    ?await ctx.supabase.from("profiles").select("id,display_name").in("id",actorIds)
+    :{data:[] as any[]};
+  const actorById=new Map((actors??[]).map((actor:any)=>[actor.id,actor.display_name||"Utilizador"]));
+  const auditByItem=new Map<string,any[]>();
+  for(const row of auditRows??[]){
+    const rows=auditByItem.get(row.content_item_id)??[];
+    rows.push(row);
+    auditByItem.set(row.content_item_id,rows);
+  }
+
   const status=(qs.status??"").trim();
   const type=(qs.type??"").trim();
   const filtered=all.filter((i:any)=>(!status||i.status===status)&&(!type||i.content_type===type));
@@ -81,6 +100,21 @@ export default async function ApprovalsPage({searchParams}:{searchParams:Promise
         </>}
         {i.status==="scheduled"&&<span className="notice">Publicação agendada: {i.scheduled_for?new Date(i.scheduled_for).toLocaleString("pt-PT"):"data indisponível"}</span>}
       </div>
+      <details style={{marginTop:14}}>
+        <summary className="text-button" style={{cursor:"pointer"}}>Histórico editorial ({(auditByItem.get(i.id)??[]).length})</summary>
+        <div className="list" style={{marginTop:10}}>
+          {(auditByItem.get(i.id)??[]).length===0
+            ?<div className="empty">Ainda não há transições registadas para este conteúdo.</div>
+            :(auditByItem.get(i.id)??[]).map((row:any)=><div className="list-row" key={row.id}>
+              <div>
+                <div className="button-row"><span className="pill">{row.action}</span><span className="muted small">{row.from_status??"—"} → {row.to_status??"—"}</span></div>
+                <strong>{actorById.get(row.actor_user_id)??"Sistema / utilizador"}</strong>
+                {row.note&&<div className="muted small" style={{marginTop:4}}>{row.note}</div>}
+              </div>
+              <span className="muted small">{new Date(row.created_at).toLocaleString("pt-PT")}</span>
+            </div>)}
+        </div>
+      </details>
     </div>)}</div>
   </AppShell>
 }
