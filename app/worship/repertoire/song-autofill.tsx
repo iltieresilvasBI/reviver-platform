@@ -4,8 +4,8 @@ import {useEffect,useRef,useState} from "react";
 
 type Candidate={
   title:string;artist:string;compositionTitle:string;versionName:string;album:string;releaseYear:number|null;
-  genre:string;artwork:string;previewUrl:string;
-  links:{youtube?:string;spotify?:string;appleMusic?:string;deezer?:string;chord?:string;lyrics?:string};
+  genre:string;artwork:string;previewUrl:string;duration?:number|null;source?:"deezer"|"itunes";sourceUrl?:string;
+  links:{youtube?:string;youtubeSearch?:string;spotify?:string;appleMusic?:string;deezer?:string;chord?:string;lyrics?:string};
 };
 
 const empty={
@@ -18,6 +18,7 @@ export function SongAutoFillFields(){
   const [results,setResults]=useState<Candidate[]>([]);
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState("");
+  const [sources,setSources]=useState<{deezer:number;itunes:number}>({deezer:0,itunes:0});
   const lastAuto=useRef("");
 
   function change(key:keyof typeof empty,value:string){
@@ -31,7 +32,7 @@ export function SongAutoFillFields(){
       artist:item.artist||current.artist,
       compositionTitle:item.compositionTitle||current.compositionTitle||item.title,
       versionName:current.versionName,
-      youtubeUrl:item.links.youtube||current.youtubeUrl,
+      youtubeUrl:item.links.youtube||item.links.youtubeSearch||current.youtubeUrl,
       spotifyUrl:item.links.spotify||current.spotifyUrl,
       appleMusicUrl:item.links.appleMusic||current.appleMusicUrl,
       deezerUrl:item.links.deezer||current.deezerUrl,
@@ -45,7 +46,7 @@ export function SongAutoFillFields(){
 
   useEffect(()=>{
     const q=fields.title.trim();
-    if(q.length<3){setResults([]);setMessage("");return}
+    if(q.length<3){setResults([]);setSources({deezer:0,itunes:0});setMessage("");return}
     const timer=window.setTimeout(async()=>{
       setBusy(true);setMessage("");
       try{
@@ -54,6 +55,7 @@ export function SongAutoFillFields(){
         if(!r.ok){setMessage(body.error||"Não foi possível pesquisar.");return}
         const list=(body.results??[]) as Candidate[];
         setResults(list);
+        setSources(body.sources??{deezer:0,itunes:0});
         if(list[0]&&lastAuto.current!==q){
           lastAuto.current=q;
           apply(list[0],true);
@@ -75,15 +77,27 @@ export function SongAutoFillFields(){
 
     {(busy||message||results.length>0)&&<div className="song-search-box">
       <div className="button-row" style={{justifyContent:"space-between"}}>
-        <strong>{busy?"A pesquisar na internet…":"Correspondências encontradas"}</strong>
+        <div>
+          <strong>{busy?"A pesquisar Deezer e outros catálogos…":"Correspondências encontradas"}</strong>
+          {!busy&&<div className="muted small" style={{marginTop:4}}>Deezer é a fonte principal · {sources.deezer} Deezer · {sources.itunes} Apple/iTunes</div>}
+        </div>
         <span className="muted small">Selecione outra versão se necessário.</span>
       </div>
       {message&&<div className="notice" style={{marginTop:10}}>{message}</div>}
-      {results.length>0&&<div className="song-candidates">{results.map((item,index)=><button type="button" className="song-candidate" onClick={()=>apply(item)} key={item.title+"|"+item.artist+"|"+index}>
-        {item.artwork?<img src={item.artwork} alt="" loading="lazy"/>:<span className="song-art-placeholder">♪</span>}
-        <span><strong>{item.title}</strong><small>{item.artist}{item.album?" · "+item.album:""}{item.releaseYear?" · "+item.releaseYear:""}</small></span>
-        <span className="pill gold">usar</span>
-      </button>)}</div>}
+      {results.length>0&&<div className="song-candidates">{results.map((item,index)=><div className="song-candidate" key={item.title+"|"+item.artist+"|"+index}>
+        <button type="button" className="song-candidate-main" onClick={()=>apply(item)}>
+          {item.artwork?<img src={item.artwork} alt="" loading="lazy"/>:<span className="song-art-placeholder">♪</span>}
+          <span><strong>{item.title}</strong><small>{item.artist}{item.album?" · "+item.album:""}{item.releaseYear?" · "+item.releaseYear:""}</small><small className="muted">{item.source==="deezer"?"Deezer":"Apple/iTunes"}{item.duration?" · "+Math.floor(item.duration/60)+":"+String(item.duration%60).padStart(2,"0"):""}</small></span>
+          <span className="pill gold">usar</span>
+        </button>
+        <div className="button-row song-candidate-links">
+          {item.links.deezer&&<a className="button small" href={item.links.deezer} target="_blank" rel="noreferrer">Deezer</a>}
+          {item.links.youtube&&<a className="button small" href={item.links.youtube} target="_blank" rel="noreferrer">YouTube</a>}
+          {!item.links.youtube&&item.links.youtubeSearch&&<a className="button small" href={item.links.youtubeSearch} target="_blank" rel="noreferrer">Procurar no YouTube</a>}
+          {item.links.spotify&&<a className="button small" href={item.links.spotify} target="_blank" rel="noreferrer">Spotify</a>}
+          {item.previewUrl&&<a className="button small" href={item.previewUrl} target="_blank" rel="noreferrer">Prévia</a>}
+        </div>
+      </div>)}</div>}
     </div>}
 
     <div className="grid grid-3">
