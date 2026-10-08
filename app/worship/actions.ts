@@ -711,3 +711,55 @@ export async function saveResolvedWorshipSongLinks(formData:FormData){
   revalidatePath("/worship/repertoire");
   redirect("/worship/repertoire?message="+encodeURIComponent("Links de streaming atualizados."));
 }
+
+
+export async function createWorshipRunSheetItem(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const position=Math.max(1,Number(formData.get("position")??1)||1);
+  const itemType=String(formData.get("itemType")??"other");
+  const title=String(formData.get("title")??"").trim();
+  const songId=String(formData.get("songId")??"").trim()||null;
+  const ownerLabel=String(formData.get("ownerLabel")??"").trim()||null;
+  const plannedRaw=String(formData.get("plannedMinutes")??"").trim();
+  const plannedMinutes=plannedRaw?Math.max(0,Math.min(240,Number(plannedRaw)||0)):null;
+  const notes=String(formData.get("notes")??"").trim()||null;
+  if(!title) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent("Indica o título do item."));
+  const {error}=await supabase.from("worship_run_sheet_items").insert({
+    schedule_id:scheduleId,position,item_type:itemType,title,song_id:songId,owner_label:ownerLabel,planned_minutes:plannedMinutes,notes,created_by:String(uid)
+  });
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+  revalidatePath("/worship");
+}
+
+export async function updateWorshipRunSheetItem(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("itemId")??"");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const patch={
+    position:Math.max(1,Number(formData.get("position")??1)||1),
+    item_type:String(formData.get("itemType")??"other"),
+    title:String(formData.get("title")??"").trim(),
+    song_id:String(formData.get("songId")??"").trim()||null,
+    owner_label:String(formData.get("ownerLabel")??"").trim()||null,
+    planned_minutes:String(formData.get("plannedMinutes")??"").trim()?Math.max(0,Math.min(240,Number(formData.get("plannedMinutes"))||0)):null,
+    notes:String(formData.get("notes")??"").trim()||null,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await supabase.from("worship_run_sheet_items").update(patch).eq("id",id).eq("schedule_id",scheduleId);
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
+
+export async function deleteWorshipRunSheetItem(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("itemId")??"");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const {error}=await supabase.from("worship_run_sheet_items").delete().eq("id",id).eq("schedule_id",scheduleId);
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
