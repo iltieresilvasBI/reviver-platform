@@ -694,3 +694,20 @@ export async function saveMyWorshipCommunicationPreference(formData:FormData){
   revalidatePath("/worship/share");
   redirect("/worship/share?message="+encodeURIComponent("Preferências de comunicação atualizadas."));
 }
+
+
+export async function saveResolvedWorshipSongLinks(formData:FormData){
+  const supabase=await createClient();
+  const songId=String(formData.get("songId")??"");
+  const patch={
+    youtube_url:String(formData.get("youtubeUrl")??"").trim()||null,
+    spotify_url:String(formData.get("spotifyUrl")??"").trim()||null,
+    apple_music_url:String(formData.get("appleMusicUrl")??"").trim()||null,
+    deezer_url:String(formData.get("deezerUrl")??"").trim()||null,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await supabase.from("worship_songs").update(patch).eq("id",songId);
+  if(error) redirect("/worship/repertoire?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/repertoire");
+  redirect("/worship/repertoire?message="+encodeURIComponent("Links de streaming atualizados."));
+}
