@@ -175,6 +175,20 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     return {count:rows.length,last:rows[0]??null};
   };
 
+  const recommendedSongsForSchedule=(schedule:any)=>{
+    const serviceType=String(schedule.service_type??"").trim().toLocaleLowerCase("pt-PT");
+    const serviceThemes=((schedule.themes??[]) as string[]).length?(schedule.themes??[]):schedule.theme?[schedule.theme]:[];
+    return [...(songs??[])].map((song:any)=>{
+      const folders=(Array.isArray(song.service_types)?song.service_types:[]).map((x:string)=>x.toLocaleLowerCase("pt-PT"));
+      const themes=(Array.isArray(song.themes)?song.themes:[]).map((x:string)=>x.toLocaleLowerCase("pt-PT"));
+      const folderMatch=Boolean(serviceType)&&folders.some((x:string)=>x===serviceType||x.includes(serviceType)||serviceType.includes(x));
+      const themeMatches=serviceThemes.filter((t:string)=>themes.includes(t.toLocaleLowerCase("pt-PT"))).length;
+      const usage=usageBefore(song.id,schedule.starts_at);
+      const score=(folderMatch?100:0)+(themeMatches*25)-Math.min(usage.count,20);
+      return {song,usage,folderMatch,themeMatches,score};
+    }).sort((a:any,b:any)=>b.score-a.score||a.usage.count-b.usage.count||String(a.song.title).localeCompare(String(b.song.title),"pt-PT"));
+  };
+
   const {count:lessonCount}=canLead
     ?await ctx.supabase.from("academy_lessons").select("*",{count:"exact",head:true}).eq("active",true)
     :{count:0 as number|null};
@@ -323,7 +337,14 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     </>}
 
     {canLead&&<>
-      <div className="section-title"><div><p className="eyebrow">OPERAÇÃO</p><h2>Configurar escalas</h2></div><span className="muted small">Admin/Líder</span></div>
+      <div className="section-title"><div><p className="eyebrow">OPERAÇÃO</p><h2>Configurar escala</h2></div><span className="muted small">Fluxo guiado · Admin/Líder</span></div>
+
+      <div className="grid grid-4" style={{marginBottom:18}}>
+        <article className="card"><span className="pill gold">1</span><h3>Culto</h3><p className="muted small">Data, tipo, grupo e tema.</p></article>
+        <article className="card"><span className="pill gold">2</span><h3>Equipa</h3><p className="muted small">Preencher grupo e ajustar funções.</p></article>
+        <article className="card"><span className="pill gold">3</span><h3>Repertório e ensaio</h3><p className="muted small">Músicas adequadas ao culto e ensaio associado.</p></article>
+        <article className="card"><span className="pill gold">4</span><h3>Rever e partilhar</h3><p className="muted small">Aprovar, publicar e enviar a escala.</p></article>
+      </div>
 
       <div className="grid grid-3" style={{marginBottom:18}}>
         <details className="card">
@@ -331,7 +352,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <form action={createWorshipSchedule} className="form-grid" style={{marginTop:16}}>
             <p className="eyebrow">NOVA ESCALA</p>
             <div className="field"><label>Título</label><input name="title" required placeholder="Culto de domingo"/></div>
-            <div className="grid grid-3"><div className="field"><label>Tipo</label><input name="serviceType" placeholder="Celebração / manhã / noite"/></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div><div className="field"><label>Temas do culto</label><input name="themes" placeholder="Graça, Família, Missões"/></div></div>
+            <div className="grid grid-3"><div className="field"><label>Tipo de culto</label><input name="serviceType" list="worship-service-types" placeholder="Culto de domingo"/><datalist id="worship-service-types"><option value="Culto de domingo"/><option value="Ceia"/><option value="Jovens"/><option value="Mulheres"/><option value="Homens"/><option value="Kids"/><option value="Vigília"/><option value="Oração"/><option value="Evangelístico"/><option value="Conferência"/><option value="Especial"/></datalist></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div><div className="field"><label>Temas do culto</label><input name="themes" placeholder="Graça, Família, Missões"/></div></div>
             <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Chegada</label><input name="callTime" type="datetime-local"/></div></div>
             <div className="field"><label>Notas</label><textarea name="notes"/></div>
             <button className="button primary">Criar escala</button>
@@ -399,10 +420,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             <p className="eyebrow">ADICIONAR MÚSICA</p>
             <form action={addSongToWorshipSchedule} className="form-grid">
               <input type="hidden" name="scheduleId" value={s.id}/>
-              <div className="field"><label>Música por tema</label><select name="songId" required><option value="">Selecionar</option>{(songs??[]).filter((song:any)=>{
-                const serviceThemes=((s.themes??[]) as string[]).length?(s.themes??[]):s.theme?[s.theme]:[];
-                return serviceThemes.length===0||(Array.isArray(song.themes)&&song.themes.some((theme:string)=>serviceThemes.some((t:string)=>t.toLocaleLowerCase("pt-PT")===theme.toLocaleLowerCase("pt-PT"))));
-              }).map((song:any)=>{const usage=usageBefore(song.id,s.starts_at); return <option value={song.id} key={song.id}>{song.title} · {usage.count}× em 4 meses</option>})}</select></div>
+              <div className="field"><label>Música recomendada</label><select name="songId" required><option value="">Selecionar</option>{recommendedSongsForSchedule(s).slice(0,12).map(({song,usage,folderMatch,themeMatches}:any)=><option value={song.id} key={song.id}>{song.title+" · "+usage.count+"×/4m"+(folderMatch?" · pasta ✓":"")+(themeMatches?" · "+themeMatches+" tema"+(themeMatches===1?"":"s")+" ✓":"")}</option>)}</select><span className="muted small">Prioriza a pasta do tipo de culto, os temas e músicas menos usadas nos últimos quatro meses.</span></div>
               <div className="grid grid-2"><div className="field"><label>Posição</label><input name="position" type="number" min="1" defaultValue="1"/></div><div className="field"><label>Tom</label><input name="keyOverride"/></div></div>
               <button className="button">Adicionar ao culto</button>
             </form>
@@ -435,6 +453,11 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                 <input type="hidden" name="publicRepertoire" value={s.public_repertoire?"false":"true"}/>
                 <button className="button">{s.public_repertoire?"Retirar repertório público":"Autorizar repertório público"}</button>
               </form>
+              <div className="button-row" style={{marginTop:10}}>
+                <Link className="button primary" href={"/worship/share?schedule="+s.id}>Partilhar escala / WhatsApp</Link>
+                <a className="button" href={"/api/worship/schedule-card/"+s.id} target="_blank" rel="noreferrer">Abrir card da escala</a>
+                <Link className="button" href={"/worship/run-sheet/"+s.id}>Roteiro do culto</Link>
+              </div>
             </div>
           </div>
         </div>
