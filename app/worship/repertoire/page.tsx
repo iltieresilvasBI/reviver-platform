@@ -132,6 +132,15 @@ export default async function WorshipRepertoirePage({
       <article className="card metric"><span>Sem uso em 4 meses</span><strong>{neverUsed}</strong></article>
     </div>
 
+    <div className="section-title"><div><p className="eyebrow">PASTAS</p><h2>Repertório por tipo de culto</h2></div><span className="muted small">Uma música pode estar em várias pastas.</span></div>
+    <div className="grid grid-4">
+      <Link className="card" href="/worship/repertoire"><span className="pill gold">Todas</span><h3 style={{marginBottom:4}}>Todo o repertório</h3><span className="muted small">{(songs??[]).length} músicas</span></Link>
+      {allServiceTypes.map(type=>{
+        const count=(songs??[]).filter((song:any)=>(Array.isArray(song.service_types)?song.service_types:[]).some((value:string)=>normalise(value)===normalise(type))).length;
+        return <Link className="card" href={"/worship/repertoire?serviceType="+encodeURIComponent(type)} key={type}><span className={normalise(selectedServiceType)===normalise(type)?"pill gold":"pill"}>{type}</span><h3 style={{marginBottom:4}}>{type}</h3><span className="muted small">{count} música{count===1?"":"s"}</span></Link>;
+      })}
+    </div>
+
     <div className="section-title"><div><p className="eyebrow">FILTRO E SUGESTÃO</p><h2>Encontrar repertório</h2></div><span className="muted small">Últimos 4 meses · Europe/Lisbon</span></div>
     <form method="get" className="card form-grid">
       <div className="grid grid-4">

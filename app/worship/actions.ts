@@ -87,6 +87,10 @@ export async function createWorshipSong(formData:FormData){
   const themes=csvThemes(String(formData.get("themes")??""));
   const service_types=csvThemes(String(formData.get("serviceTypes")??""));
   const notes=String(formData.get("notes")??"").trim()||null;
+  let duplicateQuery=supabase.from("worship_songs").select("id,title,artist").ilike("title",title).eq("active",true).is("archived_at",null).limit(1);
+  duplicateQuery=artist?duplicateQuery.ilike("artist",artist):duplicateQuery.is("artist",null);
+  const {data:duplicate}=await duplicateQuery.maybeSingle();
+  if(duplicate) redirect("/worship?message="+encodeURIComponent("Esta música já existe no repertório: "+duplicate.title+(duplicate.artist?" — "+duplicate.artist:"")));
   const {error}=await supabase.from("worship_songs").insert({
     title,artist,composition_title,version_name,original_key,recommended_key,default_key,bpm,youtube_url,spotify_url,apple_music_url,deezer_url,chord_url,lyrics_url,themes,service_types,notes,created_by:String(uid)
   });
