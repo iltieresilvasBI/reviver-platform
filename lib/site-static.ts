@@ -1,13 +1,17 @@
 export const site = {
   name: 'Igreja Reviver', academyUrl: '/login', email: '', whatsapp: '', address: '', mapEmbedUrl: '',
   social: { instagram: '', facebook: '', youtube: '', other: '' }, hours: '',
+  heroImage: 'https://images.unsplash.com/photo-1655392032677-513540578a20?auto=format&fit=crop&fm=jpg&q=82&w=2200',
+  worshipImage: 'https://images.unsplash.com/photo-1658442226030-b75a78d85d71?auto=format&fit=crop&fm=jpg&q=82&w=2000',
+  communityImage: 'https://images.unsplash.com/photo-1762158007944-81c9db8df85f?auto=format&fit=crop&fm=jpg&q=80&w=1800',
+  campaignImage: 'https://images.unsplash.com/photo-1534302802788-8661202e643c?auto=format&fit=crop&fm=jpg&q=80&w=1800',
 };
 export const categories = ['Geral', 'Kids', 'Jovens', 'Mulheres', 'Homens', 'Louvor'];
 export type EventItem = { slug:string; name:string; date:string|null; time:string; location:string; description:string; category:string; image:string; demo:boolean };
 export const demoEvents:EventItem[] = [
-  {slug:'encontro-em-comunidade',name:'Encontro em comunidade',date:null,time:'A confirmar',location:'Local a confirmar',description:'Exemplo de apresentação de um encontro da igreja. O programa, a data e as condições de participação serão substituídos pela informação oficial.',category:'Geral',image:'',demo:true},
-  {slug:'uma-nova-geracao',name:'Uma nova geração',date:null,time:'A confirmar',location:'Local a confirmar',description:'Exemplo de evento da rede de jovens. Este conteúdo demonstra a organização da agenda e não anuncia um encontro real.',category:'Jovens',image:'',demo:true},
-  {slug:'noite-de-louvor',name:'Noite de louvor',date:null,time:'A confirmar',location:'Local a confirmar',description:'Exemplo de evento do Ministério de Louvor. Repertório, equipa, horário e local aguardam confirmação da igreja.',category:'Louvor',image:'/images/sanctuary.webp',demo:true},
+  {slug:'encontro-em-comunidade',name:'Encontro em comunidade',date:null,time:'A confirmar',location:'Local a confirmar',description:'Exemplo de apresentação de um encontro da igreja. O programa, a data e as condições de participação serão substituídos pela informação oficial.',category:'Geral',image:site.communityImage,demo:true},
+  {slug:'uma-nova-geracao',name:'Uma nova geração',date:null,time:'A confirmar',location:'Local a confirmar',description:'Exemplo de evento da rede de jovens. Este conteúdo demonstra a organização da agenda e não anuncia um encontro real.',category:'Jovens',image:site.worshipImage,demo:true},
+  {slug:'noite-de-louvor',name:'Noite de louvor',date:null,time:'A confirmar',location:'Local a confirmar',description:'Exemplo de evento do Ministério de Louvor. Repertório, equipa, horário e local aguardam confirmação da igreja.',category:'Louvor',image:site.heroImage,demo:true},
 ];
 export const networks = [
  {slug:'kids',name:'Reviver Kids',label:'INFÂNCIA',phrase:'Pequenos passos. Grandes descobertas.',description:'Um espaço dedicado às crianças e às famílias.',number:'01'},
@@ -20,8 +24,8 @@ export const videoCategories=['Cultos','Mensagens','Louvor','Testemunhos','Espec
 export const demoVideos:Video[]=[];
 export type CampaignItem={slug:string;name:string;description:string;period:string;status:'ativa'|'encerrada';image:string;cta:string;demo:boolean;featured:boolean};
 export const demoCampaigns:CampaignItem[]=[
- {slug:'juntos-para-servir',name:'Juntos para servir',description:'Modelo de campanha para apresentar um propósito, um período e uma forma de participação. Conteúdo demonstrativo; não é uma campanha oficial.',period:'Período a confirmar',status:'ativa',image:'',cta:'Conhecer a campanha',demo:true,featured:true},
- {slug:'caminhos-de-partilha',name:'Caminhos de partilha',description:'Modelo de arquivo de uma campanha encerrada. Os resultados e imagens poderão ser apresentados nesta página.',period:'Período a confirmar',status:'encerrada',image:'',cta:'Ver campanha',demo:true,featured:false},
+ {slug:'juntos-para-servir',name:'Juntos para servir',description:'Modelo de campanha para apresentar um propósito, um período e uma forma de participação. Conteúdo demonstrativo; não é uma campanha oficial.',period:'Período a confirmar',status:'ativa',image:site.campaignImage,cta:'Conhecer a campanha',demo:true,featured:true},
+ {slug:'caminhos-de-partilha',name:'Caminhos de partilha',description:'Modelo de arquivo de uma campanha encerrada. Os resultados e imagens poderão ser apresentados nesta página.',period:'Período a confirmar',status:'encerrada',image:site.communityImage,cta:'Ver campanha',demo:true,featured:false},
 ];
 export type NewsItem={slug:string;title:string;category:string;text:string};
 export const demoNews:NewsItem[]=[
