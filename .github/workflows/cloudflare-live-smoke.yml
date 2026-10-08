@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for path in /worship /academy /media /admin/site; do
+          for path in /worship /worship/repertoire /worship/share /worship/substitutions /worship/reports /academy /media /admin/site; do
             headers=$(mktemp)
             code=$(curl -sS -o /dev/null -D "$headers" -w "%{http_code}" "$BASE_URL$path")
             location=$(awk 'BEGIN{IGNORECASE=1} /^location:/{gsub("\r",""); print $2}' "$headers" | tail -1)
@@ -53,9 +53,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          code=$(curl -sS -o /tmp/song-search.json -w "%{http_code}" "$BASE_URL/api/worship/search-song?q=Oceans")
+          code=$(curl -sS -o /tmp/song-search.json -w "%{http_code}" "$BASE_URL/api/worship/search-song?q=Bondade%20de%20Deus")
           echo "/api/worship/search-song -> $code"
           test "$code" = "401"
+
+      - name: Health endpoint responds
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/health.json -w "%{http_code}" "$BASE_URL/api/health")
+          echo "/api/health -> $code"
+          test "$code" = "200"
 
       - name: Security headers sanity
         shell: bash
