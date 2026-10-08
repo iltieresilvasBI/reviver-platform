@@ -8,6 +8,9 @@ import { PublicSiteShell } from "@/components/public-site-shell";
 function categoryFor(slug?:string|null){
   return slug==="kids"?"Kids":slug==="youth"?"Jovens":slug==="women"?"Mulheres":slug==="men"?"Homens":slug==="worship"?"Louvor":"Geral";
 }
+function publicNetworkSlug(slug?:string|null){
+  return slug==="youth"?"jovens":slug==="women"?"mulheres":slug==="men"?"homens":slug??null;
+}
 function localDate(iso:string|null){return iso?new Date(iso).toISOString().slice(0,10):null}
 function localTime(iso:string|null){return iso?new Date(iso).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Lisbon"}):"A confirmar"}
 function period(start:string|null,end:string|null){
@@ -31,7 +34,7 @@ export default async function ContentPreview({params}:{params:Promise<{id:string
   const networkSlug=(links?.[0] as any)?.networks?.slug??null;
   const cover=(media??[]).find((m:any)=>m.media_type==="cover")??media?.[0];
   const image=cover?.external_url??"";
-  const data:SiteDynamicData={events:[...base.events],campaigns:[...base.campaigns],news:[...base.news],videos:[...base.videos],visuals:base.visuals};
+  const data:SiteDynamicData={events:[...base.events],campaigns:[...base.campaigns],news:[...base.news],videos:[...base.videos],highlights:[...base.highlights],galleries:[...base.galleries],visuals:base.visuals};
   let previewPath="";
 
   if(item.content_type==="event"){
@@ -55,6 +58,20 @@ export default async function ContentPreview({params}:{params:Promise<{id:string
   }else if(item.content_type==="video"&&item.youtube_id){
     data.videos=[{id:item.youtube_id,title:item.title,category:networkSlug==="worship"?"Louvor":"Especiais",description:item.summary||item.body||""},...data.videos.filter(x=>x.id!==item.youtube_id)];
     previewPath="midia";
+  }else if(item.content_type==="home_highlight"){
+    data.highlights=[{
+      id:item.id,slug:item.slug,title:item.title,summary:item.summary||item.body||"",image,
+      ctaLabel:item.cta_label||"Saber mais",ctaUrl:item.cta_url||"/contactos",featured:Boolean(item.featured),priority:Number(item.priority||0)
+    },...data.highlights.filter(x=>x.id!==item.id)];
+    previewPath="";
+  }else if(item.content_type==="gallery"){
+    data.galleries=[{
+      id:item.id,slug:item.slug,title:item.title,summary:item.summary||item.body||"",network:publicNetworkSlug(networkSlug),
+      images:(media??[]).filter((m:any)=>m.external_url).map((m:any)=>({url:m.external_url,alt:m.alt_text||item.title}))
+    },...data.galleries.filter(x=>x.id!==item.id)];
+    previewPath=publicNetworkSlug(networkSlug)&&["kids","jovens","mulheres","homens"].includes(publicNetworkSlug(networkSlug)!)
+      ?"redes/"+publicNetworkSlug(networkSlug)
+      :"midia";
   }else{
     return <PublicSiteShell>
       <div className="cms-preview-bar">PRÉ-VISUALIZAÇÃO INTERNA · {item.status} · <Link href="/media">voltar ao CMS</Link></div>
