@@ -17,12 +17,15 @@
     "react-dom": "^19.1.0",
     "zod": "^4.1.0",
     "lucide-react": "^0.468.0",
-    "xlsx": "^0.18.5"
+    "read-excel-file": "^9.3.10"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "typescript": "^5.9.0"
+  },
+  "overrides": {
+    "postcss": "8.5.23"
   }
 }
