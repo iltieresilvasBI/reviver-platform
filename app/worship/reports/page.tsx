@@ -24,7 +24,7 @@ export default async function WorshipReportsPage({
   const from=qs.from?new Date(qs.from+"T00:00:00"):defaultFrom;
   const to=qs.to?new Date(qs.to+"T23:59:59"):now;
 
-  const [{data:executions,error},{data:songs},{data:themes}]=await Promise.all([
+  const [{data:executions,error},{data:songs},{data:themes},{data:teamAssignments},{data:directory},{data:memberProfiles}]=await Promise.all([
     ctx.supabase.from("worship_song_executions")
       .select("id,song_id,key_used,version_used,confirmed_at,worship_songs!inner(title,artist,composition_title,themes),worship_schedules!inner(id,title,service_type,starts_at,status)")
       .eq("worship_schedules.status","completed")
@@ -32,6 +32,13 @@ export default async function WorshipReportsPage({
       .lte("worship_schedules.starts_at",to.toISOString()),
     ctx.supabase.from("worship_songs").select("id,title,artist,composition_title,themes").eq("active",true).is("archived_at",null).order("title"),
     ctx.supabase.from("worship_themes").select("name").eq("active",true).order("name"),
+    ctx.supabase.from("worship_schedule_members")
+      .select("id,membership_id,attendance_status,worship_schedules!inner(id,title,starts_at,status)")
+      .neq("worship_schedules.status","cancelled")
+      .gte("worship_schedules.starts_at",from.toISOString())
+      .lte("worship_schedules.starts_at",to.toISOString()),
+    ctx.supabase.rpc("worship_member_directory"),
+    ctx.supabase.from("worship_member_profiles").select("membership_id,group_code,roles,active").eq("active",true),
   ]);
 
   const theme=(qs.theme??"").trim().toLocaleLowerCase("pt-PT");
@@ -72,6 +79,50 @@ export default async function WorshipReportsPage({
   const topThemes=[...themeCounts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"pt-PT"));
   const topServiceTypes=[...serviceTypeCounts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"pt-PT"));
   const unused=(songs??[]).filter((song:any)=>!countBySong.has(song.id));
+  const personByMembership=new Map((directory??[]).map((person:any)=>[person.membership_id,person]));
+  const profileByMembership=new Map((memberProfiles??[]).map((profile:any)=>[profile.membership_id,profile]));
+  const loadByMember=new Map<string,{membershipId:string;name:string;group:string;scheduled:number;completed:number}>();
+  for(const person of directory??[]){
+    if(person.status!=="active") continue;
+    const profile=profileByMembership.get(person.membership_id) as any;
+    loadByMember.set(person.membership_id,{
+      membershipId:person.membership_id,
+      name:person.display_name||person.email||"Membro",
+      group:profile?.group_code||"—",
+      scheduled:0,
+      completed:0,
+    });
+  }
+  for(const assignment of teamAssignments??[]){
+    const person=personByMembership.get(assignment.membership_id) as any;
+    const profile=profileByMembership.get(assignment.membership_id) as any;
+    const current=loadByMember.get(assignment.membership_id)??{
+      membershipId:assignment.membership_id,
+      name:person?.display_name||person?.email||"Membro",
+      group:profile?.group_code||"—",
+      scheduled:0,
+      completed:0,
+    };
+    current.scheduled++;
+    if(assignment.attendance_status==="completed") current.completed++;
+    loadByMember.set(assignment.membership_id,current);
+  }
+  const memberLoad=[...loadByMember.values()].sort((a,b)=>b.scheduled-a.scheduled||a.name.localeCompare(b.name,"pt-PT"));
+  const activeLoads=memberLoad.filter(member=>member.group!=="—");
+  const avgLoad=activeLoads.length?activeLoads.reduce((sum,member)=>sum+member.scheduled,0)/activeLoads.length:0;
+  const overloaded=memberLoad.filter(member=>member.scheduled>=Math.max(3,Math.ceil(avgLoad+1)));
+  const underloaded=memberLoad.filter(member=>member.scheduled===0);
+  const groupLoad=new Map<string,{scheduled:number;completed:number;members:Set<string>}>();
+  for(const member of memberLoad){
+    if(member.group==="—") continue;
+    const current=groupLoad.get(member.group)??{scheduled:0,completed:0,members:new Set<string>()};
+    current.scheduled+=member.scheduled;
+    current.completed+=member.completed;
+    current.members.add(member.membershipId);
+    groupLoad.set(member.group,current);
+  }
+  const groupLoadRows=[...groupLoad.entries()].sort((a,b)=>a[0].localeCompare(b[0],"pt-PT"));
+
   const query=new URLSearchParams();
   query.set("from",from.toISOString().slice(0,10));
   query.set("to",to.toISOString().slice(0,10));
@@ -100,6 +151,28 @@ export default async function WorshipReportsPage({
       <article className="card metric"><span>Sem utilização</span><strong>{unused.length}</strong></article>
       <article className="card metric"><span>Meses no período</span><strong>{monthCounts.size}</strong></article>
     </div>
+
+    <div className="section-title"><div><p className="eyebrow">EQUIPA</p><h2>Equilíbrio de escalas</h2></div><span className="muted small">Período filtrado · cultos cancelados excluídos.</span></div>
+    <div className="grid grid-4">
+      <article className="card metric"><span>Membros ativos</span><strong>{memberLoad.length}</strong></article>
+      <article className="card metric"><span>Média de escalas</span><strong>{avgLoad.toFixed(1)}</strong></article>
+      <article className="card metric"><span>Acima da média</span><strong>{overloaded.length}</strong></article>
+      <article className="card metric"><span>Sem escala</span><strong>{underloaded.length}</strong></article>
+    </div>
+    <div className="grid grid-2" style={{marginTop:16}}>
+      <div className="card">
+        <p className="eyebrow">CARGA POR MEMBRO</p>
+        <div className="list">{memberLoad.length===0?<div className="empty">Sem membros ativos para analisar.</div>:memberLoad.map(member=><div className="list-row" key={member.membershipId}><div><strong>{member.name}</strong><div className="muted small">Grupo {member.group} · {member.completed} presença{member.completed===1?"":"s"} concluída{member.completed===1?"":"s"}</div></div><span className={member.scheduled>=Math.max(3,Math.ceil(avgLoad+1))?"pill gold":"pill"}>{member.scheduled} escala{member.scheduled===1?"":"s"}</span></div>)}</div>
+      </div>
+      <div className="card">
+        <p className="eyebrow">CARGA POR GRUPO</p>
+        <div className="list">{groupLoadRows.length===0?<div className="empty">Nenhum grupo com dados no período.</div>:groupLoadRows.map(([group,load])=><div className="list-row" key={group}><div><strong>Grupo {group}</strong><div className="muted small">{load.members.size} membro{load.members.size===1?"":"s"} · {load.completed} presença{load.completed===1?"":"s"} concluída{load.completed===1?"":"s"}</div></div><span className="pill">{load.scheduled} escalas</span></div>)}</div>
+      </div>
+    </div>
+    {(overloaded.length>0||underloaded.length>0)&&<div className="notice warn" style={{marginTop:14}}>
+      {overloaded.length>0&&<span>{overloaded.length} membro{overloaded.length===1?"":"s"} com carga acima da média. </span>}
+      {underloaded.length>0&&<span>{underloaded.length} membro{underloaded.length===1?"":"s"} ativo{underloaded.length===1?"":"s"} sem escala no período.</span>}
+    </div>}
 
     <div className="section-title"><div><p className="eyebrow">ALTA ROTAÇÃO</p><h2>Repetição nos últimos 30 dias</h2></div><span className="muted small">Sinaliza músicas executadas 2× ou mais no recorte recente.</span></div>
     <div className="grid grid-3">{highRotation.length===0?<div className="empty">Nenhuma música com repetição elevada nos últimos 30 dias.</div>:highRotation.map((r:any)=><article className="card" key={r.title+"-"+r.artist}><span className="pill gold">{r.recent30}× / 30 dias</span><h3>{r.title}</h3><p className="muted">{r.artist||"Artista não informado"}</p><p className="small muted">{r.count}× no período filtrado{r.last?" · última "+new Date(r.last).toLocaleDateString("pt-PT"):""}</p></article>)}</div>
