@@ -26,7 +26,7 @@ export default async function WorshipRepertoirePage({
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
 
   if(!canRead){
-    return <AppShell title="Repertório" active="/worship" email={ctx.email}>
+    return <AppShell title="Repertório" active="/worship" email={ctx.email} variant={canLead?"default":"worship-member"}>
       <section className="hero-card">
         <p className="eyebrow">REVIVER WORSHIP</p>
         <h2>Repertório reservado ao Ministério de Louvor</h2>
