@@ -537,8 +537,9 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                 <button className="button">{s.public_repertoire?"Retirar repertório público":"Autorizar repertório público"}</button>
               </form>
               <div className="button-row" style={{marginTop:10}}>
-                <Link className="button primary" href={"/worship/share?schedule="+s.id}>Partilhar escala / WhatsApp</Link>
+                <Link className="button primary" href={"/worship/share?schedule="+s.id}>Partilhar escala</Link>
                 <a className="button" href={"/api/worship/schedule-card/"+s.id} target="_blank" rel="noreferrer">Abrir card da escala</a>
+                <a className="button" href={"/api/worship/schedule-card/"+s.id+"?download=1"}>Baixar card</a>
                 <Link className="button" href={"/worship/run-sheet/"+s.id}>Roteiro do culto</Link>
               </div>
             </div>
