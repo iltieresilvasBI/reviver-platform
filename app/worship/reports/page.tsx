@@ -45,21 +45,32 @@ export default async function WorshipReportsPage({
     return themeMatch&&serviceMatch&&qMatch;
   });
 
-  const countBySong=new Map<string,{title:string;artist:string;count:number;last:string|null;themes:string[]}>();
+  const countBySong=new Map<string,{title:string;artist:string;count:number;last:string|null;themes:string[];recent30:number}>();
   const monthCounts=new Map<string,number>();
+  const themeCounts=new Map<string,number>();
+  const serviceTypeCounts=new Map<string,number>();
+  const recentCutoff=new Date(to);
+  recentCutoff.setDate(recentCutoff.getDate()-30);
   for(const row of rows as any[]){
     const song=row.worship_songs;
     const schedule=row.worship_schedules;
     const key=row.song_id;
-    const current=countBySong.get(key)??{title:song?.title??"Música",artist:song?.artist??"",count:0,last:null,themes:song?.themes??[]};
+    const current=countBySong.get(key)??{title:song?.title??"Música",artist:song?.artist??"",count:0,last:null,themes:song?.themes??[],recent30:0};
     current.count++;
+    if(new Date(schedule.starts_at)>=recentCutoff) current.recent30++;
     if(!current.last||new Date(schedule.starts_at)>new Date(current.last)) current.last=schedule.starts_at;
     countBySong.set(key,current);
     const month=new Intl.DateTimeFormat("pt-PT",{timeZone:"Europe/Lisbon",year:"numeric",month:"2-digit"}).format(new Date(schedule.starts_at));
     monthCounts.set(month,(monthCounts.get(month)??0)+1);
+    for(const themeName of song?.themes??[]) themeCounts.set(themeName,(themeCounts.get(themeName)??0)+1);
+    const serviceType=String(schedule?.service_type??"").trim();
+    if(serviceType) serviceTypeCounts.set(serviceType,(serviceTypeCounts.get(serviceType)??0)+1);
   }
 
   const ranking=[...countBySong.values()].sort((a,b)=>b.count-a.count||a.title.localeCompare(b.title,"pt-PT"));
+  const highRotation=ranking.filter(item=>item.recent30>=2).sort((a,b)=>b.recent30-a.recent30||b.count-a.count);
+  const topThemes=[...themeCounts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"pt-PT"));
+  const topServiceTypes=[...serviceTypeCounts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"pt-PT"));
   const unused=(songs??[]).filter((song:any)=>!countBySong.has(song.id));
   const query=new URLSearchParams();
   query.set("from",from.toISOString().slice(0,10));
@@ -88,6 +99,21 @@ export default async function WorshipReportsPage({
       <article className="card metric"><span>Músicas usadas</span><strong>{ranking.length}</strong></article>
       <article className="card metric"><span>Sem utilização</span><strong>{unused.length}</strong></article>
       <article className="card metric"><span>Meses no período</span><strong>{monthCounts.size}</strong></article>
+    </div>
+
+    <div className="section-title"><div><p className="eyebrow">ALTA ROTAÇÃO</p><h2>Repetição nos últimos 30 dias</h2></div><span className="muted small">Sinaliza músicas executadas 2× ou mais no recorte recente.</span></div>
+    <div className="grid grid-3">{highRotation.length===0?<div className="empty">Nenhuma música com repetição elevada nos últimos 30 dias.</div>:highRotation.map((r:any)=><article className="card" key={r.title+"-"+r.artist}><span className="pill gold">{r.recent30}× / 30 dias</span><h3>{r.title}</h3><p className="muted">{r.artist||"Artista não informado"}</p><p className="small muted">{r.count}× no período filtrado{r.last?" · última "+new Date(r.last).toLocaleDateString("pt-PT"):""}</p></article>)}</div>
+
+    <div className="section-title"><div><p className="eyebrow">DISTRIBUIÇÃO</p><h2>Temas e tipos de culto</h2></div><span className="muted small">Baseado apenas nas execuções confirmadas.</span></div>
+    <div className="grid grid-2">
+      <div className="card">
+        <p className="eyebrow">TEMAS MAIS PRESENTES</p>
+        <div className="list">{topThemes.length===0?<div className="empty">Nenhum tema associado às execuções filtradas.</div>:topThemes.slice(0,12).map(([name,count])=><div className="list-row" key={name}><strong>{name}</strong><span className="pill">{count}×</span></div>)}</div>
+      </div>
+      <div className="card">
+        <p className="eyebrow">TIPOS DE CULTO</p>
+        <div className="list">{topServiceTypes.length===0?<div className="empty">Nenhum tipo de culto disponível no período.</div>:topServiceTypes.slice(0,12).map(([name,count])=><div className="list-row" key={name}><strong>{name}</strong><span className="pill">{count}×</span></div>)}</div>
+      </div>
     </div>
 
     <div className="section-title"><div><p className="eyebrow">RANKING</p><h2>Mais e menos cantadas</h2></div></div>
