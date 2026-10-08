@@ -13,7 +13,7 @@ function normalise(value:string){
 
 export default async function WorshipRepertoirePage({
   searchParams,
-}:{searchParams:Promise<{theme?:string;q?:string;sort?:string;message?:string}>}){
+}:{searchParams:Promise<{theme?:string;serviceType?:string;q?:string;sort?:string;message?:string}>}){
   const qs=await searchParams;
   const ctx=await getAccessContext();
 
@@ -73,16 +73,20 @@ export default async function WorshipRepertoirePage({
   const allThemes=Array.from(new Set([...configuredThemes,...songThemes].map((x:string)=>x.trim()).filter(Boolean)))
     .sort((a,b)=>a.localeCompare(b,"pt-PT"));
 
+  const allServiceTypes=Array.from(new Set((songs??[]).flatMap((song:any)=>Array.isArray(song.service_types)?song.service_types:[]).map((x:string)=>x.trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"pt-PT"));
   const selectedTheme=(qs.theme??"").trim();
+  const selectedServiceType=(qs.serviceType??"").trim();
   const query=normalise(qs.q??"");
   const sort=qs.sort??"least";
 
   let filtered=(songs??[]).filter((song:any)=>{
     const themes=Array.isArray(song.themes)?song.themes:[];
+    const serviceTypes=Array.isArray(song.service_types)?song.service_types:[];
     const themeMatch=!selectedTheme||themes.some((theme:string)=>normalise(theme)===normalise(selectedTheme));
-    const queryMatch=!query||[song.title,song.artist,song.composition_title,song.version_name,...themes]
+    const serviceTypeMatch=!selectedServiceType||serviceTypes.some((type:string)=>normalise(type)===normalise(selectedServiceType));
+    const queryMatch=!query||[song.title,song.artist,song.composition_title,song.version_name,...themes,...serviceTypes]
       .some((value:any)=>normalise(String(value??"")).includes(query));
-    return themeMatch&&queryMatch;
+    return themeMatch&&serviceTypeMatch&&queryMatch;
   });
 
   filtered=[...filtered].sort((a:any,b:any)=>{
@@ -130,12 +134,13 @@ export default async function WorshipRepertoirePage({
 
     <div className="section-title"><div><p className="eyebrow">FILTRO E SUGESTÃO</p><h2>Encontrar repertório</h2></div><span className="muted small">Últimos 4 meses · Europe/Lisbon</span></div>
     <form method="get" className="card form-grid">
-      <div className="grid grid-3">
+      <div className="grid grid-4">
+        <div className="field"><label>Pasta / tipo de culto</label><select name="serviceType" defaultValue={selectedServiceType}><option value="">Todas as pastas</option>{allServiceTypes.map(type=><option value={type} key={type}>{type}</option>)}</select></div>
         <div className="field"><label>Tema</label><select name="theme" defaultValue={selectedTheme}><option value="">Todos os temas</option>{allThemes.map(theme=><option value={theme} key={theme}>{theme}</option>)}</select></div>
-        <div className="field"><label>Pesquisar</label><input name="q" defaultValue={qs.q??""} placeholder="Título, artista, composição ou versão"/></div>
+        <div className="field"><label>Pesquisar</label><input name="q" defaultValue={qs.q??""} placeholder="Título, artista, composição, versão ou pasta"/></div>
         <div className="field"><label>Ordenar</label><select name="sort" defaultValue={sort}><option value="least">Menos cantadas</option><option value="unused">Não cantadas</option><option value="oldest">Mais tempo sem utilização</option><option value="most">Mais cantadas</option><option value="title">Título</option></select></div>
       </div>
-      <div className="button-row"><button className="button primary" type="submit">Aplicar</button>{(selectedTheme||query||sort!=="least")&&<Link className="button" href="/worship/repertoire">Limpar</Link>}</div>
+      <div className="button-row"><button className="button primary" type="submit">Aplicar</button>{(selectedServiceType||selectedTheme||query||sort!=="least")&&<Link className="button" href="/worship/repertoire">Limpar</Link>}</div>
     </form>
 
     {selectedTheme&&<>
@@ -150,10 +155,11 @@ export default async function WorshipRepertoirePage({
     <div className="list">{filtered.length===0?<div className="empty">Nenhuma música encontrada.</div>:filtered.map((song:any)=>{
       const usage=usageBySong.get(song.id);
       const themes=Array.isArray(song.themes)?song.themes:[];
+      const serviceTypes=Array.isArray(song.service_types)?song.service_types:[];
       return <details className="card" key={song.id}>
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
-            <div><div className="button-row">{themes.map((theme:string)=><span className="pill gold" key={theme}>{theme}</span>)}{song.public_visible&&<span className="pill ok">pública</span>}</div><h3 style={{margin:"10px 0 4px"}}>{song.title}</h3><span className="muted small">{song.artist||"Artista não informado"}{song.version_name?" · "+song.version_name:""}{song.recommended_key?" · tom "+song.recommended_key:song.default_key?" · tom "+song.default_key:""}{song.bpm?" · "+song.bpm+" BPM":""}</span></div>
+            <div><div className="button-row">{serviceTypes.map((type:string)=><span className="pill" key={"service-"+type}>{type}</span>)}{themes.map((theme:string)=><span className="pill gold" key={theme}>{theme}</span>)}{song.public_visible&&<span className="pill ok">pública</span>}</div><h3 style={{margin:"10px 0 4px"}}>{song.title}</h3><span className="muted small">{song.artist||"Artista não informado"}{song.version_name?" · "+song.version_name:""}{song.recommended_key?" · tom "+song.recommended_key:song.default_key?" · tom "+song.default_key:""}{song.bpm?" · "+song.bpm+" BPM":""}</span></div>
             <div style={{textAlign:"right"}}><strong style={{fontSize:24}}>{usage?.count??0}×</strong><div className="muted small">em 4 meses</div></div>
           </div>
         </summary>
@@ -173,7 +179,7 @@ export default async function WorshipRepertoirePage({
             <input type="hidden" name="songId" value={song.id}/>
             <p className="eyebrow">EDITAR MÚSICA / VERSÃO</p>
             <div className="grid grid-2"><div className="field"><label>Título</label><input name="title" defaultValue={song.title} required/></div><div className="field"><label>Artista</label><input name="artist" defaultValue={song.artist??""}/></div></div>
-            <div className="grid grid-3"><div className="field"><label>Composição</label><input name="compositionTitle" defaultValue={song.composition_title??song.title}/></div><div className="field"><label>Versão / arranjo</label><input name="versionName" defaultValue={song.version_name??""}/></div><div className="field"><label>Temas</label><input name="themes" defaultValue={themes.join(", ")}/></div></div>
+            <div className="grid grid-3"><div className="field"><label>Composição</label><input name="compositionTitle" defaultValue={song.composition_title??song.title}/></div><div className="field"><label>Versão / arranjo</label><input name="versionName" defaultValue={song.version_name??""}/></div><div className="field"><label>Temas</label><input name="themes" defaultValue={themes.join(", ")}/></div></div><div className="field"><label>Tipo de culto / pasta</label><input name="serviceTypes" defaultValue={serviceTypes.join(", ")} placeholder="Domingo, Ceia, Jovens"/></div>
             <div className="grid grid-3"><div className="field"><label>Tom original</label><input name="originalKey" defaultValue={song.original_key??""}/></div><div className="field"><label>Tom recomendado</label><input name="recommendedKey" defaultValue={song.recommended_key??song.default_key??""}/></div><div className="field"><label>BPM</label><input name="bpm" type="number" min="30" max="300" defaultValue={song.bpm??""}/></div></div>
             <input type="hidden" name="defaultKey" value={song.default_key??""}/>
             <div className="grid grid-3"><div className="field"><label>YouTube</label><input name="youtubeUrl" type="url" defaultValue={song.youtube_url??""}/></div><div className="field"><label>Spotify</label><input name="spotifyUrl" type="url" defaultValue={song.spotify_url??""}/></div><div className="field"><label>Apple Music</label><input name="appleMusicUrl" type="url" defaultValue={song.apple_music_url??""}/></div><div className="field"><label>Deezer</label><input name="deezerUrl" type="url" defaultValue={song.deezer_url??""}/></div><div className="field"><label>Cifra</label><input name="chordUrl" type="url" defaultValue={song.chord_url??""}/></div><div className="field"><label>Letra</label><input name="lyricsUrl" type="url" defaultValue={song.lyrics_url??""}/></div></div>
