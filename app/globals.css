@@ -57,11 +57,13 @@ body[data-worship-theme="light"] .hero-card{background:radial-gradient(circle at
 
 .song-search-box{border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--surface)}
 .song-candidates{display:grid;gap:8px;margin-top:10px}
-.song-candidate{width:100%;display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;text-align:left;border:1px solid var(--border);background:var(--card);color:var(--text);padding:9px;border-radius:12px}
+.song-candidate{width:100%;display:grid;gap:8px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:9px;border-radius:12px}
 .song-candidate:hover{border-color:var(--gold)}
+.song-candidate-main{width:100%;display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;text-align:left;border:0;background:transparent;color:inherit;padding:0;cursor:pointer}
 .song-candidate img,.song-art-placeholder{width:48px;height:48px;border-radius:9px;object-fit:cover;background:var(--surface)}
 .song-art-placeholder{display:grid;place-items:center;color:var(--gold);font-size:22px}
-.song-candidate span:nth-child(2){display:grid;gap:2px;min-width:0}.song-candidate small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song-candidate-main>span:nth-child(2){display:grid;gap:2px;min-width:0}.song-candidate small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song-candidate-links{padding-left:60px}.song-candidate-links .button.small{padding:6px 9px;font-size:12px}
 .member-readonly .readonly-note{border-left:3px solid var(--gold);padding-left:12px}
 
 .auth-brand{grid-template-columns:92px 1fr}
