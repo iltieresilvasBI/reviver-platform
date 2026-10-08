@@ -2,6 +2,9 @@ name: Deploy Cloudflare Workers
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -25,12 +28,39 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm install
+      - run: npm ci
       - name: Security audit
         run: npm audit --audit-level=high
       - name: TypeScript
         run: npm run typecheck
+      - name: Check Cloudflare credentials
+        id: cloudflare
+        shell: bash
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare credentials detected."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Cloudflare deploy skipped: add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as repository Actions secrets."
+          fi
+
       - name: Build for Cloudflare Workers
+        if: steps.cloudflare.outputs.configured == 'true'
         run: npm run cf:build
-      - name: Deploy to Cloudflare Workers
+
+      - name: Deploy directly to Cloudflare Workers
+        if: steps.cloudflare.outputs.configured == 'true'
         run: npx opennextjs-cloudflare deploy
+
+      - name: Verify deployed Worker
+        if: steps.cloudflare.outputs.configured == 'true'
+        shell: bash
+        run: |
+          for attempt in {1..12}; do
+            code=$(curl -sS -o /tmp/reviver-home -w "%{http_code}" https://reviver-platform.iltieresilvas.workers.dev/)
+            echo "Smoke attempt $attempt -> HTTP $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 5
+          done
+          exit 1
