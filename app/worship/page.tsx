@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { SongAutoFillFields } from "./repertoire/song-autofill";
+import { ScheduleSongPicker } from "./schedule-song-picker";
 import { getAccessContext } from "@/lib/auth";
 import {
   acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
@@ -501,13 +502,26 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
           <div className="form-grid">
             <p className="eyebrow">ADICIONAR MÚSICA</p>
-            <form action={addSongToWorshipSchedule} className="form-grid">
-              <input type="hidden" name="scheduleId" value={s.id}/>
-              <div className="field"><label>Música recomendada</label><select name="songId" required><option value="">Selecionar</option>{recommendedSongsForSchedule(s).slice(0,12).map(({song,usage,folderMatch,themeMatches}:any)=><option value={song.id} key={song.id}>{song.title+" · "+usage.count+"×/4m"+(folderMatch?" · pasta ✓":"")+(themeMatches?" · "+themeMatches+" tema"+(themeMatches===1?"":"s")+" ✓":"")}</option>)}</select><span className="muted small">Prioriza a pasta do tipo de culto, os temas e músicas menos usadas nos últimos quatro meses.</span></div>
-              <div className="grid grid-2"><div className="field"><label>Posição</label><input name="position" type="number" min="1" defaultValue="1"/></div><div className="field"><label>Tom</label><input name="keyOverride"/></div></div>
-              <button className="button">Adicionar ao culto</button>
-            </form>
-            {(((s.themes??[]) as string[]).length>0||s.theme)&&<details><summary className="text-button" style={{cursor:"pointer"}}>Ver todo o repertório</summary><form action={addSongToWorshipSchedule} className="form-grid" style={{marginTop:10}}><input type="hidden" name="scheduleId" value={s.id}/><div className="field"><select name="songId" required><option value="">Selecionar qualquer música</option>{(songs??[]).map((song:any)=>{const usage=usageBefore(song.id,s.starts_at);return <option value={song.id} key={song.id}>{song.title} · {usage.count}× em 4 meses</option>})}</select></div><input type="hidden" name="position" value="1"/><button className="button">Adicionar fora do tema</button></form></details>}
+            <p className="muted small">O seletor prioriza a pasta do tipo de culto, os temas definidos e músicas menos usadas nos quatro meses anteriores.</p>
+            <ScheduleSongPicker
+              scheduleId={s.id}
+              serviceType={s.service_type??null}
+              scheduleThemes={(((s.themes??[]) as string[]).length?(s.themes??[]):s.theme?[s.theme]:[]) as string[]}
+              songs={recommendedSongsForSchedule(s).map(({song,usage,folderMatch,themeMatches,score}:any)=>({
+                id:song.id,
+                title:song.title,
+                artist:song.artist??null,
+                defaultKey:song.default_key??null,
+                recommendedKey:song.recommended_key??null,
+                serviceTypes:Array.isArray(song.service_types)?song.service_types:[],
+                themes:Array.isArray(song.themes)?song.themes:[],
+                usageCount:usage.count,
+                lastUsedAt:usage.last?(usage.last as any).worship_schedules?.starts_at??null:null,
+                folderMatch,
+                themeMatches,
+                score,
+              }))}
+            />
           </div>
 
           <div className="form-grid">
