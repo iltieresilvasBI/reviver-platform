@@ -39,7 +39,6 @@ export async function login(formData:FormData){
   const email=String(formData.get("email")??"").trim();
   const password=String(formData.get("password")??"");
   const next=safeNext(formData.get("next"));
-  const next=safeNext(formData.get("next"));
   const {error}=await supabase.auth.signInWithPassword({email,password});
   if(error) redirect(safeMessage(friendlyAuthError(error),next));
   redirect(next);
@@ -50,6 +49,7 @@ export async function signup(formData:FormData){
   const email=String(formData.get("email")??"").trim();
   const password=String(formData.get("password")??"");
   const confirmPassword=String(formData.get("confirm_password")??"");
+  const next=safeNext(formData.get("next"));
   if(password.length<8) redirect(safeMessage("A password deve ter pelo menos 8 caracteres.",next));
   if(password!==confirmPassword) redirect(safeMessage("As passwords não coincidem.",next));
   const origin=await getAppOrigin();
@@ -57,7 +57,7 @@ export async function signup(formData:FormData){
     email,password,
     options:{emailRedirectTo:`${origin}/auth/callback?next=${encodeURIComponent(next)}`}
   });
-  if(error) redirect(safeMessage(friendlyAuthError(error)));
+  if(error) redirect(safeMessage(friendlyAuthError(error),next));
   if(data.session) redirect(next);
   redirect(safeMessage("Conta criada. Confirma o email recebido e depois inicia sessão.",next));
 }
