@@ -157,45 +157,111 @@
   .sites-root .hero-image{object-position:58% center !important}
 }
 
-/* Canonical Reviver reference alignment (source package 2026-10-06). */
+/* Final visual correction: preserve the complete logo and restore photographic surfaces. */
 .sites-root .brand-filters{position:absolute;pointer-events:none;width:0;height:0}
 .sites-root .header-logo-gold{filter:url(#reviver-gold) !important}
-.sites-root .header-inner{height:134px !important;min-height:134px !important;padding:0 !important}
+.sites-root .header-inner{height:104px !important;min-height:104px !important;padding:0 !important}
 .sites-root .header-brand{
-  position:relative !important;
-  display:block !important;
-  width:132px !important;
-  height:116px !important;
-  flex:0 0 132px !important;
-  overflow:hidden !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  width:190px !important;
+  height:82px !important;
+  flex:0 0 190px !important;
+  overflow:visible !important;
 }
 .sites-root .header-brand img{
-  position:absolute !important;
-  width:220px !important;
-  max-width:none !important;
-  height:auto !important;
-  left:-45px !important;
-  top:-16px !important;
-  object-fit:initial !important;
-  object-position:initial !important;
-  clip-path:none !important;
+  position:static !important;
+  display:block !important;
+  width:178px !important;
+  max-width:178px !important;
+  height:76px !important;
+  max-height:76px !important;
+  object-fit:contain !important;
+  object-position:left center !important;
   transform:none !important;
+  clip-path:none !important;
   border-radius:0 !important;
   filter:url(#reviver-gold) !important;
 }
-.sites-root .hero-image{display:block !important;opacity:1 !important}
-.sites-root .highlight-main{background:#282820 !important}
-.sites-root .network-card{background:#1c1d18 !important}
-.sites-root .network-card:hover{background:#25261f !important}
-.sites-root .worship-card{background:#26241c !important;border-color:#504731 !important}
-.sites-root .academy-brand{background:#23231b !important}
-.sites-root .highlight-main::before,
-.sites-root .network-card::before{display:none !important}
+.sites-root .footer .official-brand img{
+  width:220px !important;
+  height:auto !important;
+  max-height:120px !important;
+  object-fit:contain !important;
+  object-position:left center !important;
+  border-radius:0 !important;
+}
+.sites-root .hero-image{display:block !important;opacity:1 !important;object-position:center 48% !important}
+.sites-root .highlight-main{
+  background-size:cover !important;
+  background-position:center !important;
+  background-repeat:no-repeat !important;
+}
+.sites-root .highlight-main::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,transparent 35%,rgba(11,12,10,.25));
+  pointer-events:none;
+}
+.sites-root .highlight-main>*{position:relative;z-index:1}
+.sites-root .network-card{
+  background:
+    linear-gradient(180deg,rgba(18,19,16,.12) 0 30%,rgba(28,29,24,.97) 68%),
+    url('https://images.unsplash.com/photo-1762158007944-81c9db8df85f?auto=format&fit=crop&fm=jpg&q=72&w=1200') center/cover no-repeat !important;
+}
+.sites-root .network-card:nth-child(2){
+  background:
+    linear-gradient(180deg,rgba(18,19,16,.10) 0 30%,rgba(28,29,24,.97) 68%),
+    url('https://images.unsplash.com/photo-1658442226030-b75a78d85d71?auto=format&fit=crop&fm=jpg&q=72&w=1200') center/cover no-repeat !important;
+}
+.sites-root .network-card:nth-child(3){
+  background:
+    linear-gradient(180deg,rgba(18,19,16,.10) 0 30%,rgba(28,29,24,.97) 68%),
+    url('https://images.unsplash.com/photo-1534302802788-8661202e643c?auto=format&fit=crop&fm=jpg&q=72&w=1200') center/cover no-repeat !important;
+}
+.sites-root .network-card:nth-child(4){
+  background:
+    linear-gradient(180deg,rgba(18,19,16,.10) 0 30%,rgba(28,29,24,.97) 68%),
+    url('https://images.unsplash.com/photo-1655392032677-513540578a20?auto=format&fit=crop&fm=jpg&q=72&w=1200') center/cover no-repeat !important;
+}
+.sites-root .worship-card{
+  background:
+    linear-gradient(180deg,rgba(19,17,13,.08) 0 28%,rgba(38,36,28,.97) 70%),
+    url('https://images.unsplash.com/photo-1658442226030-b75a78d85d71?auto=format&fit=crop&fm=jpg&q=72&w=1200') 60% center/cover no-repeat !important;
+  border-color:#504731 !important;
+}
+.sites-root .academy-brand{
+  position:relative !important;
+  overflow:hidden !important;
+  background:
+    linear-gradient(90deg,rgba(35,35,27,.96),rgba(35,35,27,.58)),
+    url('https://images.unsplash.com/photo-1534302802788-8661202e643c?auto=format&fit=crop&fm=jpg&q=72&w=1400') center/cover no-repeat !important;
+}
+.sites-root .campaign-poster{position:relative;overflow:hidden}
+.sites-root .campaign-poster img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.sites-root .campaign-poster:has(img)::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,transparent 45%,rgba(12,13,11,.22));
+  pointer-events:none;
+}
 @media(max-width:850px){
-  .sites-root .header-inner{height:112px !important;min-height:112px !important}
-  .sites-root .header-brand{width:110px !important;height:98px !important;flex-basis:110px !important}
-  .sites-root .header-brand img{width:184px !important;left:-38px !important;top:-13px !important}
+  .sites-root .header-inner{height:88px !important;min-height:88px !important}
+  .sites-root .header-brand{width:156px !important;height:70px !important;flex-basis:156px !important}
+  .sites-root .header-brand img{width:148px !important;max-width:148px !important;height:64px !important;max-height:64px !important}
 }
 @media(max-width:600px){
-  .sites-root .header-inner{height:105px !important;min-height:105px !important}
+  .sites-root .header-inner{height:78px !important;min-height:78px !important}
+  .sites-root .header-brand{width:138px !important;height:62px !important;flex-basis:138px !important}
+  .sites-root .header-brand img{width:132px !important;max-width:132px !important;height:58px !important;max-height:58px !important}
+  .sites-root .hero-image{object-position:55% center !important}
 }
