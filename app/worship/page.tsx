@@ -287,6 +287,15 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     if(pendingResponses>0) leaderReminders.push({title:"Respostas pendentes",body:schedule.title+" · "+pendingResponses+" pessoa"+(pendingResponses===1?"":"s")+" sem resposta."});
     if(!rehearsal) leaderReminders.push({title:"Ensaio não associado",body:schedule.title+" ainda não tem ensaio vinculado."});
   }
+  for(const schedule of recentPastSchedules){
+    if(schedule.status!=="completed"){
+      leaderReminders.push({
+        title:"Fecho pós-culto pendente",
+        body:schedule.title+" · "+new Date(schedule.starts_at).toLocaleString("pt-PT")+" ainda não tem repertório e presenças fechados.",
+        href:"#post-service"
+      });
+    }
+  }
 
   return <AppShell title="Ministério de Louvor" active="/worship" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
@@ -306,7 +315,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     </div>
     {leaderReminders.length>0&&<>
       <div className="section-title"><div><p className="eyebrow">PENDÊNCIAS AUTOMÁTICAS</p><h2>O que falta fechar</h2></div><span className="muted small">Gerado a partir das próximas escalas.</span></div>
-      <div className="grid grid-3">{leaderReminders.slice(0,9).map((reminder:any,index:number)=><article className="card" key={reminder.title+"-"+index}><span className="pill gold">atenção</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p></article>)}</div>
+      <div className="grid grid-3">{leaderReminders.slice(0,9).map((reminder:any,index:number)=>reminder.href?<a className="card" href={reminder.href} key={reminder.title+"-"+index}><span className="pill gold">atenção</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p><span className="text-link">Resolver agora</span></a>:<article className="card" key={reminder.title+"-"+index}><span className="pill gold">atenção</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p></article>)}</div>
     </>}
 
     {membership?.id&&<>
@@ -561,7 +570,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         </div>
       </details>)}</div>
 
-      <div className="section-title"><div><p className="eyebrow">PÓS-CULTO</p><h2>Fechar culto</h2></div><span className="muted small">Confirma repertório e presenças numa única operação.</span></div>
+      <div id="post-service" className="section-title"><div><p className="eyebrow">PÓS-CULTO</p><h2>Fechar culto</h2></div><span className="muted small">Confirma repertório e presenças numa única operação.</span></div>
       <div className="list">{recentPastSchedules.length===0?<div className="empty">Nenhum culto anterior para confirmar.</div>:recentPastSchedules.map((s:any)=>{
         const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===s.id).sort((a:any,b:any)=>a.position-b.position);
         const people=(assignments??[]).filter((a:any)=>a.schedule_id===s.id);
