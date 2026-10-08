@@ -39,6 +39,31 @@ function dateValue(value:unknown){
   return "INVALID";
 }
 
+function emailValue(value:unknown){
+  const v=String(value??"").trim().toLowerCase();
+  if(!v) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)?v:"INVALID";
+}
+function phoneValue(value:unknown){
+  const raw=String(value??"").trim();
+  if(!raw) return null;
+  const digits=raw.replace(/\D/g,"");
+  if(digits.length<8||digits.length>15) return "INVALID";
+  return raw.startsWith("+")?"+"+digits:digits;
+}
+function groupValue(value:unknown){
+  const v=String(value??"").trim().toUpperCase();
+  if(!v) return null;
+  return ["A","B","C","D"].includes(v)?v:"INVALID";
+}
+function communicationPreferenceValue(value:unknown){
+  const v=String(value??"").trim().toLowerCase();
+  if(!v) return null;
+  if(v==="whatsapp"||v==="whats app") return "WhatsApp";
+  if(v==="email"||v==="e-mail") return "Email";
+  return "INVALID";
+}
+
 export async function POST(request:NextRequest){
   const supabase=await createClient();
   const {data:claims}=await supabase.auth.getClaims();
@@ -61,30 +86,44 @@ export async function POST(request:NextRequest){
   const accepted:any[]=[];
   const rejected:any[]=[];
   for(const row of rows){
+    const fullName=String(row.fullName??"").trim();
     const birthDate=dateValue(row.birthDate);
     const joinedOn=dateValue(row.joinedOn);
-    if(birthDate==="INVALID"||joinedOn==="INVALID"){
-      rejected.push({rowNumber:row.rowNumber,name:row.fullName||"",reason:"Data inválida. Use AAAA-MM-DD ou DD/MM/AAAA."});
+    const email=emailValue(row.email);
+    const phone=phoneValue(row.phone);
+    const groupCode=groupValue(row.groupCode);
+    const communicationPreference=communicationPreferenceValue(row.communicationPreference);
+    const communicationOptIn=boolValue(row.communicationOptIn);
+    const validationErrors:string[]=[];
+    if(!fullName) validationErrors.push("Nome completo obrigatório.");
+    if(birthDate==="INVALID"||joinedOn==="INVALID") validationErrors.push("Data inválida. Use AAAA-MM-DD ou DD/MM/AAAA.");
+    if(email==="INVALID") validationErrors.push("Email inválido.");
+    if(phone==="INVALID") validationErrors.push("Telefone inválido. Use entre 8 e 15 dígitos.");
+    if(groupCode==="INVALID") validationErrors.push("Grupo inválido. Use A, B, C ou D.");
+    if(communicationPreference==="INVALID") validationErrors.push("Preferência de comunicação inválida. Use WhatsApp ou Email.");
+    if(communicationPreference&&communicationOptIn!==true) validationErrors.push("Para definir um canal de comunicação, a autorização de notificações deve estar ativa.");
+    if(validationErrors.length){
+      rejected.push({rowNumber:row.rowNumber,name:fullName,reason:validationErrors.join(" ")});
       continue;
     }
     const {data,error}=await supabase.rpc("upsert_ministry_person",{
       p_network_slug:networkSlug,
       p_mode:mode,
       p_overwrite_empty:overwriteEmpty,
-      p_full_name:String(row.fullName??""),
-      p_preferred_name:String(row.preferredName??"")||null,
-      p_email:String(row.email??"")||null,
-      p_phone:String(row.phone??"")||null,
+      p_full_name:fullName,
+      p_preferred_name:String(row.preferredName??"").trim()||null,
+      p_email:email,
+      p_phone:phone,
       p_birth_date:birthDate,
-      p_group_code:String(row.groupCode??"").trim().toUpperCase()||null,
+      p_group_code:groupCode,
       p_roles:csvList(row.roles),
       p_instruments:csvList(row.instruments),
       p_vocal_classification:String(row.vocalClassification??"")||null,
       p_active:boolValue(row.active),
       p_joined_on:joinedOn,
       p_admin_notes:String(row.adminNotes??"")||null,
-      p_communication_opt_in:boolValue(row.communicationOptIn),
-      p_communication_preference:String(row.communicationPreference??"")||null,
+      p_communication_opt_in:communicationOptIn,
+      p_communication_preference:communicationPreference,
     });
     if(error) rejected.push({rowNumber:row.rowNumber,name:row.fullName||"",reason:error.message});
     else accepted.push({rowNumber:row.rowNumber,name:row.fullName||"",result:data});
