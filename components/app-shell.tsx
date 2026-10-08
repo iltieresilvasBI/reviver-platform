@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { WorshipThemeToggle } from "@/components/worship-theme-toggle";
 
 type Props = { title:string; eyebrow?:string; active?:string; email?:string; children:ReactNode };
 
@@ -22,6 +23,6 @@ export function AppShell({title,eyebrow="REVIVER PLATFORM",active,email,children
       </div>
       <div className="sidebar-footer">{email&&<span className="muted small">{email}</span>}<form action="/auth/logout" method="post"><button className="text-button">Sair</button></form></div>
     </aside>
-    <main className="app-main"><header className="page-header"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1></div></header>{children}</main>
+    <main className="app-main"><header className="page-header"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1></div>{active==="/worship"&&<WorshipThemeToggle/>}</header>{children}</main>
   </div>
 }
