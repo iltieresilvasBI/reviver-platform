@@ -34,7 +34,7 @@ function lisbonDateKey(value:string|Date){
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
-export default async function WorshipPage({searchParams}:{searchParams:Promise<{message?:string}>}){
+export default async function WorshipPage({searchParams}:{searchParams:Promise<{message?:string;memberGroup?:string;memberRole?:string}>}){
   const qs=await searchParams;
   const ctx=await getAccessContext();
   const {data:network}=await ctx.supabase.from("networks").select("id").eq("slug","worship").single();
@@ -246,6 +246,16 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     const serviceParticipations=(assignments??[]).filter((a:any)=>a.membership_id===m.membership_id&&a.attendance_status==="completed").length;
     return {...m,profile,completion:Math.round((completed/Math.max(lessonCount??0,1))*100),completed,avg,last,practiceMinutes,serviceParticipations};
   })):[];
+
+  const selectedMemberGroup=(qs.memberGroup??"").trim();
+  const selectedMemberRole=(qs.memberRole??"").trim();
+  const filteredMemberMetrics=memberMetrics.filter((m:any)=>{
+    const group=String(m.profile?.group_code??"");
+    const roles=Array.isArray(m.profile?.roles)?m.profile.roles:[];
+    return (!selectedMemberGroup||group===selectedMemberGroup)&&(!selectedMemberRole||roles.includes(selectedMemberRole));
+  });
+  const activeMemberMetrics=memberMetrics.filter((m:any)=>m.status==="active");
+  const groupCounts=Object.fromEntries(["A","B","C","D"].map(group=>[group,activeMemberMetrics.filter((m:any)=>m.profile?.group_code===group).length]));
 
   return <AppShell title="Ministério de Louvor" active="/worship" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
@@ -516,11 +526,21 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         </details>
       })}</div>
 
-      <div className="section-title"><h2>Membros, grupos e Academy</h2></div>
-      <div className="list">{memberMetrics.map((m:any)=><details className="card" key={m.membership_id}>
+      <div className="section-title"><div><p className="eyebrow">EQUIPA</p><h2>Membros, grupos e Academy</h2></div><span className="muted small">{activeMemberMetrics.length} membros ativos</span></div>
+      <div className="grid grid-4" style={{marginBottom:16}}>
+        {["A","B","C","D"].map(group=><article className="card metric" key={group}><span>Grupo {group}</span><strong>{groupCounts[group]??0}</strong></article>)}
+      </div>
+      <form method="get" className="card form-grid" style={{marginBottom:16}}>
+        <div className="grid grid-3">
+          <div className="field"><label>Grupo</label><select name="memberGroup" defaultValue={selectedMemberGroup}><option value="">Todos</option>{["A","B","C","D"].map(group=><option key={group} value={group}>Grupo {group}</option>)}</select></div>
+          <div className="field"><label>Função</label><select name="memberRole" defaultValue={selectedMemberRole}><option value="">Todas</option>{roleOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></div>
+          <div className="button-row" style={{alignItems:"end"}}><button className="button primary">Filtrar equipa</button>{(selectedMemberGroup||selectedMemberRole)&&<Link className="button" href="/worship">Limpar</Link>}</div>
+        </div>
+      </form>
+      <div className="list">{filteredMemberMetrics.map((m:any)=><details className="card" key={m.membership_id}>
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
-            <div><h3>{m.display_name||m.email}</h3><span className="muted small">{m.email} · {m.role} · {m.status} · Grupo {m.profile?.group_code??"—"}</span></div>
+            <div><div className="button-row">{m.profile?.group_code&&<span className="pill gold">Grupo {m.profile.group_code}</span>}{(m.profile?.roles??[]).map((role:string)=><span className="pill" key={role}>{roleLabel(role)}</span>)}</div><h3 style={{margin:"8px 0 4px"}}>{m.display_name||m.email}</h3><span className="muted small">{m.email} · {m.role} · {m.status}</span></div>
             <div className="button-row">
               {m.status==="pending"&&<><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="approve"/><button className="button primary">Aprovar</button></form><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="reject"/><button className="button">Rejeitar</button></form></>}
               {m.status==="active"&&<form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="revoke"/><button className="button danger">Revogar</button></form>}

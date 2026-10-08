@@ -34,8 +34,12 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   const parts=[
     `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="${height}" viewBox="0 0 1200 ${height}">`,
     `<rect width="1200" height="${height}" fill="#0b0c0e"/><rect x="55" y="55" width="1090" height="${height-110}" rx="28" fill="#15181d" stroke="#d8a84e" stroke-width="2"/>`,
-    line("IGREJA REVIVER · MINISTÉRIO DE LOUVOR",90,y,24,700)
+    `<circle cx="1025" cy="125" r="54" fill="#d8a84e" opacity="0.12"/>`,
+    `<path d="M1025 91 L1025 159 M991 125 L1059 125" stroke="#d8a84e" stroke-width="7" stroke-linecap="round"/>`,
+    line("IGREJA REVIVER",90,y,24,700),
+    line("MINISTÉRIO DE LOUVOR",90,y+34,18,400)
   ];
+  y+=34;
   y+=68; parts.push(line(schedule.title,90,y,50,700));
   y+=50; parts.push(line(new Date(schedule.starts_at).toLocaleString("pt-PT",{dateStyle:"full",timeStyle:"short",timeZone:"Europe/Lisbon"}),90,y,26));
   y+=42; parts.push(line("Grupo "+(schedule.group_code??"—")+" · "+((schedule.themes??[]).join(" / ")||"Tema por definir"),90,y,25));
@@ -43,7 +47,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   if(schedule.call_time){y+=38;parts.push(line("Chegada: "+new Date(schedule.call_time).toLocaleString("pt-PT",{timeZone:"Europe/Lisbon"}),90,y,24))}
   if(rehearsal?.starts_at){y+=38;parts.push(line("Ensaio: "+new Date(rehearsal.starts_at).toLocaleString("pt-PT",{timeZone:"Europe/Lisbon"})+(rehearsal.location?" · "+rehearsal.location:""),90,y,24))}
 
-  y+=72; parts.push(line("REPERTÓRIO",90,y,26,700)); y+=42;
+  y+=72; parts.push(`<line x1="90" y1="${y-22}" x2="1110" y2="${y-22}" stroke="#343840" stroke-width="2"/>`); parts.push(line("REPERTÓRIO",90,y,26,700)); y+=42;
   if(!(setlist??[]).length){parts.push(line("Ainda não definido",100,y,24));y+=42}
   for(const row of setlist??[]){
     const song=(row as any).worship_songs;
@@ -51,14 +55,14 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
     parts.push(line(String((row as any).position)+". "+(song?.title??"Música")+" · tom "+key,100,y,25));y+=48;
   }
 
-  y+=28; parts.push(line("EQUIPA",90,y,26,700)); y+=42;
+  y+=28; parts.push(`<line x1="90" y1="${y-22}" x2="1110" y2="${y-22}" stroke="#343840" stroke-width="2"/>`); parts.push(line("EQUIPA",90,y,26,700)); y+=42;
   if(!(assignments??[]).length){parts.push(line("Ainda não definida",100,y,24));y+=42}
   for(const row of assignments??[]){
     const person=people.get((row as any).membership_id) as any;
     const name=person?.display_name||person?.email||"Membro";
     parts.push(line(name+" · "+roleLabel((row as any).role),100,y,25));y+=46;
   }
-  y+=35;parts.push(line("Confirmações e alterações: Portal Reviver",90,y,20,400));
+  y+=35;parts.push(`<line x1="90" y1="${y-18}" x2="1110" y2="${y-18}" stroke="#343840" stroke-width="2"/>`);parts.push(line("Confirmações e alterações: Portal Reviver",90,y,20,400));
   parts.push("</svg>");
   return new Response(parts.join(""),{headers:{"Content-Type":"image/svg+xml; charset=utf-8","Content-Disposition":'inline; filename="escala-reviver.svg"',"Cache-Control":"no-store"}});
 }
