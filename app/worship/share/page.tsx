@@ -41,7 +41,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
   const profileByMembership=new Map(profiles.map((p:any)=>[p.membership_id,p]));
   const h=await headers();
   const protocol=h.get("x-forwarded-proto")||"https";
-  const host=h.get("x-forwarded-host")||h.get("host")||"reviver-platform-gamma.vercel.app";
+  const host=h.get("x-forwarded-host")||h.get("host")||"reviver-platform.iltieresilvas.workers.dev";
   const portalUrl=protocol+"://"+host+"/worship";
 
   return <AppShell title="Comunicação do Louvor" active="/worship" email={ctx.email}>
