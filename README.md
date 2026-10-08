@@ -4,7 +4,7 @@ Nova base técnica da Igreja Reviver.
 
 ## Stack
 - Next.js / React
-- Vercel
+- Cloudflare Workers (OpenNext)
 - Supabase Auth + PostgreSQL + Storage
 - ChatGPT Sites como frontend institucional público, consumindo API pública
 
@@ -17,7 +17,9 @@ Nova base técnica da Igreja Reviver.
 Nenhuma chave secreta deve ser commitada.
 
 
-Deployment trigger: sync latest Reviver Platform source with Vercel.
+Production deploy: pushes to `main` run GitHub Actions, build with OpenNext and deploy directly to Cloudflare Workers.
+
+Production URL: `https://reviver-platform.iltieresilvas.workers.dev`.
 
 ## Public CMS API
 
