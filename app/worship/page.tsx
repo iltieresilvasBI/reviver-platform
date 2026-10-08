@@ -346,7 +346,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       ];
       const readiness=Math.round(readinessChecks.filter(x=>x.ok).length/readinessChecks.length*100);
       const readinessMissing=readinessChecks.filter(x=>!x.ok).map(x=>x.label);
-      return <details className="card" key={s.id} open={Boolean(mine)}>
+      return <details className="card" id={"schedule-"+s.id} key={s.id} open={Boolean(mine)}>
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
             <div><div className="button-row"><span className="pill gold">Grupo {s.group_code??"—"}</span><span className={s.status==="confirmed"?"pill ok":"pill"}>{s.status}</span><span className={readiness===100?"pill ok":readiness>=50?"pill gold":"pill"}>prontidão {readiness}%</span>{mine&&<span className="pill ok">estou escalado</span>}</div><h3 style={{margin:"10px 0 4px"}}>{s.title}</h3><span className="muted small">{new Date(s.starts_at).toLocaleString("pt-PT")}{s.call_time?` · chegada ${new Date(s.call_time).toLocaleString("pt-PT")}`:""}{s.service_type?` · ${s.service_type}`:""}</span></div>
@@ -537,8 +537,9 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                 <button className="button">{s.public_repertoire?"Retirar repertório público":"Autorizar repertório público"}</button>
               </form>
               <div className="button-row" style={{marginTop:10}}>
-                <Link className="button primary" href={"/worship/share?schedule="+s.id}>Partilhar escala / WhatsApp</Link>
+                <Link className="button primary" href={"/worship/share?schedule="+s.id}>Partilhar escala</Link>
                 <a className="button" href={"/api/worship/schedule-card/"+s.id} target="_blank" rel="noreferrer">Abrir card da escala</a>
+                <a className="button" href={"/api/worship/schedule-card/"+s.id+"?download=1"}>Baixar card</a>
                 <Link className="button" href={"/worship/run-sheet/"+s.id}>Roteiro do culto</Link>
               </div>
             </div>
