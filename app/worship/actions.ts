@@ -254,6 +254,80 @@ export async function confirmWorshipExecutions(formData:FormData){
   redirect("/worship?message="+encodeURIComponent("Repertório executado confirmado. Os relatórios foram atualizados."));
 }
 
+export async function finalizeWorshipService(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const selectedSongs=Array.from(new Set(formData.getAll("songIds").map(v=>String(v)).filter(Boolean)));
+  const presentAssignments=Array.from(new Set(formData.getAll("presentAssignmentIds").map(v=>String(v)).filter(Boolean)));
+
+  const [{data:planned,error:plannedError},{data:assignments,error:assignmentError}]=await Promise.all([
+    supabase
+      .from("worship_schedule_songs")
+      .select("song_id,key_override,worship_songs!inner(version_name,default_key)")
+      .eq("schedule_id",scheduleId),
+    supabase
+      .from("worship_schedule_members")
+      .select("id")
+      .eq("schedule_id",scheduleId),
+  ]);
+  if(plannedError||assignmentError){
+    redirect("/worship?message="+encodeURIComponent(plannedError?.message??assignmentError?.message??"Não foi possível carregar o culto."));
+  }
+
+  const allowedSongs=new Set((planned??[]).map((r:any)=>r.song_id));
+  const safeSongs=selectedSongs.filter(id=>allowedSongs.has(id));
+  const allowedAssignments=new Set((assignments??[]).map((r:any)=>r.id));
+  const safePresent=presentAssignments.filter(id=>allowedAssignments.has(id));
+
+  const {error:attendanceResetError}=await supabase
+    .from("worship_schedule_members")
+    .update({attendance_status:"assigned"})
+    .eq("schedule_id",scheduleId);
+  if(attendanceResetError) redirect("/worship?message="+encodeURIComponent(attendanceResetError.message));
+
+  if(safePresent.length){
+    const {error:attendanceError}=await supabase
+      .from("worship_schedule_members")
+      .update({attendance_status:"completed"})
+      .in("id",safePresent);
+    if(attendanceError) redirect("/worship?message="+encodeURIComponent(attendanceError.message));
+  }
+
+  const {error:deleteError}=await supabase.from("worship_song_executions").delete().eq("schedule_id",scheduleId);
+  if(deleteError) redirect("/worship?message="+encodeURIComponent(deleteError.message));
+
+  const rows=(planned??[]).filter((r:any)=>safeSongs.includes(r.song_id)).map((r:any)=>({
+    schedule_id:scheduleId,
+    song_id:r.song_id,
+    key_used:r.key_override||(r.worship_songs as any)?.default_key||null,
+    version_used:(r.worship_songs as any)?.version_name||null,
+    confirmed_by:String(uid),
+    confirmed_at:new Date().toISOString()
+  }));
+  if(rows.length){
+    const {error}=await supabase.from("worship_song_executions").insert(rows);
+    if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  }
+
+  const {error:scheduleError}=await supabase
+    .from("worship_schedules")
+    .update({status:"completed",updated_at:new Date().toISOString()})
+    .eq("id",scheduleId);
+  if(scheduleError) redirect("/worship?message="+encodeURIComponent(scheduleError.message));
+
+  revalidatePath("/worship");
+  revalidatePath("/worship/repertoire");
+  revalidatePath("/worship/reports");
+  revalidatePath("/repertorio-da-igreja");
+  redirect("/worship?message="+encodeURIComponent(
+    "Culto concluído: "+safeSongs.length+" música"+(safeSongs.length===1?"":"s")+" e "+safePresent.length+" presença"+(safePresent.length===1?"":"s")+" confirmada"+(safePresent.length===1?"":"s")+"."
+  ));
+}
+
 export async function updateWorshipScheduleStatus(formData:FormData){
   const supabase=await createClient();
   const id=String(formData.get("scheduleId")??"");
