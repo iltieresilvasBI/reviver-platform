@@ -108,6 +108,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             <Link className="button primary" href="/academy">Abrir Academy</Link>
             <Link className="button" href="/worship/repertoire">Consultar repertório</Link>
             <a className="button" href="/worship/calendar">Meu calendário</a>
+            <Link className="button" href="/worship/substitutions">Substituições</Link>
+            <Link className="button" href="/worship/share">Comunicação</Link>
           </div>
         </section>
 
@@ -135,6 +137,24 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             </div>
             {schedule.notes&&<p className="muted" style={{marginTop:14}}>{schedule.notes}</p>}
             {rehearsal&&<div className="notice" style={{marginTop:14}}>Ensaio: {new Date(rehearsal.starts_at).toLocaleString("pt-PT")}{rehearsal.location?" · "+rehearsal.location:""}</div>}
+            {assignment&&<div className="card" style={{marginTop:14}}>
+              <p className="eyebrow">MINHA RESPOSTA</p>
+              <div className="button-row">
+                <form action={respondToWorshipAssignment}>
+                  <input type="hidden" name="assignmentId" value={assignment.id}/>
+                  <input type="hidden" name="responseStatus" value="confirmed"/>
+                  <button className="button primary">Confirmar presença</button>
+                </form>
+                <form action={respondToWorshipAssignment} className="button-row">
+                  <input type="hidden" name="assignmentId" value={assignment.id}/>
+                  <input type="hidden" name="responseStatus" value="declined"/>
+                  <input name="note" className="inline-input" placeholder="Motivo opcional"/>
+                  <button className="button danger">Não posso</button>
+                </form>
+                <Link className="button" href={"/worship/substitutions?schedule="+schedule.id}>Pedir substituição</Link>
+              </div>
+              {response&&<div className="muted small" style={{marginTop:10}}>Resposta atual: {response.response_status==="confirmed"?"Confirmado":"Não disponível"}{response.note?" · "+response.note:""}</div>}
+            </div>}
             <div className="card" style={{marginTop:14}}>
               <p className="eyebrow">REPERTÓRIO DESTA ESCALA</p>
               <ol>{setlist.length===0?<li className="muted">A gestão ainda não publicou músicas para esta escala.</li>:setlist.map((item:any)=>{
@@ -145,6 +165,25 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             </div>
           </article>;
         })}</div>
+
+        <div className="section-title"><div><p className="eyebrow">DISPONIBILIDADE</p><h2>Quando não posso servir</h2></div><span className="muted small">A liderança verá conflito ao montar a escala.</span></div>
+        <div className="grid grid-2">
+          <form action={createWorshipUnavailability} className="card form-grid">
+            <div className="grid grid-2">
+              <div className="field"><label>Primeiro dia</label><input name="startsOn" type="date" required/></div>
+              <div className="field"><label>Último dia</label><input name="endsOn" type="date" required/></div>
+            </div>
+            <div className="field"><label>Motivo opcional</label><input name="reason" placeholder="Viagem, trabalho, compromisso..."/></div>
+            <button className="button">Registar indisponibilidade</button>
+          </form>
+          <div className="card">
+            <p className="eyebrow">PRÓXIMOS PERÍODOS</p>
+            <div className="list">{myUnavailability.length===0?<div className="empty">Nenhuma indisponibilidade futura registada.</div>:myUnavailability.map((u:any)=><div className="list-row" key={u.id}>
+              <div><strong>{new Date(u.starts_on+"T00:00:00").toLocaleDateString("pt-PT")} → {new Date(u.ends_on+"T00:00:00").toLocaleDateString("pt-PT")}</strong>{u.reason&&<div className="muted small">{u.reason}</div>}</div>
+              <form action={deleteWorshipUnavailability}><input type="hidden" name="unavailabilityId" value={u.id}/><button className="button danger">Remover</button></form>
+            </div>)}</div>
+          </div>
+        </div>
 
         <div className="section-title"><div><p className="eyebrow">ENSAIOS</p><h2>Próximos encontros</h2></div></div>
         <div className="grid grid-3">{relevantRehearsals.length===0?<div className="empty">Nenhum ensaio futuro publicado.</div>:relevantRehearsals.map((r:any)=><article className="card" key={r.id}><span className="pill gold">ensaio</span><h3>{r.title}</h3><p className="muted">{new Date(r.starts_at).toLocaleString("pt-PT")}{r.location?" · "+r.location:""}</p>{r.notes&&<p>{r.notes}</p>}</article>)}</div>
