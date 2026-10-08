@@ -24,10 +24,12 @@ export async function GET(request:Request){
   if(error) return new Response("Unable to export",{status:503});
 
   const theme=(url.searchParams.get("theme")??"").toLocaleLowerCase("pt-PT");
+  const serviceType=(url.searchParams.get("serviceType")??"").toLocaleLowerCase("pt-PT");
   const q=(url.searchParams.get("q")??"").toLocaleLowerCase("pt-PT");
   const rows=(data??[]).filter((row:any)=>{
     const song=row.worship_songs;
     return (!theme||(song?.themes??[]).some((t:string)=>t.toLocaleLowerCase("pt-PT")===theme))
+      &&(!serviceType||String(row.worship_schedules?.service_type??"").toLocaleLowerCase("pt-PT").includes(serviceType))
       &&(!q||[song?.title,song?.artist].some((x:any)=>String(x??"").toLocaleLowerCase("pt-PT").includes(q)));
   });
   const lines=[["Data","Culto","Tipo","Música","Artista","Versão","Tom","Temas"].map(csvCell).join(",")];
