@@ -29,11 +29,6 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - name: Emit lockfile for migration
-        run: |
-          echo "__LOCK_START__"
-          cat package-lock.json
-          echo "__LOCK_END__"
       - name: Security audit
         run: npm audit --audit-level=high
       - run: npm run typecheck
