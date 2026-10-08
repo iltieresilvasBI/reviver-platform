@@ -2,9 +2,6 @@ name: Deploy Cloudflare Workers
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -17,7 +14,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://blyvwsbbrnhpswvxezjt.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_4rlp2NXYO9blpvsrRS-C7A_VX6ssJAi
