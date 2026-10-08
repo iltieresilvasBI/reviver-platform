@@ -1,0 +1,2 @@
+revoke execute on function public.admin_set_network_membership_by_email(text,text,public.network_role,public.membership_status) from anon;
+revoke execute on function public.set_my_worship_communication_preferences(boolean,text) from anon;

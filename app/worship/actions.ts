@@ -561,3 +561,250 @@ export async function markWorshipAttendance(formData:FormData){
   if(error) redirect("/worship?message="+encodeURIComponent(error.message));
   revalidatePath("/worship");
 }
+
+
+function worshipThemeSlug(value:string){
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,80);
+}
+
+export async function createWorshipTheme(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const name=String(formData.get("name")??"").trim();
+  if(!name) redirect("/worship/themes?message="+encodeURIComponent("Indica o nome do tema."));
+  const slug=worshipThemeSlug(name);
+  const {error}=await supabase.from("worship_themes").upsert({name,slug,active:true,created_by:String(uid),updated_at:new Date().toISOString()},{onConflict:"slug"});
+  if(error) redirect("/worship/themes?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/themes");
+  revalidatePath("/worship/repertoire");
+}
+
+export async function setWorshipThemeActive(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("themeId")??"");
+  const active=String(formData.get("active")??"false")==="true";
+  const {error}=await supabase.from("worship_themes").update({active,updated_at:new Date().toISOString()}).eq("id",id);
+  if(error) redirect("/worship/themes?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/themes");
+  revalidatePath("/worship/repertoire");
+}
+
+export async function requestWorshipSubstitution(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const assignmentId=String(formData.get("assignmentId")??"");
+  const proposedMembershipId=String(formData.get("proposedMembershipId")??"").trim()||null;
+  const requesterNote=String(formData.get("requesterNote")??"").trim()||null;
+  const {data:assignment,error:assignmentError}=await supabase.from("worship_schedule_members").select("id,membership_id").eq("id",assignmentId).maybeSingle();
+  if(assignmentError||!assignment) redirect("/worship?message="+encodeURIComponent(assignmentError?.message??"Escala não encontrada."));
+  const {data:ownMembership}=await supabase.from("network_memberships").select("id").eq("id",assignment.membership_id).eq("user_id",String(uid)).eq("status","active").maybeSingle();
+  if(!ownMembership) redirect("/worship?message="+encodeURIComponent("Só podes pedir substituição para a tua própria escala."));
+  const {error}=await supabase.from("worship_substitution_requests").insert({
+    assignment_id:assignmentId,
+    requested_by_membership_id:ownMembership.id,
+    proposed_membership_id:proposedMembershipId,
+    requester_note:requesterNote,
+    status:"requested"
+  });
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+  redirect("/worship?message="+encodeURIComponent("Pedido de substituição registado."));
+}
+
+export async function acceptWorshipSubstitution(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const requestId=String(formData.get("requestId")??"");
+  const note=String(formData.get("note")??"").trim()||null;
+  const {data:req,error:reqError}=await supabase.from("worship_substitution_requests").select("id,proposed_membership_id,status").eq("id",requestId).maybeSingle();
+  if(reqError||!req) redirect("/worship?message="+encodeURIComponent(reqError?.message??"Pedido não encontrado."));
+  const {data:mine}=req.proposed_membership_id
+    ?await supabase.from("network_memberships").select("id").eq("id",req.proposed_membership_id).eq("user_id",String(uid)).eq("status","active").maybeSingle()
+    :{data:null as any};
+  if(!mine) redirect("/worship?message="+encodeURIComponent("Este pedido não está dirigido à tua conta."));
+  const {error}=await supabase.from("worship_substitution_requests").update({
+    status:"accepted",substitute_note:note,accepted_at:new Date().toISOString(),updated_at:new Date().toISOString()
+  }).eq("id",requestId);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+export async function decideWorshipSubstitution(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const requestId=String(formData.get("requestId")??"");
+  const decision=String(formData.get("decision")??"");
+  const leaderNote=String(formData.get("leaderNote")??"").trim()||null;
+  if(!["approved","rejected"].includes(decision)) redirect("/worship?message="+encodeURIComponent("Decisão inválida."));
+  const {data:req,error:reqError}=await supabase.from("worship_substitution_requests")
+    .select("id,assignment_id,proposed_membership_id,status")
+    .eq("id",requestId).maybeSingle();
+  if(reqError||!req) redirect("/worship?message="+encodeURIComponent(reqError?.message??"Pedido não encontrado."));
+  if(decision==="approved"){
+    if(req.status!=="accepted"||!req.proposed_membership_id) redirect("/worship?message="+encodeURIComponent("O substituto precisa aceitar antes da validação do líder."));
+    const {data:assignment,error:assignmentError}=await supabase.from("worship_schedule_members").select("id,schedule_id,role").eq("id",req.assignment_id).maybeSingle();
+    if(assignmentError||!assignment) redirect("/worship?message="+encodeURIComponent(assignmentError?.message??"Atribuição não encontrada."));
+    const {data:conflict}=await supabase.from("worship_schedule_members")
+      .select("id").eq("schedule_id",assignment.schedule_id).eq("membership_id",req.proposed_membership_id).eq("role",assignment.role??"").maybeSingle();
+    if(conflict) redirect("/worship?message="+encodeURIComponent("O substituto já está escalado nesta função."));
+    const {error:updateAssignmentError}=await supabase.from("worship_schedule_members")
+      .update({membership_id:req.proposed_membership_id,attendance_status:"assigned"})
+      .eq("id",req.assignment_id);
+    if(updateAssignmentError) redirect("/worship?message="+encodeURIComponent(updateAssignmentError.message));
+    await supabase.from("worship_assignment_responses").delete().eq("assignment_id",req.assignment_id);
+  }
+  const {error}=await supabase.from("worship_substitution_requests").update({
+    status:decision,leader_note:leaderNote,decided_at:new Date().toISOString(),decided_by:String(uid),updated_at:new Date().toISOString()
+  }).eq("id",requestId);
+  if(error) redirect("/worship?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship");
+}
+
+
+export async function proposeWorshipSubstitute(formData:FormData){
+  const supabase=await createClient();
+  const requestId=String(formData.get("requestId")??"");
+  const proposedMembershipId=String(formData.get("proposedMembershipId")??"");
+  if(!requestId||!proposedMembershipId) redirect("/worship/substitutions?message="+encodeURIComponent("Seleciona um substituto."));
+  const {error}=await supabase.from("worship_substitution_requests").update({
+    proposed_membership_id:proposedMembershipId,status:"requested",accepted_at:null,substitute_note:null,updated_at:new Date().toISOString()
+  }).eq("id",requestId);
+  if(error) redirect("/worship/substitutions?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/substitutions");
+}
+
+
+export async function saveMyWorshipCommunicationPreference(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const optIn=String(formData.get("communicationOptIn")??"false")==="true";
+  const preference=String(formData.get("communicationPreference")??"").trim()||null;
+  const {error}=await supabase.rpc("set_my_worship_communication_preferences",{p_opt_in:optIn,p_preference:preference});
+  if(error) redirect("/worship/share?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/share");
+  redirect("/worship/share?message="+encodeURIComponent("Preferências de comunicação atualizadas."));
+}
+
+
+export async function saveResolvedWorshipSongLinks(formData:FormData){
+  const supabase=await createClient();
+  const songId=String(formData.get("songId")??"");
+  const patch={
+    youtube_url:String(formData.get("youtubeUrl")??"").trim()||null,
+    spotify_url:String(formData.get("spotifyUrl")??"").trim()||null,
+    apple_music_url:String(formData.get("appleMusicUrl")??"").trim()||null,
+    deezer_url:String(formData.get("deezerUrl")??"").trim()||null,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await supabase.from("worship_songs").update(patch).eq("id",songId);
+  if(error) redirect("/worship/repertoire?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/repertoire");
+  redirect("/worship/repertoire?message="+encodeURIComponent("Links de streaming atualizados."));
+}
+
+
+export async function createWorshipRunSheetItem(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const position=Math.max(1,Number(formData.get("position")??1)||1);
+  const itemType=String(formData.get("itemType")??"other");
+  const title=String(formData.get("title")??"").trim();
+  const songId=String(formData.get("songId")??"").trim()||null;
+  const ownerLabel=String(formData.get("ownerLabel")??"").trim()||null;
+  const plannedRaw=String(formData.get("plannedMinutes")??"").trim();
+  const plannedMinutes=plannedRaw?Math.max(0,Math.min(240,Number(plannedRaw)||0)):null;
+  const notes=String(formData.get("notes")??"").trim()||null;
+  if(!title) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent("Indica o título do item."));
+  const {error}=await supabase.from("worship_run_sheet_items").insert({
+    schedule_id:scheduleId,position,item_type:itemType,title,song_id:songId,owner_label:ownerLabel,planned_minutes:plannedMinutes,notes,created_by:String(uid)
+  });
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+  revalidatePath("/worship");
+}
+
+export async function updateWorshipRunSheetItem(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("itemId")??"");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const patch={
+    position:Math.max(1,Number(formData.get("position")??1)||1),
+    item_type:String(formData.get("itemType")??"other"),
+    title:String(formData.get("title")??"").trim(),
+    song_id:String(formData.get("songId")??"").trim()||null,
+    owner_label:String(formData.get("ownerLabel")??"").trim()||null,
+    planned_minutes:String(formData.get("plannedMinutes")??"").trim()?Math.max(0,Math.min(240,Number(formData.get("plannedMinutes"))||0)):null,
+    notes:String(formData.get("notes")??"").trim()||null,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await supabase.from("worship_run_sheet_items").update(patch).eq("id",id).eq("schedule_id",scheduleId);
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
+
+export async function deleteWorshipRunSheetItem(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("itemId")??"");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const {error}=await supabase.from("worship_run_sheet_items").delete().eq("id",id).eq("schedule_id",scheduleId);
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
+
+
+export async function createWorshipScheduleNote(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const noteType=String(formData.get("noteType")??"comment");
+  const visibility=String(formData.get("visibility")??"team");
+  const body=String(formData.get("body")??"").trim();
+  const dueAt=String(formData.get("dueAt")??"").trim()||null;
+  if(!body) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent("Escreva o conteúdo."));
+  const {error}=await supabase.from("worship_schedule_notes").insert({
+    schedule_id:scheduleId,note_type:noteType,visibility,body,due_at:dueAt,created_by:String(uid)
+  });
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
+
+export async function resolveWorshipScheduleNote(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const id=String(formData.get("noteId")??"");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const resolved=String(formData.get("resolved")??"true")==="true";
+  const {error}=await supabase.from("worship_schedule_notes").update({
+    resolved_at:resolved?new Date().toISOString():null,
+    resolved_by:resolved?String(uid):null,
+    updated_at:new Date().toISOString()
+  }).eq("id",id).eq("schedule_id",scheduleId);
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
+
+export async function deleteWorshipScheduleNote(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("noteId")??"");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const {error}=await supabase.from("worship_schedule_notes").delete().eq("id",id).eq("schedule_id",scheduleId);
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}

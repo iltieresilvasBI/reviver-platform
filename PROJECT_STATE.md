@@ -131,3 +131,45 @@ Each instrument has at least two lessons. The second lessons are guided practica
 - Private authenticated ICS export includes only the member's own schedules and relevant rehearsals.
 - CI for the consolidated release passed before this checkpoint.
 
+
+
+## Checkpoint 2026-10-08 — Worship repertoire and ministry operations
+- PR #30 merged into `main` at commit `19063221cff12716778e5db2c0aa2333e9ddb4df`.
+- Repertoire Intelligence now includes:
+  - editable multi-theme service planning;
+  - dedicated theme management;
+  - composition/version/original and recommended key metadata;
+  - Spotify / YouTube / Apple Music / Deezer references;
+  - assisted cross-platform streaming-link resolution through Songlink/Odesli, always requiring leader validation before saving;
+  - cifra/lyrics kept as external references/search, not copied content;
+  - execution confirmation after services;
+  - four-month usage metrics based only on confirmed executions in completed services;
+  - theme-based suggestions ordered by usage;
+  - internal reports with date/theme/song filters and CSV export;
+  - explicit draft / approve / publish separation;
+  - separate opt-in for public repertoire;
+  - public `/repertorio-da-igreja` catalog with only explicitly public songs/services.
+- Public worship RLS was verified with anonymous role; unpublished/private repertoire is not exposed.
+
+### Ministry operations on PR #31
+- Cross-ministry structure now includes Worship, Media, Sound, Lighting and Reception alongside existing networks.
+- Admin can assign an existing account as member/leader in multiple ministries without duplicating the account.
+- Ministry directory is separate from authentication accounts: spreadsheet import does not create passwords, accounts or invitations.
+- Excel/CSV import supports:
+  - column mapping;
+  - preview;
+  - up to 1,000 rows per import;
+  - create/update/upsert modes;
+  - duplicate control by normalized email/phone;
+  - similar-name warning in the client;
+  - empty-cell overwrite toggle;
+  - per-row rejection reporting;
+  - atomic person + ministry assignment upsert;
+  - transactional test verified idempotency and preservation of non-empty existing data; test data rolled back.
+- Worship substitutions now require requester -> substitute acceptance -> leader approval before changing the schedule.
+- Communication preferences include explicit notification opt-in and preferred channel.
+- Manual WhatsApp mode only opens a prefilled conversation for opted-in members; it never records sent/delivered/read status.
+- Official WhatsApp Business API remains intentionally unimplemented until valid credentials and approved templates are available.
+- New SECURITY DEFINER RPCs have anon EXECUTE explicitly revoked.
+- Supabase leaked-password protection remains disabled and requires account-level configuration.
+- Vercel preview/production builds are currently blocked by the account daily build limit (`api-deployments-free-per-day` / `build-rate-limit`). GitHub CI remains the available code validation gate until that quota resets.

@@ -4,6 +4,7 @@ import { getAccessContext } from "@/lib/auth";
 import {
   archiveWorshipSong,createWorshipSong,setWorshipSongVisibility,updateWorshipSong
 } from "../actions";
+import { SongLinkResolver } from "./song-link-resolver";
 
 function normalise(value:string){
   return value.trim().toLocaleLowerCase("pt-PT");
@@ -109,6 +110,7 @@ export default async function WorshipRepertoirePage({
     <div className="button-row" style={{marginBottom:18}}>
       <Link className="button" href="/worship">← Ministério de Louvor</Link>
       {canLead&&<Link className="button" href="/worship/reports">Relatórios</Link>}
+      {canLead&&<Link className="button" href="/worship/themes">Gerir temas</Link>}
       <Link className="button" href="/worship/rotacao">Rotação A/B/C/D</Link>
     </div>
 
@@ -165,6 +167,7 @@ export default async function WorshipRepertoirePage({
             <form action={setWorshipSongVisibility}><input type="hidden" name="songId" value={song.id}/><input type="hidden" name="publicVisible" value={song.public_visible?"false":"true"}/><button className="button">{song.public_visible?"Retirar da área pública":"Tornar pública"}</button></form>
             <form action={archiveWorshipSong}><input type="hidden" name="songId" value={song.id}/><input type="hidden" name="archived" value="true"/><button className="button danger">Arquivar</button></form>
           </div>
+          <SongLinkResolver songId={song.id} title={song.title} artist={song.artist} current={{youtube:song.youtube_url,spotify:song.spotify_url,appleMusic:song.apple_music_url,deezer:song.deezer_url}}/>
           <form action={updateWorshipSong} className="card form-grid" style={{marginTop:16}}>
             <input type="hidden" name="songId" value={song.id}/>
             <p className="eyebrow">EDITAR MÚSICA / VERSÃO</p>

@@ -4,7 +4,7 @@ import { getAccessContext } from "@/lib/auth";
 
 export default async function WorshipReportsPage({
   searchParams,
-}:{searchParams:Promise<{from?:string;to?:string;theme?:string;q?:string}>}){
+}:{searchParams:Promise<{from?:string;to?:string;theme?:string;q?:string;serviceType?:string}>}){
   const qs=await searchParams;
   const ctx=await getAccessContext();
   const {data:network}=await ctx.supabase.from("networks").select("id").eq("slug","worship").maybeSingle();
@@ -35,12 +35,14 @@ export default async function WorshipReportsPage({
   ]);
 
   const theme=(qs.theme??"").trim().toLocaleLowerCase("pt-PT");
+  const serviceType=(qs.serviceType??"").trim().toLocaleLowerCase("pt-PT");
   const q=(qs.q??"").trim().toLocaleLowerCase("pt-PT");
   const rows=(executions??[]).filter((row:any)=>{
     const song=row.worship_songs;
     const themeMatch=!theme||(song?.themes??[]).some((t:string)=>t.toLocaleLowerCase("pt-PT")===theme);
+    const serviceMatch=!serviceType||String(row.worship_schedules?.service_type??"").toLocaleLowerCase("pt-PT").includes(serviceType);
     const qMatch=!q||[song?.title,song?.artist,song?.composition_title].some((x:any)=>String(x??"").toLocaleLowerCase("pt-PT").includes(q));
-    return themeMatch&&qMatch;
+    return themeMatch&&serviceMatch&&qMatch;
   });
 
   const countBySong=new Map<string,{title:string;artist:string;count:number;last:string|null;themes:string[]}>();
@@ -64,6 +66,7 @@ export default async function WorshipReportsPage({
   query.set("to",to.toISOString().slice(0,10));
   if(qs.theme) query.set("theme",qs.theme);
   if(qs.q) query.set("q",qs.q);
+  if(qs.serviceType) query.set("serviceType",qs.serviceType);
 
   return <AppShell title="Relatórios do Louvor" active="/worship" email={ctx.email}>
     <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/worship/repertoire">← Repertório</Link><a className="button primary" href={"/api/worship/reports.csv?"+query.toString()}>Exportar CSV</a></div>
@@ -74,6 +77,7 @@ export default async function WorshipReportsPage({
         <div className="field"><label>De</label><input type="date" name="from" defaultValue={from.toISOString().slice(0,10)}/></div>
         <div className="field"><label>Até</label><input type="date" name="to" defaultValue={to.toISOString().slice(0,10)}/></div>
         <div className="field"><label>Tema</label><select name="theme" defaultValue={qs.theme??""}><option value="">Todos</option>{(themes??[]).map((t:any)=><option key={t.name}>{t.name}</option>)}</select></div>
+        <div className="field"><label>Tipo de culto</label><input name="serviceType" defaultValue={qs.serviceType??""} placeholder="Ex.: Celebração"/></div>
         <div className="field"><label>Música / artista</label><input name="q" defaultValue={qs.q??""}/></div>
       </div>
       <button className="button primary">Aplicar filtros</button>
