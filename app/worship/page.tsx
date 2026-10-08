@@ -4,7 +4,7 @@ import { SongAutoFillFields } from "./repertoire/song-autofill";
 import { ScheduleSongPicker } from "./schedule-song-picker";
 import { getAccessContext } from "@/lib/auth";
 import {
-  acceptWorshipInvite,addSongToWorshipSchedule,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
+  acceptWorshipInvite,assignWorshipMember,autoAssignWorshipGroup,createWorshipItem,
   createWorshipRehearsal,createWorshipSchedule,createWorshipSong,createWorshipUnavailability,decideWorship,
   deleteWorshipUnavailability,inviteWorship,markWorshipAttendance,removeSongFromWorshipSchedule,removeWorshipAssignment,requestWorshipAccess,
   respondToWorshipAssignment,saveWorshipMemberProfile,updateWorshipScheduleStatus,updateWorshipScheduleTheme,
