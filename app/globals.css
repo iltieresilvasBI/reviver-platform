@@ -34,3 +34,23 @@ button{cursor:pointer}.muted{color:var(--muted)}.small{font-size:12px}.eyebrow{c
 .cms-preview-bar{position:sticky;top:0;z-index:100;background:#2c2519;border-bottom:1px solid #5f4a22;padding:10px 22px;text-align:center;font-size:12px;letter-spacing:.08em;color:#f0dfb8}.cms-preview-bar a{text-decoration:underline;color:#fff}
 
 .contact-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+
+
+/* Worship-only appearance switch. Permissions/content do not change with theme. */
+.theme-switch{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--border);border-radius:999px;background:var(--surface)}
+.theme-switch button{border:0;background:transparent;color:var(--muted);padding:8px 11px;border-radius:999px;font-size:12px;font-weight:750}
+.theme-switch button.active{background:var(--gold-soft);color:var(--text)}
+body[data-worship-theme="light"]{
+  --bg:#f6f7f9;--surface:#ffffff;--card:#ffffff;--text:#17191d;--muted:#646b75;--border:#dfe3e8;--gold:#a86f12;--gold-soft:#f5ead2;--danger:#b54545;--ok:#2f8060
+}
+body[data-worship-theme="light"] .sidebar{background:#ffffff}
+body[data-worship-theme="light"] .field input,
+body[data-worship-theme="light"] .field textarea,
+body[data-worship-theme="light"] .field select,
+body[data-worship-theme="light"] .inline-input{background:#fbfcfd;color:var(--text)}
+body[data-worship-theme="light"] .pill{background:#eef1f4;color:#49515b}
+body[data-worship-theme="light"] .pill.gold{background:#f5ead2;color:#8b5d14}
+body[data-worship-theme="light"] .pill.ok{background:#e0f2e9;color:#28684f}
+body[data-worship-theme="light"] .notice{background:#f5f7f9}
+body[data-worship-theme="light"] .hero-card{background:radial-gradient(circle at 85% 15%,rgba(168,111,18,.12),transparent 38%),#ffffff}
+@media(max-width:720px){.page-header{align-items:flex-start}.theme-switch{margin-top:4px}}
