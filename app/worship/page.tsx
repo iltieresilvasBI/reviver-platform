@@ -89,6 +89,71 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     return (unavailability??[]).filter((u:any)=>u.membership_id===membershipId&&u.starts_on<=date&&u.ends_on>=date);
   };
 
+  if(!canLead){
+    const memberScheduleIds=new Set(myAssignments.map((a:any)=>a.schedule_id));
+    const memberSchedules=upcomingSchedules.filter((schedule:any)=>memberScheduleIds.has(schedule.id));
+    const memberSongsById=new Map((songs??[]).map((song:any)=>[song.id,song]));
+    const memberResponseByAssignment=new Map((responses??[]).map((row:any)=>[row.assignment_id,row]));
+    const relevantRehearsals=upcomingRehearsals.filter((r:any)=>!r.schedule_id||memberScheduleIds.has(r.schedule_id));
+
+    return <AppShell title="Meu Louvor" active="/worship" email={ctx.email} variant="worship-member">
+      {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
+      <div className="member-readonly">
+        <section className="hero-card">
+          <p className="eyebrow">ÁREA DO INTEGRANTE</p>
+          <h2>As tuas escalas, repertórios e avisos.</h2>
+          <p className="readonly-note">Esta visão é apenas de consulta. Planeamento, edição de repertório, gestão de pessoas e publicação ficam reservados à liderança.</p>
+          <div className="button-row" style={{marginTop:18}}>
+            <Link className="button primary" href="/academy">Abrir Academy</Link>
+            <Link className="button" href="/worship/repertoire">Consultar repertório</Link>
+            <a className="button" href="/worship/calendar">Meu calendário</a>
+          </div>
+        </section>
+
+        <div className="grid grid-4" style={{marginTop:18}}>
+          <article className="card metric"><span>Minhas próximas escalas</span><strong>{memberSchedules.length}</strong></article>
+          <article className="card metric"><span>Ensaios futuros</span><strong>{relevantRehearsals.length}</strong></article>
+          <article className="card metric"><span>Meu grupo</span><strong>{myProfile?.group_code??"—"}</strong></article>
+          <article className="card metric"><span>Avisos</span><strong>{(items??[]).length}</strong></article>
+        </div>
+
+        <div className="section-title"><div><p className="eyebrow">ESCALAS</p><h2>Minhas próximas participações</h2></div><span className="muted small">Definidas pela gestão do Louvor</span></div>
+        <div className="list">{memberSchedules.length===0?<div className="empty">Não tens nenhuma escala futura atribuída.</div>:memberSchedules.map((schedule:any)=>{
+          const assignment=myAssignments.find((a:any)=>a.schedule_id===schedule.id);
+          const response=assignment?memberResponseByAssignment.get(assignment.id) as any:null;
+          const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===schedule.id).sort((a:any,b:any)=>a.position-b.position);
+          const rehearsal=(rehearsals??[]).find((r:any)=>r.schedule_id===schedule.id);
+          return <article className="card" key={schedule.id}>
+            <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
+              <div>
+                <div className="button-row"><span className="pill gold">Grupo {schedule.group_code??myProfile?.group_code??"—"}</span><span className="pill ok">{roleLabel(assignment?.role)}</span></div>
+                <h3 style={{fontSize:22,margin:"10px 0 5px"}}>{schedule.title}</h3>
+                <div className="muted small">{new Date(schedule.starts_at).toLocaleString("pt-PT")}{schedule.call_time?" · chegada "+new Date(schedule.call_time).toLocaleString("pt-PT"):""}{schedule.location?" · "+schedule.location:""}</div>
+              </div>
+              <div>{response&&<span className={response.response_status==="confirmed"?"pill ok":"pill gold"}>{response.response_status==="confirmed"?"confirmado":"indisponível"}</span>}</div>
+            </div>
+            {schedule.notes&&<p className="muted" style={{marginTop:14}}>{schedule.notes}</p>}
+            {rehearsal&&<div className="notice" style={{marginTop:14}}>Ensaio: {new Date(rehearsal.starts_at).toLocaleString("pt-PT")}{rehearsal.location?" · "+rehearsal.location:""}</div>}
+            <div className="card" style={{marginTop:14}}>
+              <p className="eyebrow">REPERTÓRIO DESTA ESCALA</p>
+              <ol>{setlist.length===0?<li className="muted">A gestão ainda não publicou músicas para esta escala.</li>:setlist.map((item:any)=>{
+                const song=memberSongsById.get(item.song_id) as any;
+                const key=item.key_override||song?.recommended_key||song?.default_key;
+                return <li key={item.id} style={{marginBottom:9}}><strong>{song?.title??"Música"}</strong>{song?.artist?" — "+song.artist:""} <span className="muted small">{key?"· tom "+key:""}</span></li>;
+              })}</ol>
+            </div>
+          </article>;
+        })}</div>
+
+        <div className="section-title"><div><p className="eyebrow">ENSAIOS</p><h2>Próximos encontros</h2></div></div>
+        <div className="grid grid-3">{relevantRehearsals.length===0?<div className="empty">Nenhum ensaio futuro publicado.</div>:relevantRehearsals.map((r:any)=><article className="card" key={r.id}><span className="pill gold">ensaio</span><h3>{r.title}</h3><p className="muted">{new Date(r.starts_at).toLocaleString("pt-PT")}{r.location?" · "+r.location:""}</p>{r.notes&&<p>{r.notes}</p>}</article>)}</div>
+
+        <div className="section-title"><div><p className="eyebrow">AVISOS</p><h2>Informações da liderança</h2></div></div>
+        <div className="list">{(items??[]).length===0?<div className="empty">Nenhum aviso publicado.</div>:(items??[]).map((item:any)=><article className="list-row" key={item.id}><div><span className="pill">{item.item_type}</span><h3 style={{marginTop:8}}>{item.title}</h3><span className="muted small">{item.body}</span></div>{item.external_url&&<a className="button" href={item.external_url} target="_blank" rel="noreferrer">Abrir</a>}</article>)}</div>
+      </div>
+    </AppShell>;
+  }
+
   const directory=canLead?(await ctx.supabase.rpc("worship_member_directory")).data??[]:[];
   const directoryByMembership=new Map((directory??[]).map((m:any)=>[m.membership_id,m]));
   const profilesByMembership=new Map((memberProfiles??[]).map((p:any)=>[p.membership_id,p]));

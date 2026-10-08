@@ -6,7 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 
 const PROD_URL = "https://reviver-platform-gamma.vercel.app";
 
-function safeMessage(message:string){return `/login?message=${encodeURIComponent(message)}`}
+function safeNext(value:FormDataEntryValue|null){
+  const next=String(value??"");
+  return next.startsWith("/")&&!next.startsWith("//")?next:"/dashboard";
+}
+function safeMessage(message:string,next="/dashboard"){return `/login?message=${encodeURIComponent(message)}&next=${encodeURIComponent(next)}`}
 
 async function getAppOrigin(){
   const h=await headers();
@@ -34,9 +38,10 @@ export async function login(formData:FormData){
   const supabase=await createClient();
   const email=String(formData.get("email")??"").trim();
   const password=String(formData.get("password")??"");
+  const next=safeNext(formData.get("next"));
   const {error}=await supabase.auth.signInWithPassword({email,password});
-  if(error) redirect(safeMessage(friendlyAuthError(error)));
-  redirect("/dashboard");
+  if(error) redirect(safeMessage(friendlyAuthError(error),next));
+  redirect(next);
 }
 
 export async function signup(formData:FormData){
@@ -44,16 +49,17 @@ export async function signup(formData:FormData){
   const email=String(formData.get("email")??"").trim();
   const password=String(formData.get("password")??"");
   const confirmPassword=String(formData.get("confirm_password")??"");
-  if(password.length<8) redirect(safeMessage("A password deve ter pelo menos 8 caracteres."));
-  if(password!==confirmPassword) redirect(safeMessage("As passwords não coincidem."));
+  const next=safeNext(formData.get("next"));
+  if(password.length<8) redirect(safeMessage("A password deve ter pelo menos 8 caracteres.",next));
+  if(password!==confirmPassword) redirect(safeMessage("As passwords não coincidem.",next));
   const origin=await getAppOrigin();
   const {data,error}=await supabase.auth.signUp({
     email,password,
-    options:{emailRedirectTo:`${origin}/auth/callback?next=/dashboard`}
+    options:{emailRedirectTo:`${origin}/auth/callback?next=${encodeURIComponent(next)}`}
   });
-  if(error) redirect(safeMessage(friendlyAuthError(error)));
-  if(data.session) redirect("/dashboard");
-  redirect(safeMessage("Conta criada. Confirma o email recebido e depois inicia sessão."));
+  if(error) redirect(safeMessage(friendlyAuthError(error),next));
+  if(data.session) redirect(next);
+  redirect(safeMessage("Conta criada. Confirma o email recebido e depois inicia sessão.",next));
 }
 
 export async function resendConfirmation(formData:FormData){

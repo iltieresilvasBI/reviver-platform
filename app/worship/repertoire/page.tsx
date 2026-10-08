@@ -5,6 +5,7 @@ import {
   archiveWorshipSong,createWorshipSong,setWorshipSongVisibility,updateWorshipSong
 } from "../actions";
 import { SongLinkResolver } from "./song-link-resolver";
+import { SongAutoFillFields } from "./song-autofill";
 
 function normalise(value:string){
   return value.trim().toLocaleLowerCase("pt-PT");
@@ -25,7 +26,7 @@ export default async function WorshipRepertoirePage({
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
 
   if(!canRead){
-    return <AppShell title="Repertório" active="/worship" email={ctx.email}>
+    return <AppShell title="Repertório" active="/worship" email={ctx.email} variant={canLead?"default":"worship-member"}>
       <section className="hero-card">
         <p className="eyebrow">REVIVER WORSHIP</p>
         <h2>Repertório reservado ao Ministério de Louvor</h2>
@@ -186,12 +187,7 @@ export default async function WorshipRepertoirePage({
     {canLead&&<>
       <div className="section-title"><div><p className="eyebrow">CATÁLOGO</p><h2>Adicionar música</h2></div></div>
       <form action={createWorshipSong} className="card form-grid">
-        <div className="grid grid-2"><div className="field"><label>Música</label><input name="title" required/></div><div className="field"><label>Artista</label><input name="artist"/></div></div>
-        <div className="grid grid-3"><div className="field"><label>Composição</label><input name="compositionTitle" placeholder="Nome da composição"/></div><div className="field"><label>Versão / arranjo</label><input name="versionName" placeholder="Original / Ao vivo / Reviver"/></div><div className="field"><label>Temas</label><input name="themes" placeholder="Adoração, Gratidão, Missões"/></div></div>
-        <div className="grid grid-3"><div className="field"><label>Tom original</label><input name="originalKey"/></div><div className="field"><label>Tom recomendado</label><input name="recommendedKey"/></div><div className="field"><label>BPM</label><input name="bpm" type="number" min="30" max="300"/></div></div>
-        <input type="hidden" name="defaultKey" value=""/>
-        <div className="grid grid-3"><div className="field"><label>YouTube</label><input name="youtubeUrl" type="url"/></div><div className="field"><label>Spotify</label><input name="spotifyUrl" type="url"/></div><div className="field"><label>Apple Music</label><input name="appleMusicUrl" type="url"/></div><div className="field"><label>Deezer</label><input name="deezerUrl" type="url"/></div><div className="field"><label>Cifra</label><input name="chordUrl" type="url"/></div><div className="field"><label>Letra</label><input name="lyricsUrl" type="url"/></div></div>
-        <div className="field"><label>Notas</label><textarea name="notes"/></div>
+        <SongAutoFillFields/>
         <button className="button primary">Adicionar ao repertório</button>
       </form>
     </>}
