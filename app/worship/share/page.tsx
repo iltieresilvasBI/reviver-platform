@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
 import { saveMyWorshipCommunicationPreference } from "../actions";
+import { CopyTextButton } from "./copy-text-button";
 
 function waPhone(value:string|null|undefined){
   const digits=String(value??"").replace(/\D/g,"");
@@ -61,7 +62,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
 
     {canLead&&<>
       <div className="section-title"><div><p className="eyebrow">PARTILHAR ESCALA</p><h2>Mensagens individuais</h2></div></div>
-      <form method="get" className="card form-grid"><div className="field"><label>Culto</label><select name="schedule" defaultValue={selectedId}>{(schedules??[]).map((s:any)=><option key={s.id} value={s.id}>{s.title} · {new Date(s.starts_at).toLocaleString("pt-PT")}</option>)}</select></div><div className="button-row"><button className="button">Carregar escala</button>{selected&&<a className="button" href={"/api/worship/schedule-card/"+selected.id} target="_blank" rel="noreferrer">Abrir imagem da escala</a>}{selected&&<Link className="button" href={"/worship/run-sheet/"+selected.id}>Abrir roteiro</Link>}</div></form>
+      <form method="get" className="card form-grid"><div className="field"><label>Culto</label><select name="schedule" defaultValue={selectedId}>{(schedules??[]).map((s:any)=><option key={s.id} value={s.id}>{s.title} · {new Date(s.starts_at).toLocaleString("pt-PT")}</option>)}</select></div><div className="button-row"><button className="button">Carregar escala</button>{selected&&<a className="button" href={"/api/worship/schedule-card/"+selected.id} target="_blank" rel="noreferrer">Abrir imagem da escala</a>}{selected&&<a className="button" href={"/api/worship/schedule-card/"+selected.id+"?download=1"}>Baixar card</a>}{selected&&<Link className="button" href={"/worship/run-sheet/"+selected.id}>Abrir roteiro</Link>}</div></form>
       {selected&&<div className="list" style={{marginTop:16}}>{assignments.length===0?<div className="empty">Nenhum participante escalado.</div>:assignments.map((a:any)=>{
         const person=personByMembership.get(a.membership_id) as any;
         const pref=profileByMembership.get(a.membership_id) as any;
@@ -80,7 +81,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
         ].filter(Boolean).join("\n");
         const href=phone?"https://wa.me/"+phone+"?text="+encodeURIComponent(message):"";
         const allowed=Boolean(pref?.communication_opt_in)&&pref?.communication_preference==="WhatsApp"&&Boolean(phone);
-        return <article className="card" key={a.id}><div className="list-row" style={{padding:0,border:0,background:"transparent"}}><div><h3>{person?.display_name||person?.email||"Membro"}</h3><p className="muted">{roleLabel(a.role)} · {allowed?"WhatsApp autorizado":!pref?.communication_opt_in?"sem autorização de notificações":!phone?"telefone indisponível":"canal WhatsApp não selecionado"}</p></div>{allowed?<a className="button primary" href={href} target="_blank" rel="noreferrer">Abrir WhatsApp</a>:<span className="pill">não elegível</span>}</div>{allowed&&<details style={{marginTop:10}}><summary style={{cursor:"pointer"}}>Pré-visualizar mensagem</summary><pre style={{whiteSpace:"pre-wrap",fontFamily:"inherit"}}>{message}</pre><p className="muted small">Abrir a conversa não confirma envio.</p></details>}</article>
+        return <article className="card" key={a.id}><div className="list-row" style={{padding:0,border:0,background:"transparent"}}><div><h3>{person?.display_name||person?.email||"Membro"}</h3><p className="muted">{roleLabel(a.role)} · {allowed?"WhatsApp autorizado":!pref?.communication_opt_in?"sem autorização de notificações":!phone?"telefone indisponível":"canal WhatsApp não selecionado"}</p></div>{allowed?<div className="button-row"><CopyTextButton text={message} label="Copiar mensagem"/><CopyTextButton text={portalUrl} label="Copiar link"/><a className="button primary" href={href} target="_blank" rel="noreferrer">Abrir WhatsApp</a></div>:<span className="pill">não elegível</span>}</div>{allowed&&<details style={{marginTop:10}}><summary style={{cursor:"pointer"}}>Pré-visualizar mensagem</summary><pre style={{whiteSpace:"pre-wrap",fontFamily:"inherit"}}>{message}</pre><p className="muted small">Abrir a conversa não confirma envio.</p></details>}</article>
       })}</div>}
     </>}
   </AppShell>;
