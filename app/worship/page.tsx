@@ -346,7 +346,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       ];
       const readiness=Math.round(readinessChecks.filter(x=>x.ok).length/readinessChecks.length*100);
       const readinessMissing=readinessChecks.filter(x=>!x.ok).map(x=>x.label);
-      return <details className="card" key={s.id} open={Boolean(mine)}>
+      return <details className="card" id={"schedule-"+s.id} key={s.id} open={Boolean(mine)}>
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
             <div><div className="button-row"><span className="pill gold">Grupo {s.group_code??"—"}</span><span className={s.status==="confirmed"?"pill ok":"pill"}>{s.status}</span><span className={readiness===100?"pill ok":readiness>=50?"pill gold":"pill"}>prontidão {readiness}%</span>{mine&&<span className="pill ok">estou escalado</span>}</div><h3 style={{margin:"10px 0 4px"}}>{s.title}</h3><span className="muted small">{new Date(s.starts_at).toLocaleString("pt-PT")}{s.call_time?` · chegada ${new Date(s.call_time).toLocaleString("pt-PT")}`:""}{s.service_type?` · ${s.service_type}`:""}</span></div>
