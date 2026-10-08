@@ -314,3 +314,9 @@
   .sites-root .footer .official-brand{width:220px !important}
   .sites-root .footer .official-brand img{width:210px !important;max-width:210px !important}
 }
+
+.sites-root .media-editor-shortcut{margin-top:18px;padding:18px 20px;border:1px solid var(--line);background:#171814;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.sites-root .media-editor-shortcut .eyebrow{margin-bottom:4px}
+.sites-root .media-editor-shortcut strong{font-size:16px}
+.sites-root .media-editor-shortcut p:not(.eyebrow){font-size:12px;margin-top:3px}
+@media(max-width:600px){.sites-root .media-editor-shortcut{align-items:flex-start;flex-direction:column}.sites-root .media-editor-shortcut .button{width:100%}}
