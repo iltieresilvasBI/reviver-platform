@@ -763,3 +763,48 @@ export async function deleteWorshipRunSheetItem(formData:FormData){
   if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
   revalidatePath("/worship/run-sheet/"+scheduleId);
 }
+
+
+export async function createWorshipScheduleNote(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const noteType=String(formData.get("noteType")??"comment");
+  const visibility=String(formData.get("visibility")??"team");
+  const body=String(formData.get("body")??"").trim();
+  const dueAt=String(formData.get("dueAt")??"").trim()||null;
+  if(!body) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent("Escreva o conteúdo."));
+  const {error}=await supabase.from("worship_schedule_notes").insert({
+    schedule_id:scheduleId,note_type:noteType,visibility,body,due_at:dueAt,created_by:String(uid)
+  });
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
+
+export async function resolveWorshipScheduleNote(formData:FormData){
+  const supabase=await createClient();
+  const {data:claims}=await supabase.auth.getClaims();
+  const uid=claims?.claims?.sub;
+  if(!uid) redirect("/login");
+  const id=String(formData.get("noteId")??"");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const resolved=String(formData.get("resolved")??"true")==="true";
+  const {error}=await supabase.from("worship_schedule_notes").update({
+    resolved_at:resolved?new Date().toISOString():null,
+    resolved_by:resolved?String(uid):null,
+    updated_at:new Date().toISOString()
+  }).eq("id",id).eq("schedule_id",scheduleId);
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
+
+export async function deleteWorshipScheduleNote(formData:FormData){
+  const supabase=await createClient();
+  const id=String(formData.get("noteId")??"");
+  const scheduleId=String(formData.get("scheduleId")??"");
+  const {error}=await supabase.from("worship_schedule_notes").delete().eq("id",id).eq("schedule_id",scheduleId);
+  if(error) redirect("/worship/run-sheet/"+scheduleId+"?message="+encodeURIComponent(error.message));
+  revalidatePath("/worship/run-sheet/"+scheduleId);
+}
