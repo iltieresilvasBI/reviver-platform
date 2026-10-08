@@ -265,3 +265,52 @@
   .sites-root .header-brand img{width:132px !important;max-width:132px !important;height:58px !important;max-height:58px !important}
   .sites-root .hero-image{object-position:55% center !important}
 }
+
+/* Definitive logo treatment: use the horizontal vector wordmark with no crop or SVG filter. */
+.sites-root .header-logo-gold{filter:none !important}
+.sites-root .header-brand{
+  width:250px !important;
+  height:82px !important;
+  flex:0 0 250px !important;
+  overflow:visible !important;
+}
+.sites-root .header-brand img{
+  position:static !important;
+  width:236px !important;
+  max-width:236px !important;
+  height:auto !important;
+  max-height:74px !important;
+  object-fit:contain !important;
+  object-position:left center !important;
+  filter:none !important;
+  transform:none !important;
+  clip-path:none !important;
+}
+.sites-root .footer .official-brand{
+  display:block !important;
+  width:260px !important;
+  overflow:visible !important;
+}
+.sites-root .footer .official-brand img{
+  position:static !important;
+  display:block !important;
+  width:250px !important;
+  max-width:250px !important;
+  height:auto !important;
+  max-height:none !important;
+  object-fit:contain !important;
+  object-position:left center !important;
+  filter:none !important;
+  transform:none !important;
+  clip-path:none !important;
+}
+@media(max-width:850px){
+  .sites-root .header-brand{width:205px !important;flex-basis:205px !important}
+  .sites-root .header-brand img{width:196px !important;max-width:196px !important;max-height:64px !important}
+}
+@media(max-width:600px){
+  .sites-root .header-brand{width:178px !important;flex-basis:178px !important}
+  .sites-root .header-brand img{width:168px !important;max-width:168px !important;max-height:56px !important}
+  .sites-root .footer .official-brand{width:220px !important}
+  .sites-root .footer .official-brand img{width:210px !important;max-width:210px !important}
+}
