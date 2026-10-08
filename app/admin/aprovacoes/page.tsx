@@ -108,7 +108,7 @@ export default async function ApprovalsPage({searchParams}:{searchParams:Promise
             :(auditByItem.get(i.id)??[]).map((row:any)=><div className="list-row" key={row.id}>
               <div>
                 <div className="button-row"><span className="pill">{row.action}</span><span className="muted small">{row.from_status??"—"} → {row.to_status??"—"}</span></div>
-                <strong>{actorById.get(row.actor_user_id)??"Sistema / utilizador"}</strong>
+                <strong>{actorById.get(row.actor_user_id)??(row.actor_user_id?"Utilizador "+String(row.actor_user_id).slice(0,8):"Sistema")}</strong>
                 {row.note&&<div className="muted small" style={{marginTop:4}}>{row.note}</div>}
               </div>
               <span className="muted small">{new Date(row.created_at).toLocaleString("pt-PT")}</span>
