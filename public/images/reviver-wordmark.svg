@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 150" role="img" aria-labelledby="title desc">
+  <title id="title">Reviver — Igreja em Cristo</title>
+  <desc id="desc">Símbolo com pomba, cruz e globo ao lado do nome Reviver.</desc>
+  <g fill="none" fill-rule="evenodd">
+    <g transform="translate(8 12)">
+      <path d="M16 35c28 1 48 12 61 32-25-5-43-1-57 11 12-19 11-31-4-43Z" fill="#D3AD73"/>
+      <path d="M24 16c26 8 45 21 57 40-19-7-35-7-48 0 7-15 4-28-9-40Z" fill="#D3AD73" opacity=".92"/>
+      <path d="M66 28c10-15 23-22 39-20-10 6-17 15-20 27-7-4-13-6-19-7Z" fill="#D3AD73"/>
+      <path d="M52 63c-15 10-24 24-26 41 16 8 34 11 54 8 19-3 34-11 47-24" stroke="#D3AD73" stroke-width="6" stroke-linecap="round"/>
+      <path d="M104 43v56M78 68h52" stroke="#D3AD73" stroke-width="10" stroke-linecap="square"/>
+      <path d="M51 89c17-20 36-29 58-29 20 0 38 7 54 21" stroke="#D3AD73" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+      <path d="M45 91c21 31 58 40 92 21 11-6 20-14 27-24" stroke="#D3AD73" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+    </g>
+    <g transform="translate(190 28)">
+      <text x="0" y="58" font-family="Georgia, 'Times New Roman', serif" font-size="66" font-weight="700" fill="#F3F0E9">Reviver</text>
+      <line x1="2" y1="73" x2="300" y2="73" stroke="#D3AD73" stroke-width="1.5" opacity=".7"/>
+      <text x="4" y="101" font-family="Arial, Helvetica, sans-serif" font-size="17" letter-spacing="8" fill="#D3AD73">IGREJA EM CRISTO</text>
+    </g>
+  </g>
+</svg>
