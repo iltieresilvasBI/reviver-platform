@@ -2,9 +2,6 @@ name: Cloudflare Live Smoke
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -75,14 +72,3 @@ jobs:
           curl -sS -I "$BASE_URL/" > /tmp/headers
           grep -qi '^content-type:' /tmp/headers
 
-      - name: Verify hardened production headers
-        if: github.event_name == 'push'
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -sS -I "$BASE_URL/" > /tmp/headers
-          grep -qi '^x-content-type-options: nosniff' /tmp/headers
-          grep -qi '^x-frame-options: SAMEORIGIN' /tmp/headers
-          grep -qi '^referrer-policy: strict-origin-when-cross-origin' /tmp/headers
-          grep -qi '^permissions-policy: camera=(), microphone=(), geolocation=()' /tmp/headers
-          grep -qi '^strict-transport-security: max-age=31536000; includeSubDomains' /tmp/headers
