@@ -1,0 +1,57 @@
+name: Cloudflare Live Smoke
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://reviver-platform.iltieresilvas.workers.dev
+    steps:
+      - name: Public pages return 200
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /login /midia /repertorio-da-igreja; do
+            code=$(curl -sS -o /tmp/body -w "%{http_code}" "$BASE_URL$path")
+            echo "$path -> $code"
+            test "$code" = "200"
+          done
+
+      - name: Public repertoire API responds
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/repertoire.json -w "%{http_code}" "$BASE_URL/api/public/worship-repertoire")
+          echo "/api/public/worship-repertoire -> $code"
+          test "$code" = "200"
+          grep -q '"ok":true' /tmp/repertoire.json
+
+      - name: Protected areas redirect to login
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in /worship /academy /media; do
+            headers=$(mktemp)
+            code=$(curl -sS -o /dev/null -D "$headers" -w "%{http_code}" "$BASE_URL$path")
+            location=$(awk 'BEGIN{IGNORECASE=1} /^location:/{gsub("\r",""); print $2}' "$headers" | tail -1)
+            echo "$path -> $code $location"
+            case "$code" in
+              301|302|303|307|308) ;;
+              *) echo "Expected redirect for $path"; exit 1 ;;
+            esac
+            echo "$location" | grep -q "/login"
+          done
+
+      - name: Security headers sanity
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sS -I "$BASE_URL/" > /tmp/headers
+          grep -qi '^content-type:' /tmp/headers
