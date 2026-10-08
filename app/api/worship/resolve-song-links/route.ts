@@ -17,11 +17,12 @@ export async function GET(request:NextRequest){
     const data=await response.json();
     if(!data?.pageUrl||!data?.linksByPlatform)return Response.json({ok:false,error:"Não foi encontrada correspondência para este link."},{status:404});
     const p=data.linksByPlatform;
+    const entity=(Object.values(data.entitiesByUniqueId??{}) as any[]).find((x:any)=>x?.title||x?.artistName) as any;
     return Response.json({
       ok:true,
       pageUrl:data.pageUrl,
-      title:Object.values(data.entitiesByUniqueId??{}).find((x:any)=>x?.title)?.title??null,
-      artist:Object.values(data.entitiesByUniqueId??{}).find((x:any)=>x?.artistName)?.artistName??null,
+      title:entity?.title??null,
+      artist:entity?.artistName??null,
       links:{
         spotify:p.spotify?.url??null,
         youtube:p.youtube?.url??p.youtubeMusic?.url??null,
