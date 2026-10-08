@@ -126,28 +126,7 @@ export async function GET(request:Request){
 
     if(!results.length)return NextResponse.json({error:"Nenhuma correspondência encontrada nos catálogos musicais."},{status:404});
     return NextResponse.json({ok:true,query:q,sources:{deezer:deezerResults.length,itunes:itunesResults.length},results});
-  }catch{}
-      }
-      return {
-        title:track.trackName??q,
-        artist:track.artistName??"",
-        compositionTitle:track.trackName??q,
-        versionName:"",
-        album:track.collectionName??"",
-        releaseYear:track.releaseDate?new Date(track.releaseDate).getUTCFullYear():null,
-        genre:track.primaryGenreName??"",
-        artwork:track.artworkUrl100?.replace("100x100bb","300x300bb")??"",
-        previewUrl:track.previewUrl??"",
-        links:{
-          ...links,
-          chord:searchLink(baseQuery,"site:cifraclub.com.br cifra"),
-          lyrics:searchLink(baseQuery,"letra"),
-        }
-      };
-    }));
-
-    return NextResponse.json({ok:true,query:q,results});
   }catch{
-    return NextResponse.json({error:"Não foi possível consultar o catálogo musical agora."},{status:502});
+    return NextResponse.json({error:"Não foi possível consultar os catálogos musicais agora."},{status:502});
   }
 }
