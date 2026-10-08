@@ -1,6 +1,6 @@
 "use client";
 import {useMemo,useState} from "react";
-import * as XLSX from "xlsx";
+import {readSheet} from "read-excel-file/browser";
 
 const fields=[
   ["","Ignorar"],
@@ -47,6 +47,32 @@ function levenshtein(a:string,b:string){
 }
 function escapeCsv(value:unknown){return '"'+String(value??"").replace(/"/g,'""')+'"'}
 
+function parseCsv(text:string){
+  const rows:string[][]=[];let row:string[]=[];let cell="";let quoted=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(ch==='"'){
+      if(quoted&&text[i+1]==='"'){cell+='"';i++}
+      else quoted=!quoted;
+    }else if(ch===","&&!quoted){row.push(cell);cell=""}
+    else if((ch==="\n"||ch==="\r")&&!quoted){
+      if(ch==="\r"&&text[i+1]==="\n")i++;
+      row.push(cell);cell="";
+      if(row.some(v=>v.trim()!==""))rows.push(row);
+      row=[];
+    }else cell+=ch;
+  }
+  row.push(cell);
+  if(row.some(v=>v.trim()!==""))rows.push(row);
+  return rows;
+}
+
+function displayCell(value:unknown){
+  if(value instanceof Date)return value.toISOString().slice(0,10);
+  if(typeof value==="boolean")return value?"sim":"não";
+  return String(value??"");
+}
+
 export function MinistryImportClient({ministries}:{ministries:{slug:string;name:string}[]}){
   const [fileName,setFileName]=useState("");
   const [headers,setHeaders]=useState<string[]>([]);
@@ -62,13 +88,20 @@ export function MinistryImportClient({ministries}:{ministries:{slug:string;name:
   async function loadFile(file:File){
     setError(""); setResult(null); setFileName(file.name);
     if(!/\.(xlsx|csv)$/i.test(file.name)){setError("Use um ficheiro .xlsx ou .csv.");return}
-    const buffer=await file.arrayBuffer();
-    const workbook=XLSX.read(buffer,{type:"array",cellDates:false});
-    const sheet=workbook.Sheets[workbook.SheetNames[0]];
-    const matrix=XLSX.utils.sheet_to_json<any[]>(sheet,{header:1,defval:"",raw:false});
+    let matrix:any[][];
+    try{
+      if(/\.csv$/i.test(file.name)){
+        matrix=parseCsv(await file.text());
+      }else{
+        matrix=(await readSheet(file)).map(row=>row.map(displayCell));
+      }
+    }catch{
+      setError("Não foi possível ler o ficheiro. Confirme que é um .xlsx ou .csv válido.");
+      return;
+    }
     if(matrix.length<2){setError("O ficheiro precisa de cabeçalho e pelo menos uma linha.");return}
-    const h=(matrix[0]??[]).map((v:any)=>String(v??"").trim());
-    const rows=matrix.slice(1).filter((row:any[])=>row.some(v=>String(v??"").trim()!==""));
+    const h=(matrix[0]??[]).map((v:any)=>displayCell(v).trim());
+    const rows=matrix.slice(1).filter((row:any[])=>row.some(v=>displayCell(v).trim()!==""));
     setHeaders(h); setRawRows(rows.slice(0,1000));
     const auto:Record<number,string>={};
     h.forEach((header,i)=>{
