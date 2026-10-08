@@ -79,9 +79,23 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
           songs?"Repertório: "+songs:"",
           "Consultar e confirmar: "+portalUrl
         ].filter(Boolean).join("\n");
-        const href=phone?"https://wa.me/"+phone+"?text="+encodeURIComponent(message):"";
-        const allowed=Boolean(pref?.communication_opt_in)&&pref?.communication_preference==="WhatsApp"&&Boolean(phone);
-        return <article className="card" key={a.id}><div className="list-row" style={{padding:0,border:0,background:"transparent"}}><div><h3>{person?.display_name||person?.email||"Membro"}</h3><p className="muted">{roleLabel(a.role)} · {allowed?"WhatsApp autorizado":!pref?.communication_opt_in?"sem autorização de notificações":!phone?"telefone indisponível":"canal WhatsApp não selecionado"}</p></div>{allowed?<div className="button-row"><CopyTextButton text={message} label="Copiar mensagem"/><CopyTextButton text={portalUrl} label="Copiar link"/><a className="button primary" href={href} target="_blank" rel="noreferrer">Abrir WhatsApp</a></div>:<span className="pill">não elegível</span>}</div>{allowed&&<details style={{marginTop:10}}><summary style={{cursor:"pointer"}}>Pré-visualizar mensagem</summary><pre style={{whiteSpace:"pre-wrap",fontFamily:"inherit"}}>{message}</pre><p className="muted small">Abrir a conversa não confirma envio.</p></details>}</article>
+        const whatsappHref=phone?"https://wa.me/"+phone+"?text="+encodeURIComponent(message):"";
+        const whatsappAllowed=Boolean(pref?.communication_opt_in)&&pref?.communication_preference==="WhatsApp"&&Boolean(phone);
+        const emailAllowed=Boolean(pref?.communication_opt_in)&&pref?.communication_preference==="Email"&&Boolean(person?.email);
+        const emailHref=emailAllowed?"mailto:"+encodeURIComponent(person.email)+"?subject="+encodeURIComponent("Escala Reviver — "+selected.title)+"&body="+encodeURIComponent(message):"";
+        const eligible=whatsappAllowed||emailAllowed;
+        const channelStatus=whatsappAllowed
+          ?"WhatsApp autorizado"
+          :emailAllowed
+            ?"Email autorizado"
+            :!pref?.communication_opt_in
+              ?"sem autorização de notificações"
+              :pref?.communication_preference==="WhatsApp"&&!phone
+                ?"telefone indisponível"
+                :pref?.communication_preference==="Email"&&!person?.email
+                  ?"email indisponível"
+                  :"canal não configurado";
+        return <article className="card" key={a.id}><div className="list-row" style={{padding:0,border:0,background:"transparent"}}><div><h3>{person?.display_name||person?.email||"Membro"}</h3><p className="muted">{roleLabel(a.role)} · {channelStatus}</p></div>{eligible?<div className="button-row"><CopyTextButton text={message} label="Copiar mensagem"/><CopyTextButton text={portalUrl} label="Copiar link"/>{whatsappAllowed&&<a className="button primary" href={whatsappHref} target="_blank" rel="noreferrer">Abrir WhatsApp</a>}{emailAllowed&&<a className="button primary" href={emailHref}>Abrir email</a>}</div>:<span className="pill">não elegível</span>}</div>{eligible&&<details style={{marginTop:10}}><summary style={{cursor:"pointer"}}>Pré-visualizar mensagem</summary><pre style={{whiteSpace:"pre-wrap",fontFamily:"inherit"}}>{message}</pre><p className="muted small">Abrir o canal não confirma envio.</p></details>}</article>
       })}</div>}
     </>}
   </AppShell>;
