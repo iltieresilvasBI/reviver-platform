@@ -122,11 +122,30 @@ export function MinistryImportClient({ministries}:{ministries:{slug:string;name:
   const warnings=useMemo(()=>{
     const list:string[]=[];
     const names=preview.map(r=>String(r.fullName??"").trim()).filter(Boolean);
+    const emails=new Map<string,number>();
+    const phones=new Map<string,number>();
+    for(const row of preview){
+      const email=String(row.email??"").trim().toLowerCase();
+      const phone=String(row.phone??"").replace(/\D/g,"");
+      if(email) emails.set(email,(emails.get(email)??0)+1);
+      if(phone) phones.set(phone,(phones.get(phone)??0)+1);
+      const group=String(row.groupCode??"").trim().toUpperCase();
+      const pref=norm(String(row.communicationPreference??""));
+      const optIn=norm(String(row.communicationOptIn??""));
+      if(group&&!["A","B","C","D"].includes(group)) list.push('Grupo inválido na linha '+row.rowNumber+': "'+group+'".');
+      if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) list.push('Email inválido na linha '+row.rowNumber+': "'+email+'".');
+      if(phone&&(phone.length<8||phone.length>15)) list.push('Telefone inválido na linha '+row.rowNumber+'.');
+      if(pref&&!["whatsapp","whats app","email","e-mail"].includes(pref)) list.push('Preferência de comunicação inválida na linha '+row.rowNumber+'.');
+      if(pref&&["nao","não","false","0","inativo","inativa"].includes(optIn)) list.push('Linha '+row.rowNumber+': canal definido sem autorização de notificações.');
+      if(list.length>=12)return list;
+    }
+    for(const [email,count] of emails) if(count>1) list.push('Email repetido no ficheiro: "'+email+'".');
+    for(const [phone,count] of phones) if(count>1) list.push('Telefone repetido no ficheiro: "'+phone+'".');
     for(let i=0;i<names.length;i++)for(let j=i+1;j<names.length;j++){
       const a=norm(names[i]),b=norm(names[j]);
       if(a===b) list.push('Nome repetido no ficheiro: "'+names[i]+'".');
       else if(Math.max(a.length,b.length)>=5&&levenshtein(a,b)<=2) list.push('Nomes semelhantes: "'+names[i]+'" e "'+names[j]+'". Reveja antes de importar.');
-      if(list.length>=8)return list;
+      if(list.length>=12)return list;
     }
     return list;
   },[preview]);
@@ -166,7 +185,7 @@ export function MinistryImportClient({ministries}:{ministries:{slug:string;name:
       <div className="grid grid-3">{headers.map((header,i)=><div className="field" key={i}><label>{header||"Coluna "+(i+1)}</label><select value={mapping[i]??""} onChange={e=>setMapping({...mapping,[i]:e.target.value})}>{fields.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></div>)}</div>
       {warnings.length>0&&<div className="notice warn"><strong>Revisão recomendada:</strong><ul>{warnings.map((w,i)=><li key={i}>{w}</li>)}</ul></div>}
       <div className="section-title"><div><p className="eyebrow">PRÉ-VISUALIZAÇÃO</p><h2>{preview.length} registo{preview.length===1?"":"s"}</h2></div><span className="muted small">Mostrando até 10 linhas</span></div>
-      <div className="list">{preview.slice(0,10).map((row:any)=><div className="list-row" key={row.rowNumber}><div><strong>{row.fullName||"Sem nome"}</strong><div className="muted small">{[row.email,row.phone,row.groupCode,row.roles].filter(Boolean).join(" · ")}</div></div><span className="pill">linha {row.rowNumber}</span></div>)}</div>
+      <div className="list">{preview.slice(0,10).map((row:any)=><div className="list-row" key={row.rowNumber}><div><strong>{row.fullName||"Sem nome"}</strong><div className="muted small">{[row.email,row.phone,row.groupCode,row.roles].filter(Boolean).join(" · ")}</div>{(row.communicationOptIn||row.communicationPreference)&&<div className="muted small">Comunicação: {String(row.communicationOptIn||"não definido")}{row.communicationPreference?" · "+row.communicationPreference:""}</div>}</div><span className="pill">linha {row.rowNumber}</span></div>)}</div>
       <button className="button primary" onClick={submit} disabled={busy}>{busy?"A importar…":"Confirmar importação"}</button>
     </>}
     {result?.ok&&<div className="notice ok"><strong>Importação concluída:</strong> {result.acceptedCount} aceite{result.acceptedCount===1?"":"s"} · {result.rejectedCount} rejeitado{result.rejectedCount===1?"":"s"}.{result.rejectedCount>0&&<button className="button" onClick={downloadRejected} style={{marginLeft:12}}>Descarregar rejeitados</button>}</div>}
