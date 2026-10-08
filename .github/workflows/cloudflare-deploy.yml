@@ -56,11 +56,40 @@ jobs:
       - name: Verify deployed Worker
         if: steps.cloudflare.outputs.configured == 'true'
         shell: bash
+        env:
+          BASE_URL: https://reviver-platform.iltieresilvas.workers.dev
         run: |
-          for attempt in {1..12}; do
-            code=$(curl -sS -o /tmp/reviver-home -w "%{http_code}" https://reviver-platform.iltieresilvas.workers.dev/)
-            echo "Smoke attempt $attempt -> HTTP $code"
-            if [ "$code" = "200" ]; then exit 0; fi
+          set -euo pipefail
+
+          ready=false
+          for attempt in {1..18}; do
+            headers=$(mktemp)
+            code=$(curl -sS -o /tmp/reviver-home -D "$headers" -w "%{http_code}" "$BASE_URL/")
+            echo "Production readiness attempt $attempt -> HTTP $code"
+            if [ "$code" = "200" ]               && grep -qi '^x-content-type-options: nosniff' "$headers"               && grep -qi '^x-frame-options: SAMEORIGIN' "$headers"               && grep -qi '^referrer-policy: strict-origin-when-cross-origin' "$headers"               && grep -qi '^permissions-policy: camera=(), microphone=(), geolocation=()' "$headers"               && grep -qi '^strict-transport-security: max-age=31536000; includeSubDomains' "$headers"; then
+              ready=true
+              break
+            fi
             sleep 5
           done
-          exit 1
+
+          test "$ready" = "true"
+
+          code=$(curl -sS -o /tmp/health.json -w "%{http_code}" "$BASE_URL/api/health")
+          echo "/api/health -> $code"
+          test "$code" = "200"
+
+          code=$(curl -sS -o /tmp/repertoire.json -w "%{http_code}" "$BASE_URL/api/public/worship-repertoire")
+          echo "/api/public/worship-repertoire -> $code"
+          test "$code" = "200"
+          grep -q '"ok":true' /tmp/repertoire.json
+
+          protected_headers=$(mktemp)
+          code=$(curl -sS -o /dev/null -D "$protected_headers" -w "%{http_code}" "$BASE_URL/admin/site")
+          location=$(awk 'BEGIN{IGNORECASE=1} /^location:/{gsub("\r",""); print $2}' "$protected_headers" | tail -1)
+          echo "/admin/site -> $code $location"
+          case "$code" in
+            301|302|303|307|308) ;;
+            *) exit 1 ;;
+          esac
+          echo "$location" | grep -q "/login"
