@@ -6,7 +6,7 @@ const schema=z.object({
   email:z.string().trim().email().max(254),
   subject:z.string().trim().min(1).max(160),
   message:z.string().trim().min(10).max(3000),
-  company:z.string().max(0).optional().default(""),
+  company:z.string().max(200).optional().default(""),
 });
 
 export async function POST(request:Request){
