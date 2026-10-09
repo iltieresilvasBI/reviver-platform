@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-const PROD_URL = "https://reviver-platform-gamma.vercel.app";
+const PROD_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://reviver-platform.iltieresilvas.workers.dev";
 
 function safeNext(value:FormDataEntryValue|null){
   const next=String(value??"");
