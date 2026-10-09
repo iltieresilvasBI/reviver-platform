@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 function escapeIcs(value:string){
   return value
     .replace(/\\/g,"\\\\")
-    .replace(/\n/g,"\\n")
+    .replace(/\r\n|\r|\n/g,"\\n")
     .replace(/,/g,"\\,")
     .replace(/;/g,"\\;");
 }
