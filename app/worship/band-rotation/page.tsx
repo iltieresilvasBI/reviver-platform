@@ -46,7 +46,7 @@ export default async function BandRotationPage({
   ]);
 
   const personByMembership=new Map((directory??[]).map((p:any)=>[p.membership_id,p]));
-  const selectedSchedule=qs.schedule||(schedules??[])[0]?.id??"";
+  const selectedSchedule=qs.schedule||((schedules??[])[0]?.id??"");
   const backupPrimaryCount=new Set((backups??[]).map((b:any)=>b.primary_membership_id+"|"+b.role)).size;
 
   return <AppShell title="Combinações da Banda" active="/worship" email={ctx.email}>
