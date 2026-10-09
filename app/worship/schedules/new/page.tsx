@@ -146,7 +146,7 @@ export default async function NewWorshipSchedulePage({
         </div>
         <div className="field"><label>Temas</label><input name="themes" placeholder="Graça, Família, Missões"/></div>
         <div className="field"><label>Observações</label><textarea name="notes" maxLength={500}/></div>
-        <button className="button primary">Criar e continuar</button>
+        <SubmitButton className="button primary" pendingText="A criar escala…">Criar e continuar</SubmitButton>
       </form>:<div className="form-grid">
         <p className="eyebrow">DETALHES</p>
         <h2>{schedule.title}</h2>
@@ -162,7 +162,7 @@ export default async function NewWorshipSchedulePage({
         <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
           <div><p className="eyebrow">PARTICIPANTES</p><h2>{participantCount} pessoa{participantCount===1?"":"s"} na escala</h2></div>
           <div className="button-row">
-            <form action={autoAssignWorshipGroup}><input type="hidden" name="scheduleId" value={schedule.id}/><button className="button primary" disabled={!schedule.group_code}>Preencher vocais · Grupo {schedule.group_code??"—"}</button></form>
+            <form action={autoAssignWorshipGroup}><input type="hidden" name="scheduleId" value={schedule.id}/><SubmitButton className="button primary" disabled={!schedule.group_code} pendingText="A preencher vocais…">Preencher vocais · Grupo {schedule.group_code??"—"}</SubmitButton></form>
           </div>
         </div>
 
@@ -173,7 +173,7 @@ export default async function NewWorshipSchedulePage({
             <div className="field"><label>Combinação de instrumentistas</label><select name="templateId" required defaultValue=""><option value="" disabled>Selecionar combinação</option>{(bandTemplates??[]).filter((t:any)=>!t.service_types?.length||t.service_types.includes(schedule.service_type)).map((t:any)=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
             <div className="field"><label>Rotatividade</label><div className="notice">Escolhe automaticamente instrumentistas disponíveis com menor carga recente.</div></div>
           </div>
-          <div className="button-row"><button className="button primary">Preencher banda automaticamente</button><Link className="button" href={"/worship/band-rotation?schedule="+schedule.id}>Gerir combinações</Link></div>
+          <div className="button-row"><SubmitButton className="button primary" pendingText="A preencher banda…">Preencher banda automaticamente</SubmitButton><Link className="button" href={"/worship/band-rotation?schedule="+schedule.id}>Gerir combinações</Link></div>
         </form>
 
         <form action={assignWorshipMember} className="card form-grid">
@@ -182,7 +182,7 @@ export default async function NewWorshipSchedulePage({
             <div className="field"><label>Adicionar participante</label><select name="membershipId" required><option value="">Selecionar</option>{(directory??[]).filter((m:any)=>m.status==="active").map((m:any)=><option value={m.membership_id} key={m.membership_id}>{m.display_name||m.email} · G{(profileByMembership.get(m.membership_id) as any)?.group_code??"—"}</option>)}</select></div>
             <div className="field"><label>Função</label><select name="role"><option value="">Selecionar</option>{roles.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></div>
           </div>
-          <button className="button">+ Adicionar</button>
+          <SubmitButton className="button" pendingText="A adicionar…">+ Adicionar</SubmitButton>
         </form>
         <div className="list">{participantCount===0?<div className="empty">Ainda não existem participantes nesta escala.</div>:(assignments??[]).map((a:any)=>{const p=personByMembership.get(a.membership_id) as any;return <div className="list-row" key={a.id}><div><strong>{p?.display_name||p?.email||"Membro"}</strong><div className="muted small">{roleLabel(a.role)}</div></div><form action={removeWorshipAssignment}><input type="hidden" name="assignmentId" value={a.id}/><button className="button">Remover</button></form></div>})}</div>
         <div className="button-row"><Link className="button primary" href={tabHref(schedule.id,"songs")}>Continuar para músicas →</Link></div>
@@ -215,8 +215,8 @@ export default async function NewWorshipSchedulePage({
         <div className="card">
           <p className="eyebrow">FINALIZAR</p>
           <div className="button-row">
-            {schedule.publication_state==="draft"&&<form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={schedule.id}/><input type="hidden" name="publicationAction" value="approve"/><button className="button">Aprovar escala</button></form>}
-            {schedule.publication_state!=="published"&&<form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={schedule.id}/><input type="hidden" name="publicationAction" value="publish"/><button className="button primary">Publicar escala</button></form>}
+            {schedule.publication_state==="draft"&&<form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={schedule.id}/><input type="hidden" name="publicationAction" value="approve"/><SubmitButton className="button" pendingText="A aprovar…">Aprovar escala</SubmitButton></form>}
+            {schedule.publication_state!=="published"&&<form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={schedule.id}/><input type="hidden" name="publicationAction" value="publish"/><SubmitButton className="button primary" pendingText="A publicar…">Publicar escala</SubmitButton></form>}
             <Link className="button primary" href={"/worship/share?schedule="+schedule.id}>Comunicar participantes</Link>
             <a className="button" href={"https://wa.me/?text="+encodeURIComponent(shareText)} target="_blank" rel="noreferrer">Partilhar no WhatsApp</a>
           </div>
