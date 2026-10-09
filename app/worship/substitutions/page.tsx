@@ -86,7 +86,7 @@ export default async function WorshipSubstitutionsPage({
             :<form action={requestAutomaticSubstitution} className="form-grid" style={{marginTop:12}}>
               <input type="hidden" name="assignmentId" value={a.id}/>
               <div className="field"><label>Observação opcional</label><input name="requesterNote" placeholder="Ex.: viagem, trabalho, compromisso"/></div>
-              <button className="button">Pedir substituição automática</button>
+              <SubmitButton className="button" pendingText="A procurar substituto…">Pedir substituição automática</SubmitButton>
             </form>}
       </article>;
     })}</div>
@@ -108,12 +108,12 @@ export default async function WorshipSubstitutionsPage({
           <form action={respondAutomaticSubstitution}>
             <input type="hidden" name="offerId" value={offer.id}/>
             <input type="hidden" name="decision" value="accept"/>
-            <button className="button primary">Posso substituir</button>
+            <SubmitButton className="button primary" pendingText="A confirmar…">Posso substituir</SubmitButton>
           </form>
           <form action={respondAutomaticSubstitution}>
             <input type="hidden" name="offerId" value={offer.id}/>
             <input type="hidden" name="decision" value="decline"/>
-            <button className="button">Não posso</button>
+            <SubmitButton className="button" pendingText="A registar…">Não posso</SubmitButton>
           </form>
         </div>
       </article>;
