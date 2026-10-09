@@ -2,7 +2,8 @@ import { getAccessContext } from "@/lib/auth";
 
 function csvCell(value:unknown){
   const text=String(value??"");
-  return '"'+text.replace(/"/g,'""')+'"';
+  const safe=/^[=+\-@\t\r]/.test(text)?"'"+text:text;
+  return '"'+safe.replace(/"/g,'""')+'"';
 }
 
 export async function GET(request:Request){
