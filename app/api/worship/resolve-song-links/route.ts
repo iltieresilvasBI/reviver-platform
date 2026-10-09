@@ -12,7 +12,7 @@ export async function GET(request:NextRequest){
   if(!input||!/^https?:\/\//i.test(input))return Response.json({ok:false,error:"Insira um link válido de streaming."},{status:400});
   try{
     const endpoint="https://api.song.link/v1-alpha.1/links?userCountry=PT&url="+encodeURIComponent(input);
-    const response=await fetch(endpoint,{headers:{"User-Agent":"ReviverPlatform/1.0"},cache:"no-store"});
+    const response=await fetch(endpoint,{headers:{"User-Agent":"ReviverPlatform/1.0"},cache:"no-store",signal:AbortSignal.timeout(6500)});
     if(!response.ok)return Response.json({ok:false,error:"O serviço de links não respondeu."},{status:502});
     const data=await response.json();
     if(!data?.pageUrl||!data?.linksByPlatform)return Response.json({ok:false,error:"Não foi encontrada correspondência para este link."},{status:404});
