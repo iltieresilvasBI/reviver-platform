@@ -70,6 +70,8 @@ export default async function NewWorshipSchedulePage({
   const personByMembership=new Map((directory??[]).map((p:any)=>[p.membership_id,p]));
   const songById=new Map((songs??[]).map((s:any)=>[s.id,s]));
 
+  const relationOne=(value:any)=>Array.isArray(value)?value[0]:value;
+
   const candidates=(songs??[]).map((song:any)=>{
     const serviceType=String(schedule?.service_type??"").trim().toLocaleLowerCase("pt-PT");
     const songTypes=(Array.isArray(song.service_types)?song.service_types:[]).map((x:string)=>x.toLocaleLowerCase("pt-PT"));
@@ -79,15 +81,15 @@ export default async function NewWorshipSchedulePage({
     const themeMatches=scheduleThemes.filter(t=>songThemes.includes(t)).length;
     const cutoff=new Date(schedule?.starts_at??Date.now()); cutoff.setMonth(cutoff.getMonth()-4);
     const history=(executions??[]).filter((e:any)=>{
-      const s=e.worship_schedules;
+      const s=relationOne(e.worship_schedules);
       return e.song_id===song.id&&s?.status==="completed"&&new Date(s.starts_at)>=cutoff&&new Date(s.starts_at)<new Date(schedule?.starts_at??Date.now());
-    }).sort((a:any,b:any)=>new Date(b.worship_schedules.starts_at).getTime()-new Date(a.worship_schedules.starts_at).getTime());
+    }).sort((a:any,b:any)=>new Date(relationOne(b.worship_schedules)?.starts_at??0).getTime()-new Date(relationOne(a.worship_schedules)?.starts_at??0).getTime());
     return {
       id:song.id,title:song.title,artist:song.artist??null,
       defaultKey:song.default_key??null,recommendedKey:song.recommended_key??null,
       serviceTypes:Array.isArray(song.service_types)?song.service_types:[],
       themes:Array.isArray(song.themes)?song.themes:[],
-      usageCount:history.length,lastUsedAt:history[0]?.worship_schedules?.starts_at??null,
+      usageCount:history.length,lastUsedAt:relationOne(history[0]?.worship_schedules)?.starts_at??null,
       folderMatch,themeMatches,score:(folderMatch?100:0)+themeMatches*25-history.length
     };
   }).sort((a:any,b:any)=>b.score-a.score||a.usageCount-b.usageCount||a.title.localeCompare(b.title,"pt-PT"));
