@@ -123,7 +123,7 @@ export async function autoFillBand(formData:FormData){
   ));
 }
 
-export async function generateAutomaticBackups(){
+export async function generateAutomaticBackups(_formData:FormData){
   const supabase=await createClient();
   const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-120);
   const [{data:profiles,error:profileError},{data:history,error:historyError}]=await Promise.all([
