@@ -143,15 +143,57 @@ export async function generateAutomaticBackups(_formData:FormData){
   }
 
   const rows:any[]=[];
-  for(const primary of profiles??[]){
-    for(const role of (Array.isArray(primary.roles)?primary.roles:[])){
-      const candidates=(profiles??[])
+  const vocalRoles=["cantor_principal","backing_vocal"];
+  const profilesList=profiles??[];
+  const singers=profilesList.filter((p:any)=>Array.isArray(p.roles)&&p.roles.some((role:string)=>vocalRoles.includes(role)));
+  const backupDuty=new Map<string,number>();
+
+  // Vocais: exatamente 2 backups fixos por cantor. A mesma dupla é usada para todas as funções vocais
+  // que o cantor exerce. A distribuição minimiza quantas pessoas dependem de cada backup.
+  const orderedSingers=[...singers].sort((a:any,b:any)=>{
+    const ca=singers.filter((p:any)=>p.membership_id!==a.membership_id&&vocalRoles.every(role=>!a.roles.includes(role)||p.roles.includes(role))).length;
+    const cb=singers.filter((p:any)=>p.membership_id!==b.membership_id&&vocalRoles.every(role=>!b.roles.includes(role)||p.roles.includes(role))).length;
+    return ca-cb;
+  });
+
+  for(const primary of orderedSingers){
+    const primaryVocalRoles=(primary.roles??[]).filter((role:string)=>vocalRoles.includes(role));
+    const candidates=singers
+      .filter((p:any)=>p.membership_id!==primary.membership_id)
+      .filter((p:any)=>primaryVocalRoles.every((role:string)=>Array.isArray(p.roles)&&p.roles.includes(role)))
+      .sort((a:any,b:any)=>{
+        const sameGroupA=a.group_code&&primary.group_code&&a.group_code===primary.group_code?1:0;
+        const sameGroupB=b.group_code&&primary.group_code&&b.group_code===primary.group_code?1:0;
+        const scoreA=(backupDuty.get(a.membership_id)??0)*100+sameGroupA*30+(load.get(a.membership_id)??0);
+        const scoreB=(backupDuty.get(b.membership_id)??0)*100+sameGroupB*30+(load.get(b.membership_id)??0);
+        return scoreA-scoreB;
+      })
+      .slice(0,2);
+
+    for(const [index,backup] of candidates.entries()){
+      backupDuty.set(backup.membership_id,(backupDuty.get(backup.membership_id)??0)+1);
+      for(const role of primaryVocalRoles){
+        rows.push({
+          primary_membership_id:primary.membership_id,
+          role,
+          backup_membership_id:backup.membership_id,
+          priority:index+1,
+          generated_at:new Date().toISOString(),
+          active:true
+        });
+      }
+    }
+  }
+
+  // Banda: mantém até 5 backups por instrumento, porque a cobertura depende da função tocada.
+  for(const primary of profilesList){
+    const instrumentalRoles=(Array.isArray(primary.roles)?primary.roles:[]).filter((role:string)=>allowedBandRoles.includes(role as any));
+    for(const role of instrumentalRoles){
+      const candidates=profilesList
         .filter((p:any)=>p.membership_id!==primary.membership_id&&Array.isArray(p.roles)&&p.roles.includes(role))
         .sort((a:any,b:any)=>{
-          const sameGroupA=a.group_code&&a.group_code===primary.group_code?1:0;
-          const sameGroupB=b.group_code&&b.group_code===primary.group_code?1:0;
-          const sa=(load.get(a.membership_id)??0)*10+(roleLoad.get(a.membership_id+"|"+role)??0)*4+sameGroupA;
-          const sb=(load.get(b.membership_id)??0)*10+(roleLoad.get(b.membership_id+"|"+role)??0)*4+sameGroupB;
+          const sa=(load.get(a.membership_id)??0)*10+(roleLoad.get(a.membership_id+"|"+role)??0)*4;
+          const sb=(load.get(b.membership_id)??0)*10+(roleLoad.get(b.membership_id+"|"+role)??0)*4;
           return sa-sb;
         })
         .slice(0,5);
@@ -174,5 +216,7 @@ export async function generateAutomaticBackups(_formData:FormData){
   }
   revalidatePath("/worship/band-rotation");
   revalidatePath("/worship/substitutions");
-  redirect("/worship/band-rotation?message="+encodeURIComponent(rows.length+" relações de backup geradas automaticamente."));
+  redirect("/worship/band-rotation?message="+encodeURIComponent(
+    "Backups recalculados. Cada cantor ficou com até 2 backups fixos e a banda manteve a cobertura por instrumento."
+  ));
 }
