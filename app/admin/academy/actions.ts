@@ -9,6 +9,16 @@ function slugify(v:string){
 }
 const blockedVideoIds=new Set(["YCLyAmXtpfY","nBQH1c20xbs","N50kF0FE3hM"]);
 
+function quizOptions(formData:FormData){
+  const correctRaw=Number(formData.get("correct")??0);
+  const compact=[0,1,2,3]
+    .map(rawIndex=>({rawIndex,label:String(formData.get("option"+rawIndex)??"").trim()}))
+    .filter(item=>Boolean(item.label));
+  const correctIndex=Math.max(0,compact.findIndex(item=>item.rawIndex===correctRaw));
+  return {labels:compact.map(item=>item.label),correctIndex};
+}
+
+
 function youtubeId(value:string){
   const v=value.trim();
   if(!v) return null;
@@ -94,31 +104,40 @@ export async function deactivateLesson(formData:FormData){
   revalidatePath("/admin/academy"); revalidatePath("/academy");
 }
 export async function createQuestion(formData:FormData){
-  const s=await requireAdmin(); const lesson_id=String(formData.get("lessonId")??"");
-  const prompt=String(formData.get("prompt")??"").trim(); const sort_order=Number(formData.get("sortOrder")??0);
-  const {data:q,error}=await s.from("quiz_questions").insert({lesson_id,prompt,sort_order}).select("id").single();
-  if(error||!q) redirect("/admin/academy?message="+encodeURIComponent(error?.message??"Erro ao criar pergunta"));
-  const labels=[0,1,2,3].map(i=>String(formData.get("option"+i)??"").trim()).filter(Boolean);
-  const correct=Number(formData.get("correct")??0);
-  if(labels.length<2){await s.rpc("admin_delete_question",{p_question_id:q.id});redirect("/admin/academy?message=Use pelo menos duas opções.");}
-  const rows=labels.map((label,i)=>({question_id:q.id,label,is_correct:i===correct,sort_order:i+1}));
-  if(!rows.some(r=>r.is_correct)) rows[0].is_correct=true;
-  const {error:oe}=await s.from("quiz_options").insert(rows);
-  if(oe) redirect("/admin/academy?message="+encodeURIComponent(oe.message));
-  revalidatePath("/admin/academy"); redirect("/admin/academy?message=Pergunta criada.");
+  const s=await requireAdmin();
+  const lessonId=String(formData.get("lessonId")??"");
+  const prompt=String(formData.get("prompt")??"").trim();
+  const sortOrder=Number(formData.get("sortOrder")??0);
+  const {labels,correctIndex}=quizOptions(formData);
+  if(labels.length<2) redirect("/admin/academy?message="+encodeURIComponent("Use pelo menos duas opções."));
+  const {error}=await s.rpc("admin_create_quiz_question",{
+    p_lesson_id:lessonId,
+    p_prompt:prompt,
+    p_sort_order:sortOrder,
+    p_options:labels,
+    p_correct_index:correctIndex
+  });
+  if(error) redirect("/admin/academy?message="+encodeURIComponent(error.message));
+  revalidatePath("/admin/academy");
+  redirect("/admin/academy?message="+encodeURIComponent("Pergunta criada."));
 }
 export async function updateQuestion(formData:FormData){
-  const s=await requireAdmin(); const qid=String(formData.get("questionId")??"");
-  const prompt=String(formData.get("prompt")??"").trim(); const sort_order=Number(formData.get("sortOrder")??0);
-  const {error}=await s.from("quiz_questions").update({prompt,sort_order}).eq("id",qid);
+  const s=await requireAdmin();
+  const questionId=String(formData.get("questionId")??"");
+  const prompt=String(formData.get("prompt")??"").trim();
+  const sortOrder=Number(formData.get("sortOrder")??0);
+  const {labels,correctIndex}=quizOptions(formData);
+  if(labels.length<2) redirect("/admin/academy?message="+encodeURIComponent("Use pelo menos duas opções."));
+  const {error}=await s.rpc("admin_update_quiz_question",{
+    p_question_id:questionId,
+    p_prompt:prompt,
+    p_sort_order:sortOrder,
+    p_options:labels,
+    p_correct_index:correctIndex
+  });
   if(error) redirect("/admin/academy?message="+encodeURIComponent(error.message));
-  await s.from("quiz_options").delete().eq("question_id",qid);
-  const labels=[0,1,2,3].map(i=>String(formData.get("option"+i)??"").trim()).filter(Boolean);
-  const correct=Number(formData.get("correct")??0);
-  const rows=labels.map((label,i)=>({question_id:qid,label,is_correct:i===correct,sort_order:i+1}));
-  if(!rows.some(r=>r.is_correct)&&rows[0]) rows[0].is_correct=true;
-  if(rows.length>=2) await s.from("quiz_options").insert(rows);
-  revalidatePath("/admin/academy"); redirect("/admin/academy?message=Pergunta atualizada.");
+  revalidatePath("/admin/academy");
+  redirect("/admin/academy?message="+encodeURIComponent("Pergunta atualizada."));
 }
 export async function deleteQuestion(formData:FormData){
   const s=await requireAdmin(); const id=String(formData.get("questionId")??"");

@@ -2,11 +2,13 @@ import { AppShell } from "@/components/app-shell";
 import { getAccessContext } from "@/lib/auth";
 import { updateProfile } from "./actions";
 
-export default async function ProfilePage(){
+export default async function ProfilePage({searchParams}:{searchParams:Promise<{message?:string}>}){
+  const qs=await searchParams;
   const ctx=await getAccessContext();
   const {data:xp}=await ctx.supabase.from("xp_events").select("xp").eq("user_id",ctx.userId);
   const totalXp=(xp??[]).reduce((s,r)=>s+(r.xp??0),0);
   return <AppShell title="Perfil" active="/profile" email={ctx.email}>
+    {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="grid grid-2">
       <form action={updateProfile} className="card form-grid">
         <p className="eyebrow">DADOS PESSOAIS</p>

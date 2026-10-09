@@ -26,18 +26,14 @@ assert_text() {
 
 assert_redirect_login() {
   local path="$1"
-  local headers="$tmpdir/headers-$(echo "$path" | tr '/ ?=&' '______')"
-  local code location
-  code=$(curl -sS -o /dev/null -D "$headers" -w "%{http_code}" "$BASE_URL$path")
-  location=$(awk 'BEGIN{IGNORECASE=1} /^location:/{gsub("\r",""); print $2}' "$headers" | tail -1)
-  echo "$path -> $code $location"
-  case "$code" in
-    301|302|303|307|308) ;;
-    *) echo "Expected redirect for $path"; exit 1 ;;
-  esac
-  echo "$location" | grep -q "/login"
+  local result code final_url
+  result=$(curl -sS -L -o /dev/null -w "%{http_code}|%{url_effective}" "$BASE_URL$path")
+  code="${result%%|*}"
+  final_url="${result#*|}"
+  echo "$path -> $code $final_url"
+  test "$code" = "200"
+  echo "$final_url" | grep -q "/login"
 }
-
 assert_api_200() {
   local path="$1"
   local file="$2"
@@ -70,7 +66,17 @@ done
 assert_text "$tmpdir/public-_login.html" "reviver-gold\.svg"
 
 echo "== Public APIs =="
-for path in   /api/health   /api/public/site   /api/public/worship-repertoire   /api/public/content   /api/public/content/events   /api/public/content/campaigns   /api/public/content/posts   /api/public/content/videos   /api/public/content/galleries   /api/public/content/highlights
+for path in \
+  "/api/health" \
+  "/api/public/site" \
+  "/api/public/worship-repertoire" \
+  "/api/public/content?type=post" \
+  "/api/public/content/events" \
+  "/api/public/content/campaigns" \
+  "/api/public/content/posts" \
+  "/api/public/content/videos" \
+  "/api/public/content/galleries" \
+  "/api/public/content/highlights"
 do
   file="$tmpdir/api-$(echo "$path" | tr '/' '_').json"
   assert_api_200 "$path" "$file"
