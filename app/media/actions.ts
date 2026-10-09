@@ -46,8 +46,14 @@ export async function createContent(formData:FormData){
   if(error||!item)redirect("/media?message="+encodeURIComponent(error?.message??"Falha ao criar conteúdo"));
   const networkSlug=String(formData.get("network")??"").trim();
   if(networkSlug){
-    const {data:network}=await supabase.from("networks").select("id").eq("slug",networkSlug).eq("active",true).maybeSingle();
-    if(network)await supabase.from("content_item_networks").insert({content_item_id:item.id,network_id:network.id});
+    const {error:networkError}=await supabase.rpc("set_content_network_atomic",{
+      p_content_id:item.id,
+      p_network_slug:networkSlug
+    });
+    if(networkError){
+      await supabase.from("content_items").delete().eq("id",item.id);
+      redirect("/media?message="+encodeURIComponent("Conteúdo não criado: "+networkError.message));
+    }
   }
   revalidatePath("/media"); redirect("/media?message="+encodeURIComponent("Conteúdo criado como rascunho."));
 }
@@ -91,11 +97,11 @@ export async function updateContent(formData:FormData){
   const {error}=await supabase.from("content_items").update(payload).eq("id",id);
   if(error)redirect("/media?message="+encodeURIComponent(error.message));
   const networkSlug=String(formData.get("network")??"").trim();
-  await supabase.from("content_item_networks").delete().eq("content_item_id",id);
-  if(networkSlug){
-    const {data:network}=await supabase.from("networks").select("id").eq("slug",networkSlug).maybeSingle();
-    if(network)await supabase.from("content_item_networks").insert({content_item_id:id,network_id:network.id});
-  }
+  const {error:networkError}=await supabase.rpc("set_content_network_atomic",{
+    p_content_id:id,
+    p_network_slug:networkSlug||null
+  });
+  if(networkError) redirect("/media?message="+encodeURIComponent("Conteúdo guardado, mas a rede não foi alterada: "+networkError.message));
   revalidatePath("/media"); refreshPublic();
   redirect("/media?message="+encodeURIComponent("Conteúdo atualizado."));
 }
@@ -107,18 +113,10 @@ export async function setCoverMedia(formData:FormData){
   const contentId=String(formData.get("contentId")??"");
   if(!mediaId||!contentId) redirect("/media?message="+encodeURIComponent("Imagem inválida."));
 
-  const {error:resetError}=await supabase
-    .from("content_media")
-    .update({media_type:"image"})
-    .eq("content_item_id",contentId)
-    .eq("media_type","cover");
-  if(resetError) redirect("/media/edit/"+contentId+"?message="+encodeURIComponent(resetError.message));
-
-  const {error}=await supabase
-    .from("content_media")
-    .update({media_type:"cover"})
-    .eq("id",mediaId)
-    .eq("content_item_id",contentId);
+  const {error}=await supabase.rpc("set_content_cover_atomic",{
+    p_content_id:contentId,
+    p_media_id:mediaId
+  });
   if(error) redirect("/media/edit/"+contentId+"?message="+encodeURIComponent(error.message));
 
   revalidatePath("/media");
