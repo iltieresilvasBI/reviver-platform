@@ -104,6 +104,7 @@ export default async function WorshipRepertoirePage({
   });
 
   const suggested=filtered.slice(0,5);
+  const unclassifiedSongs=(songs??[]).filter((song:any)=>!Array.isArray(song.service_types)||song.service_types.length===0);
   const usedInPeriod=(songs??[]).filter((song:any)=>(usageBySong.get(song.id)?.count??0)>0).length;
   const neverUsed=(songs??[]).length-usedInPeriod;
   const totalExecutions=Array.from(usageBySong.values()).reduce((sum,item)=>sum+item.count,0);
@@ -111,6 +112,11 @@ export default async function WorshipRepertoirePage({
   return <AppShell title="Repertório Inteligente" active="/worship" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     {(songsError||usageError||themesError)&&<div className="notice warn" style={{marginBottom:16}}>Alguns dados do repertório não puderam ser carregados.</div>}
+    {canLead&&unclassifiedSongs.length>0&&<div className="notice warn" style={{marginBottom:16}}>
+      <strong>{unclassifiedSongs.length} música{unclassifiedSongs.length===1?"":"s"} sem tipo de culto.</strong>{" "}
+      Não aparecerá{unclassifiedSongs.length===1?"":"ão"} no wizard até ser{unclassifiedSongs.length===1?"":"em"} classificada{unclassifiedSongs.length===1?"":"s"}.
+      <div className="button-row" style={{marginTop:10}}>{unclassifiedSongs.slice(0,6).map((song:any)=><Link className="button" href={"/worship/repertoire?q="+encodeURIComponent(song.title)} key={song.id}>Classificar {song.title}</Link>)}</div>
+    </div>}
 
     <div className="button-row" style={{marginBottom:18}}>
       <Link className="button" href="/worship">← Ministério de Louvor</Link>
