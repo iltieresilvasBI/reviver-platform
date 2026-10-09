@@ -122,3 +122,100 @@ using (
 );
 create policy "substitution events authenticated insert" on public.worship_substitution_events for insert to authenticated
 with check ((select auth.uid()) is not null);
+
+
+create or replace function public.accept_worship_substitution_offer(p_offer_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  v_uid uuid:=auth.uid();
+  v_membership_id uuid;
+  v_offer public.worship_substitution_offers;
+  v_request public.worship_substitution_requests;
+  v_assignment public.worship_schedule_members;
+  v_schedule public.worship_schedules;
+  v_old_membership uuid;
+begin
+  if v_uid is null then raise exception 'authentication required'; end if;
+
+  select id into v_membership_id
+  from public.network_memberships
+  where user_id=v_uid and status='active'
+    and network_id=(select id from public.networks where slug='worship')
+  limit 1;
+  if v_membership_id is null then raise exception 'active worship membership required'; end if;
+
+  select * into v_offer
+  from public.worship_substitution_offers
+  where id=p_offer_id
+  for update;
+  if v_offer.id is null then raise exception 'offer not found'; end if;
+  if v_offer.proposed_membership_id<>v_membership_id then raise exception 'offer not assigned to current member'; end if;
+  if v_offer.status<>'pending' then raise exception 'offer is no longer pending'; end if;
+
+  select * into v_request
+  from public.worship_substitution_requests
+  where id=v_offer.request_id
+  for update;
+  if v_request.id is null or v_request.status<>'requested' then raise exception 'substitution request is no longer open'; end if;
+
+  select * into v_assignment
+  from public.worship_schedule_members
+  where id=v_request.assignment_id
+  for update;
+  if v_assignment.id is null then raise exception 'assignment not found'; end if;
+
+  select * into v_schedule from public.worship_schedules where id=v_assignment.schedule_id;
+  if v_schedule.id is null or v_schedule.status='cancelled' then raise exception 'schedule unavailable'; end if;
+
+  if exists(
+    select 1 from public.worship_schedule_members
+    where schedule_id=v_assignment.schedule_id and membership_id=v_membership_id and id<>v_assignment.id
+  ) then raise exception 'member already assigned to this schedule'; end if;
+
+  if exists(
+    select 1 from public.worship_member_unavailability u
+    where u.membership_id=v_membership_id
+      and u.starts_on<=((v_schedule.starts_at at time zone 'Europe/Lisbon')::date)
+      and u.ends_on>=((v_schedule.starts_at at time zone 'Europe/Lisbon')::date)
+  ) then raise exception 'member unavailable on schedule date'; end if;
+
+  v_old_membership:=v_assignment.membership_id;
+
+  update public.worship_schedule_members
+  set membership_id=v_membership_id,attendance_status='assigned'
+  where id=v_assignment.id;
+
+  delete from public.worship_assignment_responses where assignment_id=v_assignment.id;
+
+  update public.worship_substitution_offers
+  set status=case when id=p_offer_id then 'accepted' else 'expired' end,
+      responded_at=case when id=p_offer_id then now() else responded_at end
+  where request_id=v_request.id and status='pending';
+
+  update public.worship_substitution_requests
+  set status='approved',
+      proposed_membership_id=v_membership_id,
+      accepted_at=now(),
+      decided_at=now(),
+      decided_by=v_uid,
+      leader_note='Substituição automática por backup',
+      updated_at=now()
+  where id=v_request.id;
+
+  insert into public.worship_substitution_events(
+    request_id,event_type,actor_membership_id,from_membership_id,to_membership_id,details
+  ) values(
+    v_request.id,'auto_replaced',v_membership_id,v_old_membership,v_membership_id,
+    jsonb_build_object('role',v_assignment.role,'schedule_id',v_assignment.schedule_id)
+  );
+
+  return v_assignment.id;
+end;
+$$;
+
+revoke execute on function public.accept_worship_substitution_offer(uuid) from public,anon;
+grant execute on function public.accept_worship_substitution_offer(uuid) to authenticated;
