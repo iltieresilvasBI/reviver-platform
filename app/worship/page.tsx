@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { SubmitButton } from "@/components/submit-button";
 import { SongAutoFillFields } from "./repertoire/song-autofill";
 import { ScheduleSongPicker } from "./schedule-song-picker";
 import { getAccessContext } from "@/lib/auth";
@@ -163,13 +164,13 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                 <form action={respondToWorshipAssignment}>
                   <input type="hidden" name="assignmentId" value={assignment.id}/>
                   <input type="hidden" name="responseStatus" value="confirmed"/>
-                  <button className="button primary">Confirmar presença</button>
+                  <SubmitButton className="button primary" pendingText="A confirmar…">Confirmar presença</SubmitButton>
                 </form>
                 <form action={respondToWorshipAssignment} className="button-row">
                   <input type="hidden" name="assignmentId" value={assignment.id}/>
                   <input type="hidden" name="responseStatus" value="declined"/>
                   <input name="note" className="inline-input" placeholder="Motivo opcional"/>
-                  <button className="button danger">Não posso</button>
+                  <SubmitButton className="button danger" pendingText="A registar…">Não posso</SubmitButton>
                 </form>
                 <Link className="button" href={"/worship/substitutions?schedule="+schedule.id}>Pedir substituição</Link>
               </div>
@@ -394,13 +395,13 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                   <form action={respondToWorshipAssignment}>
                     <input type="hidden" name="assignmentId" value={mine.id}/>
                     <input type="hidden" name="responseStatus" value="confirmed"/>
-                    <button className="button primary">Confirmar presença</button>
+                    <SubmitButton className="button primary" pendingText="A confirmar…">Confirmar presença</SubmitButton>
                   </form>
                   <form action={respondToWorshipAssignment} className="button-row">
                     <input type="hidden" name="assignmentId" value={mine.id}/>
                     <input type="hidden" name="responseStatus" value="declined"/>
                     <input name="note" className="inline-input" placeholder="Motivo opcional"/>
-                    <button className="button danger">Não posso</button>
+                    <SubmitButton className="button danger" pendingText="A registar…">Não posso</SubmitButton>
                   </form>
                 </div>
                 {responseByAssignment.get(mine.id)&&<div className="muted small" style={{marginTop:10}}>Resposta atual: {(responseByAssignment.get(mine.id) as any).response_status==="confirmed"?"Confirmado":"Não disponível"}{(responseByAssignment.get(mine.id) as any).note?` · ${(responseByAssignment.get(mine.id) as any).note}`:""}</div>}
@@ -452,7 +453,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <form action={createWorshipSong} className="form-grid" style={{marginTop:16}}>
             <p className="eyebrow">REPERTÓRIO</p>
             <SongAutoFillFields/>
-            <button className="button primary">Adicionar música</button>
+            <SubmitButton className="button primary" pendingText="A adicionar música…">Adicionar música</SubmitButton>
           </form>
         </details>
 
@@ -465,7 +466,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             <div className="field"><label>Local</label><input name="location"/></div>
             <div className="field"><label>Vincular a escala</label><select name="scheduleId"><option value="">Sem vínculo</option>{upcomingSchedules.map((s:any)=><option value={s.id} key={s.id}>{s.title}</option>)}</select></div>
             <div className="field"><label>Notas</label><textarea name="notes"/></div>
-            <button className="button primary">Criar ensaio</button>
+            <SubmitButton className="button primary" pendingText="A criar ensaio…">Criar ensaio</SubmitButton>
           </form>
         </details>
       </div>
@@ -477,7 +478,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         <div className="button-row" style={{marginTop:14}}>
           <form action={autoAssignWorshipGroup}>
             <input type="hidden" name="scheduleId" value={s.id}/>
-            <button className="button primary" disabled={!s.group_code}>Preencher Grupo {s.group_code??"—"}</button>
+            <SubmitButton className="button primary" disabled={!s.group_code} pendingText="A preencher grupo…">Preencher Grupo {s.group_code??"—"}</SubmitButton>
           </form>
           <span className="muted small">Adiciona membros ativos do grupo, ignora indisponíveis e usa a primeira função configurada como principal.</span>
         </div>
@@ -501,7 +502,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             })}</select></div>
             {(()=>{const count=(directory??[]).filter((m:any)=>m.status==="active"&&conflictsFor(m.membership_id,s.starts_at).length>0).length; return count>0?<div className="notice warn">{count} membro{count===1?"":"s"} com indisponibilidade nesta data.</div>:null;})()}
             <div className="field"><label>Função</label><select name="role"><option value="">Sem função</option>{roleOptions.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></div>
-            <button className="button">Adicionar à escala</button>
+            <SubmitButton className="button" pendingText="A adicionar…">Adicionar à escala</SubmitButton>
           </form>
 
           <div className="form-grid">
@@ -533,26 +534,26 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
               <input type="hidden" name="scheduleId" value={s.id}/>
               <p className="eyebrow">TEMAS</p>
               <div className="field"><label>Temas, separados por vírgula</label><input name="themes" defaultValue={((s.themes??[]) as string[]).join(", ")||s.theme||""}/></div>
-              <button className="button">Guardar temas</button>
+              <SubmitButton className="button" pendingText="A guardar…">Guardar temas</SubmitButton>
             </form>
             <form action={updateWorshipScheduleStatus} className="form-grid">
               <input type="hidden" name="scheduleId" value={s.id}/>
               <p className="eyebrow">ESTADO</p>
               <div className="field"><label>Estado da escala</label><select name="status" defaultValue={s.status}><option value="planned">Planeada</option><option value="confirmed">Confirmada</option><option value="completed">Concluída</option><option value="cancelled">Cancelada</option></select></div>
-              <button className="button">Guardar estado</button>
+              <SubmitButton className="button" pendingText="A guardar…">Guardar estado</SubmitButton>
             </form>
             <div className="card">
               <p className="eyebrow">APROVAÇÃO E PUBLICAÇÃO</p>
               <div className="button-row">
                 <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="draft"/><button className="button">Rascunho</button></form>
-                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="approve"/><button className="button">Aprovar</button></form>
-                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="publish"/><button className="button primary">Publicar equipa</button></form>
+                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="approve"/><SubmitButton className="button" pendingText="A aprovar…">Aprovar</SubmitButton></form>
+                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="publish"/><SubmitButton className="button primary" pendingText="A publicar…">Publicar equipa</SubmitButton></form>
               </div>
               <div className="muted small" style={{marginTop:8}}>Estado editorial: {s.publication_state??"draft"}. Aprovar não publica nem envia mensagens.</div>
               <form action={setWorshipPublicRepertoire} className="button-row" style={{marginTop:10}}>
                 <input type="hidden" name="scheduleId" value={s.id}/>
                 <input type="hidden" name="publicRepertoire" value={s.public_repertoire?"false":"true"}/>
-                <button className="button">{s.public_repertoire?"Retirar repertório público":"Autorizar repertório público"}</button>
+                <SubmitButton className="button" pendingText="A atualizar…">{s.public_repertoire?"Retirar repertório público":"Autorizar repertório público"}</SubmitButton>
               </form>
               <div className="button-row" style={{marginTop:10}}>
                 <Link className="button primary" href={"/worship/share?schedule="+s.id}>Partilhar escala</Link>
@@ -585,7 +586,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
               {people.length===0?<div className="empty">Nenhum membro foi escalado neste culto.</div>:people.map((a:any)=>{const person=directoryByMembership.get(a.membership_id) as any;const response=responseByAssignment.get(a.id) as any;return <label className="list-row" key={a.id} style={{cursor:"pointer"}}><span><strong>{person?.display_name||person?.email||"Membro"}</strong><span className="muted small"> · {roleLabel(a.role)}{response?.response_status==="confirmed"?" · confirmou presença":response?.response_status==="declined"?" · tinha indicado indisponibilidade":""}</span></span><input type="checkbox" name="presentAssignmentIds" value={a.id} defaultChecked={a.attendance_status==="completed"||response?.response_status==="confirmed"}/></label>})}
             </div>
             <div className="button-row">
-              <button className="button primary">Concluir culto e atualizar relatórios</button>
+              <SubmitButton className="button primary" pendingText="A concluir culto…">Concluir culto e atualizar relatórios</SubmitButton>
               <Link className="button" href="/worship/reports">Ver relatórios</Link>
             </div>
           </form>
@@ -622,7 +623,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
               <div className="field"><label>Funções</label><input name="roles" defaultValue={(m.profile?.roles??[]).join(", ")} placeholder="cantor_principal, backing_vocal"/></div>
               <div className="field"><label>Notas</label><input name="notes" defaultValue={m.profile?.notes??""}/></div>
             </div>
-            <button className="button">Guardar perfil do ministério</button>
+            <SubmitButton className="button" pendingText="A guardar…">Guardar perfil do ministério</SubmitButton>
           </form>
           <div className="grid grid-4" style={{marginTop:14}}><div className="metric"><span>Academy</span><strong>{m.completion}%</strong></div><div className="metric"><span>Aulas concluídas</span><strong>{m.completed}</strong></div><div className="metric"><span>Média quizzes</span><strong>{m.avg}%</strong></div><div className="metric"><span>Participações</span><strong>{m.serviceParticipations}</strong></div></div>
           <div className="muted small" style={{marginTop:10}}>Prática recente: {m.practiceMinutes}m</div>
@@ -643,7 +644,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             </div>
             <div className="field"><label>Funções</label><input name="roles" placeholder="Ex.: cantor_principal, backing_vocal, teclado"/></div>
             <div className="field"><label>Notas</label><input name="notes" placeholder="Observações internas opcionais"/></div>
-            <button className="button primary">Criar membro</button>
+            <SubmitButton className="button primary" pendingText="A criar membro…">Criar membro</SubmitButton>
           </form>
         </div>
         <div className="card">
