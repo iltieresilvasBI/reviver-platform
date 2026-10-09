@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { AppShell } from "@/components/app-shell";
+import { SubmitButton } from "@/components/submit-button";
 import { getAccessContext } from "@/lib/auth";
 import { saveMyWorshipCommunicationPreference } from "../actions";
 import { CopyTextButton } from "./copy-text-button";
@@ -80,7 +81,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
         <p className="eyebrow">MINHAS PREFERÊNCIAS</p>
         <label className="button-row"><input type="checkbox" name="communicationOptIn" value="true" defaultChecked={Boolean(myProfile?.communication_opt_in)}/> Autorizo notificações do Ministério de Louvor</label>
         <div className="field"><label>Canal preferido</label><select name="communicationPreference" defaultValue={myProfile?.communication_preference??""}><option value="">Sem preferência</option><option value="WhatsApp">WhatsApp</option><option value="Email">Email</option></select></div>
-        <button className="button">Guardar preferências</button>
+        <SubmitButton className="button" pendingText="A guardar…">Guardar preferências</SubmitButton>
       </form>
       <article className="card"><p className="eyebrow">ESTADO DA INTEGRAÇÃO</p><h3>Modo manual ativo</h3><p className="muted">API oficial do WhatsApp Business: pendente de credenciais e modelos aprovados. Nenhum estado “enviado”, “entregue” ou “lido” é inventado neste modo.</p></article>
     </div>
