@@ -80,8 +80,8 @@ export default async function BandRotationPage({
       <form action={generateAutomaticBackups} className="card form-grid">
         <p className="eyebrow">BACKUPS AUTOMÁTICOS</p>
         <h3>Gerar por função</h3>
-        <p className="muted">Para cada membro e cada função configurada, o sistema ordena até 5 backups compatíveis pela carga recente.</p>
-        <button className="button primary">Recalcular todos os backups</button>
+        <p className="muted">Vocais: cada cantor recebe 2 backups fixos, distribuídos para evitar concentração e, sempre que possível, de outros grupos A/B/C/D. Banda: mantém backups por instrumento.</p>
+        <button className="button primary">Recalcular backups</button>
       </form>
     </div>
 
@@ -113,7 +113,7 @@ export default async function BandRotationPage({
       <button className="button primary">Preencher banda automaticamente</button>
     </form>
 
-    <div className="section-title"><div><p className="eyebrow">BACKUPS</p><h2>Exemplos das prioridades atuais</h2></div></div>
+    <div className="section-title"><div><p className="eyebrow">BACKUPS</p><h2>Prioridades atuais</h2></div><span className="muted small">Vocais ficam fixos até novo recálculo.</span></div>
     <div className="list">{(backups??[]).slice(0,40).map((b:any)=>{
       const primary=personByMembership.get(b.primary_membership_id) as any;
       const backup=personByMembership.get(b.backup_membership_id) as any;
