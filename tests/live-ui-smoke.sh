@@ -70,7 +70,17 @@ done
 assert_text "$tmpdir/public-_login.html" "reviver-gold\.svg"
 
 echo "== Public APIs =="
-for path in   /api/health   /api/public/site   /api/public/worship-repertoire   /api/public/content   /api/public/content/events   /api/public/content/campaigns   /api/public/content/posts   /api/public/content/videos   /api/public/content/galleries   /api/public/content/highlights
+for path in \
+  "/api/health" \
+  "/api/public/site" \
+  "/api/public/worship-repertoire" \
+  "/api/public/content?type=post" \
+  "/api/public/content/events" \
+  "/api/public/content/campaigns" \
+  "/api/public/content/posts" \
+  "/api/public/content/videos" \
+  "/api/public/content/galleries" \
+  "/api/public/content/highlights"
 do
   file="$tmpdir/api-$(echo "$path" | tr '/' '_').json"
   assert_api_200 "$path" "$file"
