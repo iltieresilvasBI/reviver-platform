@@ -10,6 +10,7 @@ import {
   updateWorshipPublication
 } from "../../actions";
 import {ScheduleSongPicker} from "../../schedule-song-picker";
+import {autoFillBand} from "../../band-rotation/actions";
 
 const roles=[
   ["cantor_principal","Cantor principal"],
@@ -57,14 +58,15 @@ export default async function NewWorshipSchedulePage({
     ?await ctx.supabase.from("worship_schedules").select("*").eq("id",scheduleId).maybeSingle()
     :{data:null as any};
 
-  const [{data:directory},{data:profiles},{data:assignments},{data:songs},{data:scheduleSongs},{data:executions}]=schedule?await Promise.all([
+  const [{data:directory},{data:profiles},{data:assignments},{data:songs},{data:scheduleSongs},{data:executions},{data:bandTemplates}]=schedule?await Promise.all([
     ctx.supabase.rpc("worship_member_directory"),
     ctx.supabase.from("worship_member_profiles").select("membership_id,group_code,roles,active").eq("active",true),
     ctx.supabase.from("worship_schedule_members").select("*").eq("schedule_id",schedule.id).order("created_at"),
     ctx.supabase.from("worship_songs").select("*").eq("active",true).is("archived_at",null).order("title"),
     ctx.supabase.from("worship_schedule_songs").select("*").eq("schedule_id",schedule.id).order("position"),
-    ctx.supabase.from("worship_song_executions").select("song_id,worship_schedules!inner(starts_at,status)")
-  ]):[{data:[]},{data:[]},{data:[]},{data:[]},{data:[]},{data:[]}];
+    ctx.supabase.from("worship_song_executions").select("song_id,worship_schedules!inner(starts_at,status)"),
+    ctx.supabase.from("worship_band_templates").select("id,name,service_types").eq("active",true).order("name")
+  ]):[{data:[]},{data:[]},{data:[]},{data:[]},{data:[]},{data:[]},{data:[]}];
 
   const profileByMembership=new Map((profiles??[]).map((p:any)=>[p.membership_id,p]));
   const personByMembership=new Map((directory??[]).map((p:any)=>[p.membership_id,p]));
@@ -160,9 +162,20 @@ export default async function NewWorshipSchedulePage({
         <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
           <div><p className="eyebrow">PARTICIPANTES</p><h2>{participantCount} pessoa{participantCount===1?"":"s"} na escala</h2></div>
           <div className="button-row">
-            <form action={autoAssignWorshipGroup}><input type="hidden" name="scheduleId" value={schedule.id}/><button className="button primary" disabled={!schedule.group_code}>Preencher Grupo {schedule.group_code??"—"}</button></form>
+            <form action={autoAssignWorshipGroup}><input type="hidden" name="scheduleId" value={schedule.id}/><button className="button primary" disabled={!schedule.group_code}>Preencher vocais · Grupo {schedule.group_code??"—"}</button></form>
           </div>
         </div>
+
+        <form action={autoFillBand} className="card form-grid">
+          <input type="hidden" name="scheduleId" value={schedule.id}/>
+          <p className="eyebrow">BANDA</p>
+          <div className="grid grid-2">
+            <div className="field"><label>Combinação de instrumentistas</label><select name="templateId" required defaultValue=""><option value="" disabled>Selecionar combinação</option>{(bandTemplates??[]).filter((t:any)=>!t.service_types?.length||t.service_types.includes(schedule.service_type)).map((t:any)=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+            <div className="field"><label>Rotatividade</label><div className="notice">Escolhe automaticamente instrumentistas disponíveis com menor carga recente.</div></div>
+          </div>
+          <div className="button-row"><button className="button primary">Preencher banda automaticamente</button><Link className="button" href={"/worship/band-rotation?schedule="+schedule.id}>Gerir combinações</Link></div>
+        </form>
+
         <form action={assignWorshipMember} className="card form-grid">
           <input type="hidden" name="scheduleId" value={schedule.id}/>
           <div className="grid grid-2">
