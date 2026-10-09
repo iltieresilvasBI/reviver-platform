@@ -440,17 +440,12 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       </div>
 
       <div className="grid grid-3" style={{marginBottom:18}}>
-        <details className="card">
-          <summary style={{cursor:"pointer",fontWeight:800}}>+ Criar nova escala</summary>
-          <form action={createWorshipSchedule} className="form-grid" style={{marginTop:16}}>
-            <p className="eyebrow">NOVA ESCALA</p>
-            <div className="field"><label>Título</label><input name="title" required placeholder="Culto de domingo"/></div>
-            <div className="grid grid-3"><div className="field"><label>Tipo de culto</label><input name="serviceType" list="worship-service-types" placeholder="Culto de domingo"/><datalist id="worship-service-types"><option value="Culto de domingo"/><option value="Ceia"/><option value="Jovens"/><option value="Mulheres"/><option value="Homens"/><option value="Kids"/><option value="Vigília"/><option value="Oração"/><option value="Evangelístico"/><option value="Conferência"/><option value="Especial"/></datalist></div><div className="field"><label>Grupo</label><select name="groupCode"><option value="">Sem grupo</option>{["A","B","C","D"].map(g=><option key={g}>{g}</option>)}</select></div><div className="field"><label>Temas do culto</label><input name="themes" placeholder="Graça, Família, Missões"/></div></div>
-            <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Chegada</label><input name="callTime" type="datetime-local"/></div></div>
-            <div className="field"><label>Notas</label><textarea name="notes"/></div>
-            <button className="button primary">Criar escala</button>
-          </form>
-        </details>
+        <article className="card">
+          <p className="eyebrow">NOVA ESCALA</p>
+          <h3>Criação simplificada</h3>
+          <p className="muted small">Detalhes → participantes → músicas → roteiro → publicação e comunicação.</p>
+          <Link className="button primary" href="/worship/schedules/new">+ Criar nova escala</Link>
+        </article>
 
         <details className="card">
           <summary style={{cursor:"pointer",fontWeight:800}}>+ Adicionar música ao repertório</summary>

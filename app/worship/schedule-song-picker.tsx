@@ -30,19 +30,17 @@ export function ScheduleSongPicker({
   songs:ScheduleSongCandidate[];
 }){
   const [query,setQuery]=useState("");
-  const [showAll,setShowAll]=useState(false);
-
   const filtered=useMemo(()=>{
     const normalized=query.trim().toLocaleLowerCase("pt-PT");
-    const source=showAll?songs:songs.filter(song=>song.folderMatch||song.themeMatches>0);
+    const source=serviceType?songs.filter(song=>song.folderMatch):songs.filter(song=>song.themeMatches>0);
     const searched=!normalized?source:source.filter(song=>{
       const haystack=[song.title,song.artist??"",...song.serviceTypes,...song.themes].join(" ").toLocaleLowerCase("pt-PT");
       return haystack.includes(normalized);
     });
-    return searched.slice(0,showAll?40:16);
-  },[query,showAll,songs]);
+    return searched.slice(0,40);
+  },[query,songs,serviceType]);
 
-  const matchedCount=songs.filter(song=>song.folderMatch||song.themeMatches>0).length;
+  const matchedCount=serviceType?songs.filter(song=>song.folderMatch).length:songs.filter(song=>song.themeMatches>0).length;
 
   return <div className="form-grid">
     <div className="list-row" style={{padding:0,border:0,background:"transparent",alignItems:"end"}}>
@@ -50,9 +48,7 @@ export function ScheduleSongPicker({
         <label>Pesquisar música</label>
         <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Título, artista, tema ou pasta"/>
       </div>
-      <button type="button" className="button" onClick={()=>setShowAll(v=>!v)}>
-        {showAll?"Mostrar recomendadas":"Ver todo o repertório"}
-      </button>
+      <span className="pill">{serviceType?"Filtro obrigatório por tipo de culto":"Filtrado por tema"}</span>
     </div>
 
     <div className="button-row">
@@ -62,7 +58,7 @@ export function ScheduleSongPicker({
     </div>
 
     <div className="list">
-      {filtered.length===0?<div className="empty">Nenhuma música corresponde aos filtros atuais.</div>:filtered.map(song=><article className="card" key={song.id}>
+      {filtered.length===0?<div className="empty">{serviceType?"Nenhuma música está classificada para este tipo de culto. Classifique músicas no repertório antes de continuar.":"Nenhuma música corresponde aos temas atuais."}</div>:filtered.map(song=><article className="card" key={song.id}>
         <div className="list-row" style={{padding:0,border:0,background:"transparent",alignItems:"flex-start"}}>
           <div style={{minWidth:0}}>
             <div className="button-row">
