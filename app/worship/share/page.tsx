@@ -3,8 +3,10 @@ import { headers } from "next/headers";
 import { AppShell } from "@/components/app-shell";
 import { SubmitButton } from "@/components/submit-button";
 import { getAccessContext } from "@/lib/auth";
+import { getWhatsAppConfigStatus } from "@/lib/whatsapp";
 import { saveMyWorshipCommunicationPreference } from "../actions";
 import { CopyTextButton } from "./copy-text-button";
+import { processPendingWhatsApp, retryFailedWhatsApp, sendScheduleWhatsApp } from "./actions";
 
 function waPhone(value:string|null|undefined){
   const digits=String(value??"").replace(/\D/g,"");
@@ -70,11 +72,36 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
   const blockedCount=communicationRows.length-eligibleCount;
   const whatsappCount=communicationRows.filter((row:any)=>row.whatsappAllowed).length;
   const emailCount=communicationRows.filter((row:any)=>row.emailAllowed).length;
+  const whatsappIntegration=getWhatsAppConfigStatus();
+  let apiMessages:any[]=[];
+  if(canLead&&selected){
+    const {data}=await ctx.supabase
+      .from("worship_whatsapp_messages")
+      .select("id,recipient_membership_id,kind,status,attempts,error_message,sent_at,delivered_at,read_at,failed_at,created_at")
+      .eq("schedule_id",selected.id)
+      .order("created_at",{ascending:false})
+      .limit(100);
+    apiMessages=data??[];
+  }
+  const latestApiByMembership=new Map<string,any>();
+  for(const item of apiMessages){
+    if(item.recipient_membership_id&&!latestApiByMembership.has(item.recipient_membership_id)){
+      latestApiByMembership.set(item.recipient_membership_id,item);
+    }
+  }
+  const groupShareMessage=selected?[
+    "Escala Reviver — "+selected.title,
+    "Data: "+new Date(selected.starts_at).toLocaleString("pt-PT"),
+    selected.group_code?"Grupo vocal: "+selected.group_code:"",
+    assignments.length?"Participantes: "+assignments.length:"",
+    setlist.length?"Repertório: "+setlist.map((x:any)=>((x.worship_songs as any)?.title??"Música")).join(", "):"",
+    "Portal: "+portalUrl
+  ].filter(Boolean).join("\n"):"";
 
   return <AppShell title="Comunicação do Louvor" active="/worship" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/worship">← Louvor</Link></div>
-    <section className="hero-card"><p className="eyebrow">COMUNICAÇÃO</p><h2>WhatsApp com consentimento explícito.</h2><p>A integração oficial ainda não está configurada. Esta área prepara a mensagem e abre a conversa; isso não significa que a mensagem foi enviada.</p></section>
+    <section className="hero-card"><p className="eyebrow">COMUNICAÇÃO</p><h2>WhatsApp com consentimento explícito.</h2><p>{whatsappIntegration.configured?"A Cloud API está pronta para envio individual, confirmações e substituições.":"A infraestrutura oficial está instalada; falta apenas ligar as credenciais e templates aprovados da Meta."}</p></section>
 
     <div className="grid grid-2" style={{marginTop:18}}>
       <form action={saveMyWorshipCommunicationPreference} className="card form-grid">
@@ -83,7 +110,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
         <div className="field"><label>Canal preferido</label><select name="communicationPreference" defaultValue={myProfile?.communication_preference??""}><option value="">Sem preferência</option><option value="WhatsApp">WhatsApp</option><option value="Email">Email</option></select></div>
         <SubmitButton className="button" pendingText="A guardar…">Guardar preferências</SubmitButton>
       </form>
-      <article className="card"><p className="eyebrow">ESTADO DA INTEGRAÇÃO</p><h3>Modo manual ativo</h3><p className="muted">API oficial do WhatsApp Business: pendente de credenciais e modelos aprovados. Nenhum estado “enviado”, “entregue” ou “lido” é inventado neste modo.</p></article>
+      <article className="card"><p className="eyebrow">ESTADO DA INTEGRAÇÃO</p><h3>{whatsappIntegration.configured?"Cloud API pronta":"Aguardando credenciais Meta"}</h3><p className="muted">{whatsappIntegration.configured?(whatsappIntegration.webhookConfigured?"Envio e webhook configurados. Estados de entrega e respostas podem ser sincronizados automaticamente.":"Envio configurado, mas o webhook ainda não está completo."):"O portal não envia nada pela API enquanto os secrets não estiverem configurados. O modo manual continua disponível."}</p></article>
     </div>
 
     {canLead&&<>
@@ -103,8 +130,27 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
           {!officialPublished&&<span> <Link href="/worship">Voltar a Configurar escala →</Link></span>}
         </div>
         <div className="muted small" style={{marginTop:8}}>{emailCount} membro{emailCount===1?"":"s"} com email autorizado.</div>
+        <article className="card" style={{marginTop:16}}>
+          <p className="eyebrow">WHATSAPP BUSINESS API</p>
+          <h3>Envio oficial e acompanhamento</h3>
+          <p className="muted small">A API oficial envia mensagens individuais. Grupos normais do WhatsApp não aceitam publicação automática pela Cloud API; para o grupo do Louvor, use a partilha manual abaixo.</p>
+          <div className="button-row">
+            <form action={sendScheduleWhatsApp}>
+              <input type="hidden" name="scheduleId" value={selected.id}/>
+              <SubmitButton className="button primary" pendingText="A enviar pela Meta…" disabled={!officialPublished||!whatsappIntegration.configured||whatsappCount===0}>Enviar escala via API ({whatsappCount})</SubmitButton>
+            </form>
+            <form action={processPendingWhatsApp}>
+              <input type="hidden" name="scheduleId" value={selected.id}/>
+              <SubmitButton className="button" pendingText="A processar fila…" disabled={!whatsappIntegration.configured}>Processar fila</SubmitButton>
+            </form>
+            <a className="button" href={"https://wa.me/?text="+encodeURIComponent(groupShareMessage)} target="_blank" rel="noreferrer">Partilhar no grupo do Louvor</a>
+          </div>
+          {!officialPublished&&<p className="muted small" style={{marginTop:10}}>O envio oficial só fica disponível depois de Publicar a escala.</p>}
+        </article>
         <div className="list" style={{marginTop:16}}>{communicationRows.length===0?<div className="empty">Nenhum participante escalado.</div>:communicationRows.map((row:any)=>{ const a=row.assignment;
         const {person,phone,whatsappAllowed,emailAllowed,eligible,channelStatus}=row;
+        const apiMessage=latestApiByMembership.get(a.membership_id) as any;
+        const apiStatusLabel=apiMessage?.status==="sent"?"enviado":apiMessage?.status==="delivered"?"entregue":apiMessage?.status==="read"?"lido":apiMessage?.status==="failed"?"falhou":apiMessage?.status==="queued"?"na fila":apiMessage?.status==="sending"?"a enviar":null;
         const songs=setlist.map((x:any)=>{const song=x.worship_songs as any;return (song?.title??"Música")+" ("+(x.key_override||song?.recommended_key||song?.default_key||"tom a definir")+")"}).join("; ");
         const message=[
           "Olá, "+(person?.display_name||"")+"!",
@@ -119,7 +165,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
         ].filter(Boolean).join("\n");
         const whatsappHref=phone?"https://wa.me/"+phone+"?text="+encodeURIComponent(message):"";
         const emailHref=emailAllowed?"mailto:"+encodeURIComponent(person.email)+"?subject="+encodeURIComponent("Escala Reviver — "+selected.title)+"&body="+encodeURIComponent(message):"";
-        return <article className="card" key={a.id}><div className="list-row" style={{padding:0,border:0,background:"transparent"}}><div><h3>{person?.display_name||person?.email||"Membro"}</h3><p className="muted">{roleLabel(a.role)} · {channelStatus}</p></div>{eligible?<div className="button-row"><CopyTextButton text={message} label="Copiar mensagem"/><CopyTextButton text={portalUrl} label="Copiar link"/>{officialPublished&&whatsappAllowed&&<a className="button primary" href={whatsappHref} target="_blank" rel="noreferrer">Abrir WhatsApp</a>}{officialPublished&&emailAllowed&&<a className="button primary" href={emailHref}>Abrir email</a>}{!officialPublished&&<span className="pill gold">aguarda publicação</span>}</div>:<span className="pill">não elegível</span>}</div>{eligible&&<details style={{marginTop:10}}><summary style={{cursor:"pointer"}}>Pré-visualizar mensagem</summary><pre style={{whiteSpace:"pre-wrap",fontFamily:"inherit"}}>{message}</pre><p className="muted small">Abrir o canal não confirma envio.</p></details>}</article>
+        return <article className="card" key={a.id}><div className="list-row" style={{padding:0,border:0,background:"transparent"}}><div><h3>{person?.display_name||person?.email||"Membro"}</h3><p className="muted">{roleLabel(a.role)} · {channelStatus}</p>{apiStatusLabel&&<p className="muted small">API: <span className={apiMessage?.status==="read"||apiMessage?.status==="delivered"?"pill ok":apiMessage?.status==="failed"?"pill":"pill gold"}>{apiStatusLabel}</span>{apiMessage?.error_message?" · "+apiMessage.error_message:""}</p>}</div>{eligible?<div className="button-row"><CopyTextButton text={message} label="Copiar mensagem"/><CopyTextButton text={portalUrl} label="Copiar link"/>{officialPublished&&whatsappAllowed&&<a className="button primary" href={whatsappHref} target="_blank" rel="noreferrer">Abrir WhatsApp</a>}{officialPublished&&emailAllowed&&<a className="button primary" href={emailHref}>Abrir email</a>}{apiMessage?.status==="failed"&&<form action={retryFailedWhatsApp}><input type="hidden" name="messageId" value={apiMessage.id}/><input type="hidden" name="scheduleId" value={selected.id}/><SubmitButton className="button" pendingText="A reenviar…">Reenviar API</SubmitButton></form>}{!officialPublished&&<span className="pill gold">aguarda publicação</span>}</div>:<span className="pill">não elegível</span>}</div>{eligible&&<details style={{marginTop:10}}><summary style={{cursor:"pointer"}}>Pré-visualizar mensagem</summary><pre style={{whiteSpace:"pre-wrap",fontFamily:"inherit"}}>{message}</pre><p className="muted small">{apiMessage?"O estado acima vem do webhook oficial da Meta.":"Abrir o canal manual não confirma envio."}</p></details>}</article>
       })}</div>
       </>}
     </>}
