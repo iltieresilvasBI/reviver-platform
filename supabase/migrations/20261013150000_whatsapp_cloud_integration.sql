@@ -152,15 +152,19 @@ begin
     raise exception 'invalid decision';
   end if;
 
-  select o.*,nm.user_id,regexp_replace(coalesce(p.phone,''),'\D','','g')
-    into v_offer,v_user_id,v_member_phone
-  from public.worship_substitution_offers o
-  join public.network_memberships nm on nm.id=o.proposed_membership_id
-  join public.profiles p on p.id=nm.user_id
-  where o.id=p_offer_id
-  for update of o;
+  select * into v_offer
+  from public.worship_substitution_offers
+  where id=p_offer_id
+  for update;
 
   if v_offer.id is null then raise exception 'offer not found'; end if;
+
+  select nm.user_id,regexp_replace(coalesce(p.phone,''),'\D','','g')
+    into v_user_id,v_member_phone
+  from public.network_memberships nm
+  join public.profiles p on p.id=nm.user_id
+  where nm.id=v_offer.proposed_membership_id
+  limit 1;
   if v_offer.status<>'pending' then raise exception 'offer is no longer pending'; end if;
   if v_member_phone is null or v_member_phone='' then raise exception 'member phone unavailable'; end if;
   if v_member_phone<>regexp_replace(coalesce(p_sender_phone,''),'\D','','g') then
