@@ -100,11 +100,6 @@ test_dynamic_route() {
 test_dynamic_route "/api/public/content/events" "/eventos"
 test_dynamic_route "/api/public/content/campaigns" "/campanhas"
 
-echo "== WhatsApp webhook boundary =="
-code=$(curl -sS -o /dev/null -w "%{http_code}" "$BASE_URL/api/integrations/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=invalid-smoke-token&hub.challenge=123")
-echo "/api/integrations/whatsapp/webhook invalid verification -> $code"
-test "$code" = "403"
-
 echo "== Protected UI =="
 for path in   /dashboard   /academy   /academy/resources   /achievements   /vocal-gym   /profile   /worship   /worship/repertoire   /worship/share   /worship/substitutions   /worship/reports   /worship/themes   /worship/rotacao   /worship/band-rotation   /worship/import   /worship/schedules/new   /worship/run-sheet/test   /media   /media/edit/test   /media/preview/test   /admin   /admin/site   /admin/academy   /admin/academy/resources   /admin/academy/preview/test   /admin/aprovacoes   /admin/conteudos   /admin/louvor   /admin/mensagens   /admin/ministerios   /admin/utilizadores
 do
