@@ -3,6 +3,7 @@
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
+import {getWhatsAppConfigStatus,processWhatsAppOutbox,queueSubstitutionWhatsApp} from "@/lib/whatsapp";
 
 function lisbonDate(value:string){
   return new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Lisbon",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value));
@@ -89,10 +90,21 @@ export async function requestAutomaticSubstitution(formData:FormData){
     details:{role,offers:candidates.length}
   });
 
+  let whatsappQueued=0;
+  if(getWhatsAppConfigStatus().configured&&candidates.length){
+    try{
+      const queued=await queueSubstitutionWhatsApp(req.id);
+      whatsappQueued=queued.queued;
+      if(queued.queued) await processWhatsAppOutbox(10);
+    }catch(error){
+      console.error("WhatsApp substitution notification failed",error);
+    }
+  }
+
   revalidatePath("/worship/substitutions");
   redirect("/worship/substitutions?message="+encodeURIComponent(
     candidates.length
-      ?"Pedido enviado automaticamente a "+Math.min(candidates.length,5)+" backup"+(candidates.length===1?"":"s")+"."
+      ?"Pedido enviado automaticamente a "+Math.min(candidates.length,5)+" backup"+(candidates.length===1?"":"s")+(whatsappQueued?" · WhatsApp API acionada para "+whatsappQueued+".":".")
       :"Pedido registado, mas não existe backup elegível disponível nesta data."
   ));
 }
