@@ -89,3 +89,17 @@ The route validates:
 ## Group note (2026)
 
 Meta offers an official Groups API for eligible WhatsApp Business Platform accounts. It is a separate product with eligibility and group-size constraints. Reviver therefore keeps the existing Louvor group as a manual share target by default. If the church later qualifies and wants an API-created small group, that can be added as a separate integration.
+
+
+## Safe secret activation
+
+The repository includes a manual GitHub Actions workflow named **Configure WhatsApp Worker Secrets**.
+
+Activation flow:
+
+1. Add the required values as GitHub Actions repository secrets.
+2. Open Actions → Configure WhatsApp Worker Secrets.
+3. Run the workflow manually.
+4. The workflow validates that required names are present, sends values to Cloudflare through `wrangler secret put`, never prints secret values, and checks `/api/health` until WhatsApp reports `ready`.
+
+Do not commit Meta tokens, app secrets, verify tokens, or the Supabase service-role key to source control.
