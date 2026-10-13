@@ -35,6 +35,7 @@ export default async function AdminPage(){
     {title:"Ministérios",text:"Louvor, Mídia, Som, Iluminação, Receção e Infantil; membros e líderes por área.",href:"/admin/ministerios",cta:"Gerir ministérios"},
     {title:"Mensagens",text:"Contactos recebidos pelo site público e respetivo estado.",href:"/admin/mensagens",cta:`${newMessagesCount??0} novas`},
     {title:"Saúde do sistema",text:"Diagnóstico de repertório, Academy, escalas, backups, mensagens e publicações agendadas.",href:"/admin/system-health",cta:"Ver diagnóstico"},
+    {title:"Integração WhatsApp",text:"Estado da Cloud API, webhook, fila, entregas, leituras, falhas e configuração Meta.",href:"/admin/integrations/whatsapp",cta:"Ver WhatsApp"},
     {title:"Ministério de Louvor",text:"Membros, convites, pedidos, escalas, ensaios e repertório.",href:"/worship",cta:"Gerir Louvor"},
     {title:"Site público",text:"Ver exatamente o que a comunidade está a receber.",href:"/",cta:"Abrir site"},
   ];
