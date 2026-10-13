@@ -1,7 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { getWhatsAppConfigStatus } from "@/lib/whatsapp";
 
 export async function GET() {
   const timestamp=new Date().toISOString();
+  const whatsapp=getWhatsAppConfigStatus();
+  const integrations={
+    whatsapp:whatsapp.configured&&whatsapp.webhookConfigured?"ready":"pending"
+  };
 
   try{
     const supabase=await createClient();
@@ -12,6 +17,7 @@ export async function GET() {
         ok:false,
         service:"reviver-platform",
         dependencies:{supabase:"unavailable"},
+        integrations,
         timestamp,
       },{status:503,headers:{"Cache-Control":"no-store"}});
     }
@@ -20,6 +26,7 @@ export async function GET() {
       ok:true,
       service:"reviver-platform",
       dependencies:{supabase:"ok"},
+      integrations,
       timestamp,
     },{headers:{"Cache-Control":"no-store"}});
   }catch{
@@ -27,6 +34,7 @@ export async function GET() {
       ok:false,
       service:"reviver-platform",
       dependencies:{supabase:"unavailable"},
+      integrations,
       timestamp,
     },{status:503,headers:{"Cache-Control":"no-store"}});
   }
