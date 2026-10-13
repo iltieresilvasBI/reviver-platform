@@ -10,7 +10,7 @@ The portal is designed to use the official Meta WhatsApp Business Cloud API for 
 - First backup who accepts replaces the unavailable member automatically.
 - Meta webhook updates message state: sent, delivered, read or failed.
 - Failed messages can be retried from the Communication page.
-- The worship WhatsApp group remains a manual share action. Cloud API does not publish into a normal WhatsApp group chat.
+- The existing worship WhatsApp group remains a manual share action. Meta now offers a separate Groups API for eligible accounts and API-created groups, but it does not turn the current normal ministry group into a general automation target.
 
 ## Required server secrets
 
@@ -84,3 +84,8 @@ The route validates:
 6. Subscribe to WhatsApp message events.
 7. Run a test with a test member who explicitly opted into WhatsApp notifications.
 8. Confirm the portal records sent → delivered → read and processes quick replies.
+
+
+## Group note (2026)
+
+Meta offers an official Groups API for eligible WhatsApp Business Platform accounts. It is a separate product with eligibility and group-size constraints. Reviver therefore keeps the existing Louvor group as a manual share target by default. If the church later qualifies and wants an API-created small group, that can be added as a separate integration.
