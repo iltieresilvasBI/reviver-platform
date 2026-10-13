@@ -103,3 +103,46 @@ Activation flow:
 4. The workflow validates that required names are present, sends values to Cloudflare through `wrangler secret put`, never prints secret values, and checks `/api/health` until WhatsApp reports `ready`.
 
 Do not commit Meta tokens, app secrets, verify tokens, or the Supabase service-role key to source control.
+
+
+## Recommended Meta templates
+
+### `reviver_escala_publicada`
+
+Suggested category: Utility.
+
+Body:
+
+```
+Olá {{1}}. Você está escalado(a) para {{2}} em {{3}}.
+Função: {{4}}.
+Consulte os detalhes e confirme a presença: {{5}}
+```
+
+Quick-reply buttons:
+
+1. **Confirmar**
+2. **Não posso**
+
+Set `WHATSAPP_TEMPLATE_SCHEDULE_PUBLISHED=reviver_escala_publicada`.
+
+### `reviver_pedido_substituicao`
+
+Suggested category: Utility.
+
+Body:
+
+```
+Olá {{1}}. Precisamos de substituição para {{2}} em {{3}}.
+Função/instrumento: {{4}}.
+Veja o pedido: {{5}}
+```
+
+Quick-reply buttons:
+
+1. **Posso substituir**
+2. **Não posso**
+
+Set `WHATSAPP_TEMPLATE_SUBSTITUTION_REQUEST=reviver_pedido_substituicao`.
+
+Template wording may be adjusted during Meta review, but keep the five variables and two quick-reply button positions in the same order expected by the portal.
