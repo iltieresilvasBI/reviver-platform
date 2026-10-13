@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {AppShell} from "@/components/app-shell";
 import {getAccessContext} from "@/lib/auth";
+import {getWhatsAppConfigStatus} from "@/lib/whatsapp";
 
 export default async function SystemHealthPage(){
   const ctx=await getAccessContext();
   if(!ctx.isAdmin) return <AppShell title="Saúde do sistema" active="/admin" email={ctx.email}><section className="hero-card"><p className="eyebrow">ACESSO RESTRITO</p><h2>Administração global</h2><p>Esta área exige o papel Admin.</p></section></AppShell>;
   const now=new Date().toISOString();
+  const whatsapp=getWhatsAppConfigStatus();
   const [songs,lessons,resources,members,backups,schedules,scheduleMembers,scheduleSongs,subs,offers,overdue,newMessages]=await Promise.all([
     ctx.supabase.from("worship_songs").select("id,title,service_types").eq("active",true).is("archived_at",null),
     ctx.supabase.from("academy_lessons").select("id,title,youtube_id").eq("active",true),
@@ -46,6 +48,7 @@ export default async function SystemHealthPage(){
     {label:"Substituições abertas sem oferta",value:String(noOffers.length),ok:noOffers.length===0,href:"/worship/substitutions"},
     {label:"Publicações agendadas atrasadas",value:String((overdue.data??[]).length),ok:(overdue.data??[]).length===0,href:"/admin/aprovacoes"},
     {label:"Mensagens novas",value:String(newMessages.count??0),ok:(newMessages.count??0)===0,href:"/admin/mensagens"},
+    {label:"WhatsApp Business API",value:whatsapp.configured&&whatsapp.webhookConfigured?"Pronta":String(whatsapp.missing.length)+" configuração(ões) pendente(s)",ok:whatsapp.configured&&whatsapp.webhookConfigured,href:"/worship/share"},
   ];
   const issues=checks.filter(x=>!x.ok).length;
   return <AppShell title="Saúde do sistema" active="/admin" email={ctx.email}>
