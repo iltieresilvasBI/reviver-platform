@@ -133,7 +133,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
         <article className="card" style={{marginTop:16}}>
           <p className="eyebrow">WHATSAPP BUSINESS API</p>
           <h3>Envio oficial e acompanhamento</h3>
-          <p className="muted small">A API oficial envia mensagens individuais. Grupos normais do WhatsApp não aceitam publicação automática pela Cloud API; para o grupo do Louvor, use a partilha manual abaixo.</p>
+          <p className="muted small">O envio individual usa a Cloud API oficial. A Meta também oferece Groups API para contas elegíveis e grupos próprios com limites específicos; isso não equivale ao grupo normal atual do Louvor. Para o grupo existente, mantenha a partilha manual.</p>
           <div className="button-row">
             <form action={sendScheduleWhatsApp}>
               <input type="hidden" name="scheduleId" value={selected.id}/>

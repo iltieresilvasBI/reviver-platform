@@ -10,7 +10,7 @@ The portal is designed to use the official Meta WhatsApp Business Cloud API for 
 - First backup who accepts replaces the unavailable member automatically.
 - Meta webhook updates message state: sent, delivered, read or failed.
 - Failed messages can be retried from the Communication page.
-- The worship WhatsApp group remains a manual share action. Cloud API does not publish into a normal WhatsApp group chat.
+- The existing worship WhatsApp group remains a manual share action. Meta now offers a separate Groups API for eligible accounts and API-created groups, but it does not turn the current normal ministry group into a general automation target.
 
 ## Required server secrets
 
@@ -84,3 +84,65 @@ The route validates:
 6. Subscribe to WhatsApp message events.
 7. Run a test with a test member who explicitly opted into WhatsApp notifications.
 8. Confirm the portal records sent → delivered → read and processes quick replies.
+
+
+## Group note (2026)
+
+Meta offers an official Groups API for eligible WhatsApp Business Platform accounts. It is a separate product with eligibility and group-size constraints. Reviver therefore keeps the existing Louvor group as a manual share target by default. If the church later qualifies and wants an API-created small group, that can be added as a separate integration.
+
+
+## Safe secret activation
+
+The repository includes a manual GitHub Actions workflow named **Configure WhatsApp Worker Secrets**.
+
+Activation flow:
+
+1. Add the required values as GitHub Actions repository secrets.
+2. Open Actions → Configure WhatsApp Worker Secrets.
+3. Run the workflow manually.
+4. The workflow validates that required names are present, sends values to Cloudflare through `wrangler secret put`, never prints secret values, and checks `/api/health` until WhatsApp reports `ready`.
+
+Do not commit Meta tokens, app secrets, verify tokens, or the Supabase service-role key to source control.
+
+
+## Recommended Meta templates
+
+### `reviver_escala_publicada`
+
+Suggested category: Utility.
+
+Body:
+
+```
+Olá {{1}}. Você está escalado(a) para {{2}} em {{3}}.
+Função: {{4}}.
+Consulte os detalhes e confirme a presença: {{5}}
+```
+
+Quick-reply buttons:
+
+1. **Confirmar**
+2. **Não posso**
+
+Set `WHATSAPP_TEMPLATE_SCHEDULE_PUBLISHED=reviver_escala_publicada`.
+
+### `reviver_pedido_substituicao`
+
+Suggested category: Utility.
+
+Body:
+
+```
+Olá {{1}}. Precisamos de substituição para {{2}} em {{3}}.
+Função/instrumento: {{4}}.
+Veja o pedido: {{5}}
+```
+
+Quick-reply buttons:
+
+1. **Posso substituir**
+2. **Não posso**
+
+Set `WHATSAPP_TEMPLATE_SUBSTITUTION_REQUEST=reviver_pedido_substituicao`.
+
+Template wording may be adjusted during Meta review, but keep the five variables and two quick-reply button positions in the same order expected by the portal.

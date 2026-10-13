@@ -106,7 +106,7 @@ echo "/api/integrations/whatsapp/webhook invalid verification -> $code"
 test "$code" = "403"
 
 echo "== Protected UI =="
-for path in   /dashboard   /academy   /academy/resources   /achievements   /vocal-gym   /profile   /worship   /worship/repertoire   /worship/share   /worship/substitutions   /worship/reports   /worship/themes   /worship/rotacao   /worship/band-rotation   /worship/import   /worship/schedules/new   /worship/run-sheet/test   /media   /media/edit/test   /media/preview/test   /admin   /admin/site   /admin/academy   /admin/academy/resources   /admin/academy/preview/test   /admin/aprovacoes   /admin/conteudos   /admin/louvor   /admin/mensagens   /admin/ministerios   /admin/utilizadores
+for path in   /dashboard   /academy   /academy/resources   /achievements   /vocal-gym   /profile   /worship   /worship/repertoire   /worship/share   /worship/substitutions   /worship/reports   /worship/themes   /worship/rotacao   /worship/band-rotation   /worship/import   /worship/schedules/new   /worship/run-sheet/test   /media   /media/edit/test   /media/preview/test   /admin   /admin/site   /admin/academy   /admin/academy/resources   /admin/academy/preview/test   /admin/aprovacoes   /admin/conteudos   /admin/louvor   /admin/mensagens   /admin/ministerios   /admin/utilizadores   /admin/integrations/whatsapp
 do
   assert_redirect_login "$path"
 done

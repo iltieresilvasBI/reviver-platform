@@ -2,6 +2,7 @@ import Link from "next/link";
 import {AppShell} from "@/components/app-shell";
 import {SubmitButton} from "@/components/submit-button";
 import {getAccessContext} from "@/lib/auth";
+import {getWhatsAppConfigStatus} from "@/lib/whatsapp";
 import {createScheduleAndContinue} from "./actions";
 import {
   assignWorshipMember,
@@ -12,6 +13,7 @@ import {
 } from "../../actions";
 import {ScheduleSongPicker} from "../../schedule-song-picker";
 import {autoFillBand} from "../../band-rotation/actions";
+import {sendScheduleWhatsApp} from "../../share/actions";
 
 const roles=[
   ["cantor_principal","Cantor principal"],
@@ -40,6 +42,7 @@ export default async function NewWorshipSchedulePage({
 }){
   const qs=await searchParams;
   const ctx=await getAccessContext();
+  const whatsappIntegration=getWhatsAppConfigStatus();
   const {data:network}=await ctx.supabase.from("networks").select("id").eq("slug","worship").maybeSingle();
   const {data:membership}=network
     ?await ctx.supabase.from("network_memberships").select("id,role,status").eq("network_id",network.id).eq("user_id",ctx.userId).maybeSingle()
@@ -218,10 +221,11 @@ export default async function NewWorshipSchedulePage({
           <div className="button-row">
             {schedule.publication_state==="draft"&&<form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={schedule.id}/><input type="hidden" name="publicationAction" value="approve"/><SubmitButton className="button" pendingText="A aprovar…">Aprovar escala</SubmitButton></form>}
             {schedule.publication_state!=="published"&&<form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={schedule.id}/><input type="hidden" name="publicationAction" value="publish"/><SubmitButton className="button primary" pendingText="A publicar…">Publicar escala</SubmitButton></form>}
-            <Link className="button primary" href={"/worship/share?schedule="+schedule.id}>Comunicar participantes</Link>
-            <a className="button" href={"https://wa.me/?text="+encodeURIComponent(shareText)} target="_blank" rel="noreferrer">Partilhar no WhatsApp</a>
+            {schedule.publication_state==="published"&&<form action={sendScheduleWhatsApp}><input type="hidden" name="scheduleId" value={schedule.id}/><SubmitButton className="button primary" pendingText="A enviar pela Meta…" disabled={!whatsappIntegration.configured}>Enviar WhatsApp pela Meta</SubmitButton></form>}
+            <Link className="button" href={"/worship/share?schedule="+schedule.id}>Comunicação e estados</Link>
+            <a className="button" href={"https://wa.me/?text="+encodeURIComponent(shareText)} target="_blank" rel="noreferrer">Partilhar no grupo</a>
           </div>
-          <p className="muted small">“Comunicar participantes” prepara as mensagens individuais. “Partilhar no WhatsApp” abre o WhatsApp para escolher manualmente o grupo do Louvor.</p>
+          <p className="muted small">{whatsappIntegration.configured?"Depois de Publicar, pode disparar as mensagens individuais pela API oficial. A página Comunicação mostra enviado, entregue, lido e falhas.":"A Cloud API ainda aguarda as credenciais da Meta; a partilha manual continua disponível."} O botão de grupo abre o WhatsApp para escolher o grupo atual do Louvor.</p>
         </div>
       </div>}
     </div>
