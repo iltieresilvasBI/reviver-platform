@@ -100,7 +100,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
 
   return <AppShell title="Comunicação do Louvor" active="/worship" email={ctx.email}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
-    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/worship">← Louvor</Link></div>
+    <nav className="button-row" aria-label="Navegação da página" style={{marginBottom:18}}><a className="button" href="/worship" aria-label="Voltar à área do Louvor">← Voltar ao Louvor</a></nav>
     <section className="hero-card"><p className="eyebrow">COMUNICAÇÃO</p><h2>WhatsApp com consentimento explícito.</h2><p>{whatsappIntegration.configured?"A Cloud API está pronta para envio individual, confirmações e substituições.":"A infraestrutura oficial está instalada; falta apenas ligar as credenciais e templates aprovados da Meta."}</p></section>
 
     <div className="grid grid-2" style={{marginTop:18}}>
