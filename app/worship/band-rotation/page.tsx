@@ -32,7 +32,7 @@ export default async function BandRotationPage({
     :{data:null as any};
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
   if(!canLead){
-    return <AppShell title="Combinações da Banda" active="/worship" email={ctx.email}><section className="hero-card"><h2>Acesso de liderança necessário.</h2><Link className="button" href="/worship">Voltar</Link></section></AppShell>;
+    return <AppShell title="Combinações da Banda" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}><section className="hero-card"><h2>Acesso de liderança necessário.</h2><Link className="button" href="/worship">Voltar</Link></section></AppShell>;
   }
 
   const now=new Date().toISOString();
@@ -49,7 +49,7 @@ export default async function BandRotationPage({
   const selectedSchedule=qs.schedule||((schedules??[])[0]?.id??"");
   const backupPrimaryCount=new Set((backups??[]).map((b:any)=>b.primary_membership_id+"|"+b.role)).size;
 
-  return <AppShell title="Combinações da Banda" active="/worship" email={ctx.email}>
+  return <AppShell title="Combinações da Banda" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}>
       <Link className="button" href="/worship">← Louvor</Link>

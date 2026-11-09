@@ -26,7 +26,7 @@ export default async function WorshipRepertoirePage({
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
 
   if(!canRead){
-    return <AppShell title="Repertório" active="/worship" email={ctx.email} variant={canLead?"default":"worship-member"}>
+    return <AppShell title="Repertório" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
       <section className="hero-card">
         <p className="eyebrow">REVIVER WORSHIP</p>
         <h2>Repertório reservado ao Ministério de Louvor</h2>
@@ -109,7 +109,7 @@ export default async function WorshipRepertoirePage({
   const neverUsed=(songs??[]).length-usedInPeriod;
   const totalExecutions=Array.from(usageBySong.values()).reduce((sum,item)=>sum+item.count,0);
 
-  return <AppShell title="Repertório Inteligente" active="/worship" email={ctx.email}>
+  return <AppShell title="Repertório Inteligente" active="/worship/repertoire" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     {(songsError||usageError||themesError)&&<div className="notice warn" style={{marginBottom:16}}>Alguns dados do repertório não puderam ser carregados.</div>}
     {canLead&&unclassifiedSongs.length>0&&<div className="notice warn" style={{marginBottom:16}}>

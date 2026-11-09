@@ -118,28 +118,14 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <div className="member-readonly">
         <section className="hero-card">
           <p className="eyebrow">ÁREA DO INTEGRANTE</p>
-          <h2>As tuas escalas, repertórios e avisos.</h2>
-          <p className="readonly-note">Aqui podes consultar as tuas escalas, confirmar presença, indicar quando não podes servir e responder a pedidos de substituição. A criação e edição de escalas é exclusiva da liderança.</p>
+          <h2>As tuas próximas participações.</h2>
+          <p className="readonly-note">Consulta a tua escala, confirma a presença ou pede uma troca. A liderança organiza os cultos.</p>
           <div className="button-row" style={{marginTop:18}}>
-            <a className="button primary" href="#my-schedules">Ver as minhas escalas</a>
-            <Link className="button" href="/worship/substitutions">Pedir ou aceitar troca</Link>
+            <a className="button primary" href="#my-schedules">Ver minhas escalas</a>
+            <a className="button" href="/worship/substitutions">Pedir ou aceitar troca</a>
             <a className="button" href="#my-availability">Indicar indisponibilidade</a>
-            <Link className="button" href="/worship/repertoire">Consultar repertório</Link>
-            <Link className="button" href="/worship/share">Preferências de contacto</Link>
           </div>
         </section>
-
-        <div className="grid grid-4" style={{marginTop:18}}>
-          <article className="card metric"><span>Minhas próximas escalas</span><strong>{memberSchedules.length}</strong></article>
-          <article className="card metric"><span>Ensaios futuros</span><strong>{relevantRehearsals.length}</strong></article>
-          <article className="card metric"><span>Meu grupo</span><strong>{myProfile?.group_code??"—"}</strong></article>
-          <article className="card metric"><span>Lembretes</span><strong>{memberReminders.length}</strong></article>
-        </div>
-
-        {memberReminders.length>0&&<>
-          <div className="section-title"><div><p className="eyebrow">LEMBRETES</p><h2>Precisa da tua atenção</h2></div><span className="muted small">Atualizado automaticamente ao abrir o portal.</span></div>
-          <div className="grid grid-3">{memberReminders.slice(0,6).map((reminder:any,index:number)=><a className="card" href={reminder.href} key={reminder.title+"-"+index}><span className={reminder.kind==="action"?"pill gold":"pill"}>{reminder.kind==="action"?"ação":reminder.kind==="soon"?"próximo":"info"}</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p></a>)}</div>
-        </>}
 
         <div id="my-schedules" className="section-title"><div><p className="eyebrow">ESCALAS</p><h2>Minhas próximas participações</h2></div><span className="muted small">Definidas pela gestão do Louvor</span></div>
         <div className="list">{memberSchedules.length===0?<div className="empty">Não tens nenhuma escala futura atribuída.</div>:memberSchedules.map((schedule:any)=>{
@@ -170,9 +156,9 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                   <input type="hidden" name="assignmentId" value={assignment.id}/>
                   <input type="hidden" name="responseStatus" value="declined"/>
                   <input name="note" className="inline-input" placeholder="Motivo opcional"/>
-                  <SubmitButton className="button danger" pendingText="A registar…">Não posso</SubmitButton>
+                  <SubmitButton className="button danger" pendingText="A registar…">Não posso servir</SubmitButton>
                 </form>
-                <Link className="button" href={"/worship/substitutions?schedule="+schedule.id}>Pedir substituição</Link>
+                <a className="button" href={"/worship/substitutions?schedule="+schedule.id+"#request-change"}>Procurar substituto</a>
               </div>
               {response&&<div className="muted small" style={{marginTop:10}}>Resposta atual: {response.response_status==="confirmed"?"Confirmado":"Não disponível"}{response.note?" · "+response.note:""}</div>}
             </div>}
@@ -249,24 +235,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     }).sort((a:any,b:any)=>b.score-a.score||a.usage.count-b.usage.count||String(a.song.title).localeCompare(String(b.song.title),"pt-PT"));
   };
 
-  const {count:lessonCount}=canLead
-    ?await ctx.supabase.from("academy_lessons").select("*",{count:"exact",head:true}).eq("active",true)
-    :{count:0 as number|null};
-
-  const memberMetrics=canLead?await Promise.all((directory??[]).map(async(m:any)=>{
-    const [{data:progress},{data:attempts},{data:practice}]=await Promise.all([
-      ctx.supabase.from("lesson_progress").select("status,last_activity_at").eq("user_id",m.user_id),
-      ctx.supabase.from("quiz_attempts").select("score_percentage,attempted_at").eq("user_id",m.user_id),
-      ctx.supabase.from("practice_sessions").select("duration_seconds,practiced_at").eq("user_id",m.user_id).order("practiced_at",{ascending:false}).limit(20)
-    ]);
-    const completed=(progress??[]).filter(p=>p.status==="completed").length;
-    const avg=(attempts??[]).length?Math.round((attempts??[]).reduce((sum,a)=>sum+Number(a.score_percentage??0),0)/(attempts??[]).length):0;
-    const last=[...(progress??[]).map(p=>p.last_activity_at),...(attempts??[]).map(a=>a.attempted_at),...(practice??[]).map(p=>p.practiced_at)].filter(Boolean).sort().at(-1)??null;
-    const practiceMinutes=Math.round((practice??[]).reduce((sum,p)=>sum+(p.duration_seconds??0),0)/60);
-    const profile=profilesByMembership.get(m.membership_id) as any;
-    const serviceParticipations=(assignments??[]).filter((a:any)=>a.membership_id===m.membership_id&&a.attendance_status==="completed").length;
-    return {...m,profile,completion:Math.round((completed/Math.max(lessonCount??0,1))*100),completed,avg,last,practiceMinutes,serviceParticipations};
-  })):[];
+  // O diretório é suficiente para a gestão diária. Dados da Academy são consultados na respetiva área.
+  const memberMetrics=(directory??[]).map((m:any)=>({...m,profile:profilesByMembership.get(m.membership_id)}));
 
   const selectedMemberGroup=(qs.memberGroup??"").trim();
   const selectedMemberRole=(qs.memberRole??"").trim();
@@ -298,302 +268,53 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     }
   }
 
-  return <AppShell title="Ministério de Louvor" active="/worship" email={ctx.email}>
-    {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
-
+  return <AppShell title="Gestão do Louvor" active="/worship" email={ctx.email} variant="worship-leader">
+    {qs.message&&<div className="notice" role="status" style={{marginBottom:16}}>{qs.message}</div>}
     <section className="hero-card">
-      <p className="eyebrow">REVIVER WORSHIP</p>
-      <h2>Organize os cultos, a equipa e o repertório.</h2>
-      <p>Organiza os grupos A/B/C/D, prepara cultos e ensaios, mantém o repertório centralizado e acompanha a evolução da equipa na Academy.</p>
-      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/worship/schedules/new">Criar nova escala</Link><Link className="button" href="/academy">Abrir Academy</Link><Link className="button" href="/worship/repertoire">Repertório inteligente</Link>{canLead&&<Link className="button" href="/worship/reports">Relatórios</Link>}{canLead&&<Link className="button" href="/worship/themes">Temas</Link>}<Link className="button" href="/worship/substitutions">Substituições</Link><Link className="button" href="/worship/share">Comunicação</Link>{canLead&&<Link className="button" href="/worship/import">Importar membros</Link>}<Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação vocal A/B/C/D</Link>{canLead&&<Link className="button" href="/worship/band-rotation">Banda e backups</Link>}<a className="button" href="/worship/calendar">Exportar meu calendário</a></div>
+      <p className="eyebrow">MINISTÉRIO DE LOUVOR · GESTÃO</p>
+      <h2>O que precisa de fazer?</h2>
+      <p>Crie uma escala, escolha a equipa e as músicas, publique e acompanhe as respostas.</p>
+      <div className="button-row" style={{marginTop:18}}>
+        <a className="button primary" href="/worship/schedules/new">+ Nova escala</a>
+        <a className="button" href="/worship/repertoire">Gerir músicas</a>
+        <a className="button" href="/worship/substitutions">Trocas</a>
+      </div>
     </section>
-
-    <div className="grid grid-4" style={{marginTop:18}}>
-      <article className="card metric"><span>Próximas escalas</span><strong>{upcomingSchedules.length}</strong></article>
-      <article className="card metric"><span>Ensaios futuros</span><strong>{upcomingRehearsals.length}</strong></article>
-      <article className="card metric"><span>Repertório ativo</span><strong>{(songs??[]).length}</strong></article>
-      <article className="card metric"><span>Pendências</span><strong>{leaderReminders.length}</strong></article>
-    </div>
-    {leaderReminders.length>0&&<>
-      <div className="section-title"><div><p className="eyebrow">PENDÊNCIAS AUTOMÁTICAS</p><h2>O que falta fechar</h2></div><span className="muted small">Gerado a partir das próximas escalas.</span></div>
-      <div className="grid grid-3">{leaderReminders.slice(0,9).map((reminder:any,index:number)=>reminder.href?<a className="card" href={reminder.href} key={reminder.title+"-"+index}><span className="pill gold">atenção</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p><span className="text-link">Resolver agora</span></a>:<article className="card" key={reminder.title+"-"+index}><span className="pill gold">atenção</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p></article>)}</div>
-    </>}
-
-    {membership?.id&&<>
-      <div className="section-title"><div><p className="eyebrow">DISPONIBILIDADE</p><h2>Quando não posso servir</h2></div><span className="muted small">O líder verá conflito ao montar a escala.</span></div>
-      <div className="grid grid-2">
-        <form action={createWorshipUnavailability} className="card form-grid">
-          <div className="grid grid-2">
-            <div className="field"><label>Primeiro dia</label><input name="startsOn" type="date" required/></div>
-            <div className="field"><label>Último dia</label><input name="endsOn" type="date" required/></div>
-          </div>
-          <div className="field"><label>Motivo opcional</label><input name="reason" placeholder="Viagem, trabalho, compromisso..."/></div>
-          <button className="button">Registar indisponibilidade</button>
-        </form>
-        <div className="card">
-          <p className="eyebrow">PRÓXIMOS PERÍODOS</p>
-          <div className="list">{myUnavailability.length===0?<div className="empty">Nenhuma indisponibilidade futura registada.</div>:myUnavailability.map((u:any)=><div className="list-row" key={u.id}>
-            <div><strong>{new Date(u.starts_on+"T00:00:00").toLocaleDateString("pt-PT")} → {new Date(u.ends_on+"T00:00:00").toLocaleDateString("pt-PT")}</strong>{u.reason&&<div className="muted small">{u.reason}</div>}</div>
-            <form action={deleteWorshipUnavailability}><input type="hidden" name="unavailabilityId" value={u.id}/><button className="button danger">Remover</button></form>
-          </div>)}</div>
-        </div>
-      </div>
-    </>}
-
-    <div className="section-title"><div><p className="eyebrow">AGENDA</p><h2>Próximas escalas</h2></div><span className="muted small">Grupo, equipa e repertório por culto</span></div>
-    <div className="list">{upcomingSchedules.length===0?<div className="empty">Nenhuma escala futura criada.</div>:upcomingSchedules.map((s:any)=>{
-      const people=(assignments??[]).filter((a:any)=>a.schedule_id===s.id);
-      const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===s.id).sort((a:any,b:any)=>a.position-b.position);
-      const mine=people.find((a:any)=>a.membership_id===membership?.id);
-      const confirmed=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="confirmed").length;
-      const declined=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="declined").length;
-      const pending=people.length-confirmed-declined;
-      const linkedRehearsal=(rehearsals??[]).find((r:any)=>r.schedule_id===s.id);
-      const readinessChecks=[
-        {label:"Equipa definida",ok:people.length>0},
-        {label:"Equipa confirmada",ok:people.length>0&&pending===0&&declined===0},
-        {label:"Repertório definido",ok:setlist.length>0},
-        {label:"Ensaio associado",ok:Boolean(linkedRehearsal)},
-      ];
-      const readiness=Math.round(readinessChecks.filter(x=>x.ok).length/readinessChecks.length*100);
-      const readinessMissing=readinessChecks.filter(x=>!x.ok).map(x=>x.label);
-      return <details className="card" id={"schedule-"+s.id} key={s.id} open={Boolean(mine)}>
-        <summary style={{cursor:"pointer"}}>
-          <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
-            <div><div className="button-row"><span className="pill gold">Grupo {s.group_code??"—"}</span><span className={s.status==="confirmed"?"pill ok":"pill"}>{s.status}</span><span className={readiness===100?"pill ok":readiness>=50?"pill gold":"pill"}>prontidão {readiness}%</span>{mine&&<span className="pill ok">estou escalado</span>}</div><h3 style={{margin:"10px 0 4px"}}>{s.title}</h3><span className="muted small">{new Date(s.starts_at).toLocaleString("pt-PT")}{s.call_time?` · chegada ${new Date(s.call_time).toLocaleString("pt-PT")}`:""}{s.service_type?` · ${s.service_type}`:""}</span></div>
-            {mine&&<div><strong>{roleLabel(mine.role)}</strong>{responseByAssignment.get(mine.id)&&<div className="muted small" style={{marginTop:4}}>{(responseByAssignment.get(mine.id) as any).response_status==="confirmed"?"Presença confirmada":"Indisponibilidade registada"}</div>}</div>}
-          </div>
-        </summary>
-
-        {s.notes&&<p className="muted" style={{marginTop:14}}>{s.notes}</p>}
-
-        <div className="card" style={{marginTop:16}}>
-          <p className="eyebrow">PRONTIDÃO DO CULTO</p>
-          <div className="grid grid-4">{readinessChecks.map(check=><div className="metric" key={check.label}><span>{check.label}</span><strong>{check.ok?"✓":"—"}</strong></div>)}</div>
-          <div className="muted small" style={{marginTop:10}}>{confirmed} confirmado{confirmed===1?"":"s"} · {pending} sem resposta · {declined} {declined===1?"indisponível":"indisponíveis"}{linkedRehearsal?` · ensaio ${new Date(linkedRehearsal.starts_at).toLocaleString("pt-PT")}`:""}</div>
-          {readinessMissing.length>0&&<div className="notice warn" style={{marginTop:12}}>Falta: {readinessMissing.join(" · ")}</div>}
-        </div>
-
-        <div className="grid grid-2" style={{marginTop:16}}>
-          <div className="card">
-            <p className="eyebrow">EQUIPA</p>
-            {canLead
-              ?<div className="list">{people.length===0?<div className="empty">Sem pessoas atribuídas.</div>:people.map((a:any)=>{
-                const person=directoryByMembership.get(a.membership_id) as any;
-                const response=responseByAssignment.get(a.id) as any;
-                return <div className="list-row" key={a.id}>
-                  <div><strong>{person?.display_name||person?.email||"Membro"}</strong><div className="muted small">{roleLabel(a.role)} · {response?response.response_status==="confirmed"?"confirmado":"não disponível":"sem resposta"} · {a.attendance_status==="completed"?"presença concluída":"presença pendente"}</div>{response?.note&&<div className="muted small">{response.note}</div>}</div>
-                  <div className="button-row">
-                    <form action={markWorshipAttendance}><input type="hidden" name="assignmentId" value={a.id}/><input type="hidden" name="attendance" value={a.attendance_status==="completed"?"assigned":"completed"}/><button className="button">{a.attendance_status==="completed"?"Reabrir presença":"Marcar presença"}</button></form>
-                    <form action={removeWorshipAssignment}><input type="hidden" name="assignmentId" value={a.id}/><button className="button danger">Remover</button></form>
-                  </div>
-                </div>
-              })}</div>
-              :mine?<div>
-                <div className="notice">A tua função: <strong>{roleLabel(mine.role)}</strong></div>
-                <div className="button-row" style={{marginTop:12}}>
-                  <form action={respondToWorshipAssignment}>
-                    <input type="hidden" name="assignmentId" value={mine.id}/>
-                    <input type="hidden" name="responseStatus" value="confirmed"/>
-                    <SubmitButton className="button primary" pendingText="A confirmar…">Confirmar presença</SubmitButton>
-                  </form>
-                  <form action={respondToWorshipAssignment} className="button-row">
-                    <input type="hidden" name="assignmentId" value={mine.id}/>
-                    <input type="hidden" name="responseStatus" value="declined"/>
-                    <input name="note" className="inline-input" placeholder="Motivo opcional"/>
-                    <SubmitButton className="button danger" pendingText="A registar…">Não posso</SubmitButton>
-                  </form>
-                </div>
-                {responseByAssignment.get(mine.id)&&<div className="muted small" style={{marginTop:10}}>Resposta atual: {(responseByAssignment.get(mine.id) as any).response_status==="confirmed"?"Confirmado":"Não disponível"}{(responseByAssignment.get(mine.id) as any).note?` · ${(responseByAssignment.get(mine.id) as any).note}`:""}</div>}
-              </div>:<div className="muted">Esta escala pertence ao grupo {s.group_code??"—"}.</div>}
-          </div>
-
-          <div className="card">
-            <p className="eyebrow">REPERTÓRIO DO CULTO</p>
-            <ol>{setlist.length===0?<li className="muted">Ainda sem músicas.</li>:setlist.map((x:any)=>{
-              const song=songsById.get(x.song_id) as any;
-              return <li key={x.id} style={{marginBottom:10}}><strong>{song?.title??"Música"}</strong>{song?.artist?` — ${song.artist}`:""} <span className="muted small">{x.key_override||song?.default_key?`· tom ${x.key_override||song?.default_key}`:""}</span>{canLead&&<form action={removeSongFromWorshipSchedule} style={{display:"inline",marginLeft:8}}><input type="hidden" name="scheduleSongId" value={x.id}/><button className="button">×</button></form>}</li>
-            })}</ol>
-          </div>
-        </div>
-      </details>
-    })}</div>
-
-    <div className="section-title"><div><p className="eyebrow">ENSAIOS</p><h2>Próximos encontros</h2></div></div>
-    <div className="grid grid-3">{upcomingRehearsals.length===0?<div className="empty">Nenhum ensaio futuro.</div>:upcomingRehearsals.map((r:any)=><article className="card" key={r.id}><span className="pill gold">ensaio</span><h3>{r.title}</h3><p className="muted">{new Date(r.starts_at).toLocaleString("pt-PT")}{r.location?` · ${r.location}`:""}</p>{r.notes&&<p>{r.notes}</p>}</article>)}</div>
-
-    <div className="section-title"><div><p className="eyebrow">REPERTÓRIO</p><h2>Biblioteca musical</h2></div></div>
-    <div className="grid grid-3">{(songs??[]).length===0?<div className="empty">Repertório ainda vazio.</div>:(songs??[]).map((song:any)=><article className="card" key={song.id}><h3>{song.title}</h3><p className="muted">{song.artist||"Artista não informado"}{song.default_key?` · tom ${song.default_key}`:""}{song.bpm?` · ${song.bpm} BPM`:""}</p><div className="button-row">{song.youtube_url&&<a className="button" href={song.youtube_url} target="_blank">Ouvir</a>}{song.chord_url&&<a className="button" href={song.chord_url} target="_blank">Cifra</a>}</div></article>)}</div>
-
-    {(items??[]).length>0&&<>
-      <div className="section-title"><div><p className="eyebrow">RECURSOS</p><h2>Avisos e ficheiros</h2></div></div>
-      <div className="list">{(items??[]).map((i:any)=><div className="list-row" key={i.id}><div><span className="pill">{i.item_type}</span><h3 style={{marginTop:8}}>{i.title}</h3><span className="muted small">{i.body}</span></div>{i.external_url&&<a className="button" href={i.external_url} target="_blank">Abrir</a>}</div>)}</div>
-    </>}
-
-    {canLead&&<>
-      <div className="section-title"><div><p className="eyebrow">OPERAÇÃO</p><h2>Configurar escala</h2></div><span className="muted small">Fluxo guiado · Admin/Líder</span></div>
-
-      <div className="grid grid-4" style={{marginBottom:18}}>
-        <article className="card"><span className="pill gold">1</span><h3>Culto</h3><p className="muted small">Data, tipo, grupo e tema.</p></article>
-        <article className="card"><span className="pill gold">2</span><h3>Equipa</h3><p className="muted small">Preencher grupo e ajustar funções.</p></article>
-        <article className="card"><span className="pill gold">3</span><h3>Repertório e ensaio</h3><p className="muted small">Músicas adequadas ao culto e ensaio associado.</p></article>
-        <article className="card"><span className="pill gold">4</span><h3>Rever e partilhar</h3><p className="muted small">Aprovar, publicar e enviar a escala.</p></article>
-      </div>
-
-      <div className="grid grid-3" style={{marginBottom:18}}>
-        <article className="card">
-          <p className="eyebrow">NOVA ESCALA</p>
-          <h3>Criação simplificada</h3>
-          <p className="muted small">Detalhes → participantes → músicas → roteiro → publicação e comunicação.</p>
-          <Link className="button primary" href="/worship/schedules/new">+ Criar nova escala</Link>
-        </article>
-
-        <details className="card">
-          <summary style={{cursor:"pointer",fontWeight:800}}>+ Adicionar música ao repertório</summary>
-          <form action={createWorshipSong} className="form-grid" style={{marginTop:16}}>
-            <p className="eyebrow">REPERTÓRIO</p>
-            <SongAutoFillFields/>
-            <SubmitButton className="button primary" pendingText="A adicionar música…">Adicionar música</SubmitButton>
-          </form>
-        </details>
-
-        <details className="card">
-          <summary style={{cursor:"pointer",fontWeight:800}}>+ Criar ensaio</summary>
-          <form action={createWorshipRehearsal} className="form-grid" style={{marginTop:16}}>
-            <p className="eyebrow">NOVO ENSAIO</p>
-            <div className="field"><label>Título</label><input name="title" required placeholder="Ensaio geral"/></div>
-            <div className="grid grid-2"><div className="field"><label>Início</label><input name="startsAt" type="datetime-local" required/></div><div className="field"><label>Fim</label><input name="endsAt" type="datetime-local"/></div></div>
-            <div className="field"><label>Local</label><input name="location"/></div>
-            <div className="field"><label>Vincular a escala</label><select name="scheduleId"><option value="">Sem vínculo</option>{upcomingSchedules.map((s:any)=><option value={s.id} key={s.id}>{s.title}</option>)}</select></div>
-            <div className="field"><label>Notas</label><textarea name="notes"/></div>
-            <SubmitButton className="button primary" pendingText="A criar ensaio…">Criar ensaio</SubmitButton>
-          </form>
-        </details>
-      </div>
-
-      <div className="notice" style={{marginBottom:18}}>Crie a escala, associe ou encontre músicas do repertório e marque o ensaio dentro do mesmo fluxo de configuração.</div>
-
-      <div className="list">{upcomingSchedules.length===0?<div className="empty">Cria a primeira escala para configurar equipa e repertório.</div>:upcomingSchedules.map((s:any)=><details className="card" key={s.id}>
-        <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · Grupo {s.group_code??"—"}{(s.themes??[]).length?" · "+(s.themes??[]).join(" / "):s.theme?" · "+s.theme:""} · {new Date(s.starts_at).toLocaleString("pt-PT")}</summary>
-        <div className="button-row" style={{marginTop:14}}>
-          <form action={autoAssignWorshipGroup}>
-            <input type="hidden" name="scheduleId" value={s.id}/>
-            <SubmitButton className="button primary" disabled={!s.group_code} pendingText="A preencher grupo…">Preencher Grupo {s.group_code??"—"}</SubmitButton>
-          </form>
-          <span className="muted small">Adiciona membros ativos do grupo, ignora indisponíveis e usa a primeira função configurada como principal.</span>
-        </div>
-        <div className="grid grid-3" style={{marginTop:16}}>
-          <div className="card">
-            <p className="eyebrow">RESPOSTAS DA EQUIPA</p>
-            {(()=>{
-              const people=(assignments??[]).filter((a:any)=>a.schedule_id===s.id);
-              const confirmed=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="confirmed").length;
-              const declined=people.filter((a:any)=>(responseByAssignment.get(a.id) as any)?.response_status==="declined").length;
-              const pending=people.length-confirmed-declined;
-              return <div className="grid grid-3"><div className="metric"><span>Confirmados</span><strong>{confirmed}</strong></div><div className="metric"><span>Não podem</span><strong>{declined}</strong></div><div className="metric"><span>Sem resposta</span><strong>{pending}</strong></div></div>;
-            })()}
-          </div>
-          <form action={assignWorshipMember} className="form-grid">
-            <input type="hidden" name="scheduleId" value={s.id}/>
-            <p className="eyebrow">ESCALAR PESSOA</p>
-            <div className="field"><label>Membro</label><select name="membershipId" required><option value="">Selecionar</option>{(directory??[]).filter((m:any)=>m.status==="active").map((m:any)=>{
-              const conflicts=conflictsFor(m.membership_id,s.starts_at);
-              return <option value={m.membership_id} key={m.membership_id}>{m.display_name||m.email} · G{(profilesByMembership.get(m.membership_id) as any)?.group_code??"—"}{conflicts.length?" · ⚠ indisponível":""}</option>;
-            })}</select></div>
-            {(()=>{const count=(directory??[]).filter((m:any)=>m.status==="active"&&conflictsFor(m.membership_id,s.starts_at).length>0).length; return count>0?<div className="notice warn">{count} membro{count===1?"":"s"} com indisponibilidade nesta data.</div>:null;})()}
-            <div className="field"><label>Função</label><select name="role"><option value="">Sem função</option>{roleOptions.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></div>
-            <SubmitButton className="button" pendingText="A adicionar…">Adicionar à escala</SubmitButton>
-          </form>
-
-          <div className="form-grid">
-            <p className="eyebrow">ADICIONAR MÚSICA</p>
-            <p className="muted small">O seletor prioriza a pasta do tipo de culto, os temas definidos e músicas menos usadas nos quatro meses anteriores.</p>
-            <ScheduleSongPicker
-              scheduleId={s.id}
-              serviceType={s.service_type??null}
-              scheduleThemes={(((s.themes??[]) as string[]).length?(s.themes??[]):s.theme?[s.theme]:[]) as string[]}
-              songs={recommendedSongsForSchedule(s).map(({song,usage,folderMatch,themeMatches,score}:any)=>({
-                id:song.id,
-                title:song.title,
-                artist:song.artist??null,
-                defaultKey:song.default_key??null,
-                recommendedKey:song.recommended_key??null,
-                serviceTypes:Array.isArray(song.service_types)?song.service_types:[],
-                themes:Array.isArray(song.themes)?song.themes:[],
-                usageCount:usage.count,
-                lastUsedAt:usage.last?(usage.last as any).worship_schedules?.starts_at??null:null,
-                folderMatch,
-                themeMatches,
-                score,
-              }))}
-            />
-          </div>
-
-          <div className="form-grid">
-            <form action={updateWorshipScheduleTheme} className="form-grid">
-              <input type="hidden" name="scheduleId" value={s.id}/>
-              <p className="eyebrow">TEMAS</p>
-              <div className="field"><label>Temas, separados por vírgula</label><input name="themes" defaultValue={((s.themes??[]) as string[]).join(", ")||s.theme||""}/></div>
-              <SubmitButton className="button" pendingText="A guardar…">Guardar temas</SubmitButton>
-            </form>
-            <form action={updateWorshipScheduleStatus} className="form-grid">
-              <input type="hidden" name="scheduleId" value={s.id}/>
-              <p className="eyebrow">ESTADO</p>
-              <div className="field"><label>Estado da escala</label><select name="status" defaultValue={s.status}><option value="planned">Planeada</option><option value="confirmed">Confirmada</option><option value="completed">Concluída</option><option value="cancelled">Cancelada</option></select></div>
-              <SubmitButton className="button" pendingText="A guardar…">Guardar estado</SubmitButton>
-            </form>
-            <div className="card">
-              <p className="eyebrow">APROVAÇÃO E PUBLICAÇÃO</p>
+    <section aria-labelledby="leader-schedules-heading" style={{marginTop:26}}>
+      <div className="section-title"><div><p className="eyebrow">ESCALAS</p><h2 id="leader-schedules-heading">Próximos cultos</h2></div><span className="muted small">{upcomingSchedules.length} agendado{upcomingSchedules.length===1?"":"s"}</span></div>
+      <div className="list">
+        {upcomingSchedules.length===0?<div className="card"><p>Ainda não existem escalas futuras.</p><Link className="button primary" href="/worship/schedules/new">Criar a primeira escala</Link></div>
+          :upcomingSchedules.map((schedule:any)=>{
+          const team=(assignments??[]).filter((a:any)=>a.schedule_id===schedule.id);
+          const confirmed=team.filter((a:any)=>(responses??[]).some((r:any)=>r.assignment_id===a.id&&r.response_status==="confirmed")).length;
+          const musicCount=(scheduleSongs??[]).filter((s:any)=>s.schedule_id===schedule.id).length;
+          return <article className="card worship-service-card" key={schedule.id}>
+            <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
+              <div>
+                <div className="button-row"><span className="pill gold">Grupo {schedule.group_code??"—"}</span><span className={schedule.publication_state==="published"?"pill ok":"pill"}>{schedule.publication_state==="published"?"Publicada":"Por publicar"}</span></div>
+                <h3>{schedule.title}</h3>
+                <p className="muted small">{new Date(schedule.starts_at).toLocaleString("pt-PT")} · {team.length} pessoas · {confirmed} confirmadas · {musicCount} músicas</p>
+              </div>
               <div className="button-row">
-                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="draft"/><button className="button">Rascunho</button></form>
-                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="approve"/><SubmitButton className="button" pendingText="A aprovar…">Aprovar</SubmitButton></form>
-                <form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={s.id}/><input type="hidden" name="publicationAction" value="publish"/><SubmitButton className="button primary" pendingText="A publicar…">Publicar equipa</SubmitButton></form>
-              </div>
-              <div className="muted small" style={{marginTop:8}}>Estado editorial: {s.publication_state??"draft"}. Aprovar não publica nem envia mensagens.</div>
-              <form action={setWorshipPublicRepertoire} className="button-row" style={{marginTop:10}}>
-                <input type="hidden" name="scheduleId" value={s.id}/>
-                <input type="hidden" name="publicRepertoire" value={s.public_repertoire?"false":"true"}/>
-                <SubmitButton className="button" pendingText="A atualizar…">{s.public_repertoire?"Retirar repertório público":"Autorizar repertório público"}</SubmitButton>
-              </form>
-              <div className="button-row" style={{marginTop:10}}>
-                <Link className="button primary" href={"/worship/share?schedule="+s.id}>Partilhar escala</Link>
-                <a className="button" href={"/api/worship/schedule-card/"+s.id} target="_blank" rel="noreferrer">Abrir card da escala</a>
-                <a className="button" href={"/api/worship/schedule-card/"+s.id+"?download=1"}>Baixar card</a>
-                <Link className="button" href={"/worship/run-sheet/"+s.id}>Roteiro do culto</Link>
+                <a className="button primary" href={"/worship/schedules/new?schedule="+schedule.id+"&step=participants"}>Gerir escala</a>
+                {schedule.publication_state==="published"&&<a className="button" href={"/worship/share?schedule="+schedule.id}>Comunicar</a>}
               </div>
             </div>
-          </div>
-        </div>
-      </details>)}</div>
-
-      <div id="post-service" className="section-title"><div><p className="eyebrow">PÓS-CULTO</p><h2>Fechar culto</h2></div><span className="muted small">Confirma repertório e presenças numa única operação.</span></div>
-      <div className="list">{recentPastSchedules.length===0?<div className="empty">Nenhum culto anterior para confirmar.</div>:recentPastSchedules.map((s:any)=>{
-        const setlist=(scheduleSongs??[]).filter((x:any)=>x.schedule_id===s.id).sort((a:any,b:any)=>a.position-b.position);
-        const people=(assignments??[]).filter((a:any)=>a.schedule_id===s.id);
-        return <details className="card" key={"executed-"+s.id}>
-          <summary style={{cursor:"pointer",fontWeight:800}}>{s.title} · {new Date(s.starts_at).toLocaleString("pt-PT")} · {s.status}</summary>
-          <form action={finalizeWorshipService} className="form-grid" style={{marginTop:14}}>
-            <input type="hidden" name="scheduleId" value={s.id}/>
-            <div className="notice">
-              Ao concluir, o sistema atualiza o repertório executado, as presenças da equipa e o estado do culto. Guardar novamente substitui a confirmação anterior.
-            </div>
-            <div>
-              <p className="eyebrow">MÚSICAS EXECUTADAS</p>
-              {setlist.length===0?<div className="empty">Este culto não tem repertório planeado.</div>:setlist.map((x:any)=>{const song=songsById.get(x.song_id) as any;return <label className="list-row" key={x.id} style={{cursor:"pointer"}}><span><strong>{song?.title??"Música"}</strong><span className="muted small"> · tom {x.key_override||song?.default_key||"—"}{song?.version_name?" · "+song.version_name:""}</span></span><input type="checkbox" name="songIds" value={x.song_id} defaultChecked={executionKeys.has(s.id+"|"+x.song_id)}/></label>})}
-            </div>
-            <div>
-              <p className="eyebrow">QUEM SERVIU</p>
-              {people.length===0?<div className="empty">Nenhum membro foi escalado neste culto.</div>:people.map((a:any)=>{const person=directoryByMembership.get(a.membership_id) as any;const response=responseByAssignment.get(a.id) as any;return <label className="list-row" key={a.id} style={{cursor:"pointer"}}><span><strong>{person?.display_name||person?.email||"Membro"}</strong><span className="muted small"> · {roleLabel(a.role)}{response?.response_status==="confirmed"?" · confirmou presença":response?.response_status==="declined"?" · tinha indicado indisponibilidade":""}</span></span><input type="checkbox" name="presentAssignmentIds" value={a.id} defaultChecked={a.attendance_status==="completed"||response?.response_status==="confirmed"}/></label>})}
-            </div>
-            <div className="button-row">
-              <SubmitButton className="button primary" pendingText="A concluir culto…">Concluir culto e atualizar relatórios</SubmitButton>
-              <Link className="button" href="/worship/reports">Ver relatórios</Link>
-            </div>
-          </form>
-        </details>
-      })}</div>
-
-      <div className="section-title"><div><p className="eyebrow">EQUIPA</p><h2>Membros, grupos e Academy</h2></div><span className="muted small">{activeMemberMetrics.length} membros ativos</span></div>
+          </article>;
+        })}
+      </div>
+    </section>
+    <details className="card worship-advanced" style={{marginTop:26}}>
+      <summary><strong>Gerir equipa e configurações</strong><span className="muted small">Integrantes, grupos, formação e opções menos frequentes</span></summary>
+      <div className="button-row" style={{margin:"18px 0"}}>
+        <Link className="button" href="/worship/band-rotation">Banda e backups</Link>
+        <Link className="button" href="/worship/rotacao">Grupos vocais</Link>
+        <Link className="button" href="/worship/import">Importar membros</Link>
+        <Link className="button" href="/worship/reports">Relatórios</Link>
+        <Link className="button" href="/worship/themes">Temas</Link>
+        <Link className="button" href="/academy">Academy</Link>
+      </div>
+      <div className="section-title"><div><p className="eyebrow">EQUIPA</p><h2>Gerir integrantes</h2></div><span className="muted small">{activeMemberMetrics.length} membros ativos</span></div>
       <div className="grid grid-4" style={{marginBottom:16}}>
         {["A","B","C","D"].map(group=><article className="card metric" key={group}><span>Grupo {group}</span><strong>{groupCounts[group]??0}</strong></article>)}
       </div>
@@ -608,12 +329,12 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
             <div><div className="button-row">{m.profile?.group_code&&<span className="pill gold">Grupo {m.profile.group_code}</span>}{(m.profile?.roles??[]).map((role:string)=><span className="pill" key={role}>{roleLabel(role)}</span>)}</div><h3 style={{margin:"8px 0 4px"}}>{m.display_name||m.email}</h3><span className="muted small">{m.email} · {m.role} · {m.status}</span></div>
-            <div className="button-row">
-              {m.status==="pending"&&<><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="approve"/><button className="button primary">Aprovar</button></form><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="reject"/><button className="button">Rejeitar</button></form></>}
-              {m.status==="active"&&<form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="revoke"/><button className="button danger">Revogar</button></form>}
-            </div>
           </div>
         </summary>
+        <div className="button-row" style={{marginTop:12}}>
+          {m.status==="pending"&&<><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="approve"/><SubmitButton className="button primary" pendingText="A aprovar…">Aprovar</SubmitButton></form><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="reject"/><SubmitButton className="button" pendingText="A rejeitar…">Rejeitar</SubmitButton></form></>}
+          {m.status==="active"&&<form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="revoke"/><SubmitButton className="button danger" pendingText="A revogar…">Revogar acesso</SubmitButton></form>}
+        </div>
 
         {m.status==="active"&&<>
           <form action={saveWorshipMemberProfile} className="form-grid" style={{marginTop:16}}>
@@ -625,9 +346,6 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             </div>
             <SubmitButton className="button" pendingText="A guardar…">Guardar perfil do ministério</SubmitButton>
           </form>
-          <div className="grid grid-4" style={{marginTop:14}}><div className="metric"><span>Academy</span><strong>{m.completion}%</strong></div><div className="metric"><span>Aulas concluídas</span><strong>{m.completed}</strong></div><div className="metric"><span>Média quizzes</span><strong>{m.avg}%</strong></div><div className="metric"><span>Participações</span><strong>{m.serviceParticipations}</strong></div></div>
-          <div className="muted small" style={{marginTop:10}}>Prática recente: {m.practiceMinutes}m</div>
-          {m.last&&<div className="muted small" style={{marginTop:12}}>Última atividade: {new Date(m.last).toLocaleString("pt-PT")}</div>}
         </>}
       </details>)}</div>
 
@@ -655,15 +373,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         </div>
       </div>
 
-      <div className="section-title"><div><p className="eyebrow">RECURSOS</p><h2>Avisos e ficheiros</h2></div></div>
-      <form action={createWorshipItem} className="card form-grid">
-        <p className="eyebrow">AVISO / FICHEIRO</p>
-        <div className="field"><label>Tipo</label><select name="item_type"><option value="notice">Aviso</option><option value="file">Ficheiro</option></select></div>
-        <div className="field"><label>Título</label><input name="title" required/></div>
-        <div className="field"><label>Descrição</label><textarea name="body"/></div>
-        <div className="field"><label>Link externo</label><input name="external_url" type="url"/></div>
-        <button className="button">Guardar recurso</button>
-      </form>
-    </>}
-  </AppShell>
+
+    </details>
+  </AppShell>;
 }
