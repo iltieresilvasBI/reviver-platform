@@ -184,3 +184,11 @@ button.pill:active{transform:scale(.97)}
 #page-content a:focus-visible,#page-content button:focus-visible,#page-content input:focus-visible,#page-content select:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #page-content .button-row{flex-wrap:wrap}
 @media(max-width:720px){#page-content .hero-card .button-row>.button{flex:1 1 180px;text-align:center}#page-content .list-row{flex-wrap:wrap}}
+
+/* Worship: keep advanced tools visually secondary and emphasize a requested swap. */
+.worship-advanced>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:4px;min-height:44px}
+.worship-advanced>summary:focus-visible{outline:3px solid var(--gold);outline-offset:4px;border-radius:8px}
+.worship-service-card h3{margin:8px 0 6px}
+.worship-service-card>.list-row{gap:18px;flex-wrap:wrap}
+.worship-focused{border-color:var(--gold)!important;box-shadow:0 0 0 1px var(--gold)}
+@media(max-width:720px){.worship-service-card .button-row{width:100%}.worship-service-card .button-row>.button{flex:1 1 150px;text-align:center}}
