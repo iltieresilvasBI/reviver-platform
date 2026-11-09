@@ -10,10 +10,10 @@ export default async function WorshipThemesPage({searchParams}:{searchParams:Pro
   const {data:membership}=network?await ctx.supabase.from("network_memberships").select("role,status").eq("network_id",network.id).eq("user_id",ctx.userId).maybeSingle():{data:null as any};
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
   if(!canLead){
-    return <AppShell title="Temas de Louvor" active="/worship" email={ctx.email}><section className="hero-card"><p className="eyebrow">ACESSO RESTRITO</p><h2>Gestão de temas disponível apenas para líderes e administradores.</h2><Link className="button" href="/worship">Voltar</Link></section></AppShell>;
+    return <AppShell title="Temas de Louvor" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}><section className="hero-card"><p className="eyebrow">ACESSO RESTRITO</p><h2>Gestão de temas disponível apenas para líderes e administradores.</h2><Link className="button" href="/worship">Voltar</Link></section></AppShell>;
   }
   const {data:themes,error}=await ctx.supabase.from("worship_themes").select("id,name,slug,active,created_at").order("name");
-  return <AppShell title="Temas de Louvor" active="/worship" email={ctx.email}>
+  return <AppShell title="Temas de Louvor" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/worship/repertoire">← Repertório</Link></div>
     <section className="hero-card"><p className="eyebrow">PASTAS POR TEMA</p><h2>Organização sem duplicar músicas.</h2><p>Uma música pode pertencer a vários temas. Arquivar um tema não remove nenhuma música do catálogo.</p></section>
