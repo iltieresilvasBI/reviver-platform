@@ -122,7 +122,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <p className="readonly-note">Consulta a tua escala, confirma a presença ou pede uma troca. A liderança organiza os cultos.</p>
           <div className="button-row" style={{marginTop:18}}>
             <a className="button primary" href="#my-schedules">Ver minhas escalas</a>
-            <Link className="button" href="/worship/substitutions">Pedir ou aceitar troca</Link>
+            <a className="button" href="/worship/substitutions">Pedir ou aceitar troca</a>
             <a className="button" href="#my-availability">Indicar indisponibilidade</a>
           </div>
         </section>
@@ -158,7 +158,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                   <input name="note" className="inline-input" placeholder="Motivo opcional"/>
                   <SubmitButton className="button danger" pendingText="A registar…">Não posso servir</SubmitButton>
                 </form>
-                <Link className="button" href={"/worship/substitutions?schedule="+schedule.id}>Procurar substituto</Link>
+                <a className="button" href={"/worship/substitutions?schedule="+schedule.id}>Procurar substituto</a>
               </div>
               {response&&<div className="muted small" style={{marginTop:10}}>Resposta atual: {response.response_status==="confirmed"?"Confirmado":"Não disponível"}{response.note?" · "+response.note:""}</div>}
             </div>}
@@ -275,9 +275,9 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
       <h2>O que precisa de fazer?</h2>
       <p>Crie uma escala, escolha a equipa e as músicas, publique e acompanhe as respostas.</p>
       <div className="button-row" style={{marginTop:18}}>
-        <Link className="button primary" href="/worship/schedules/new">+ Nova escala</Link>
-        <Link className="button" href="/worship/repertoire">Gerir músicas</Link>
-        <Link className="button" href="/worship/substitutions">Trocas</Link>
+        <a className="button primary" href="/worship/schedules/new">+ Nova escala</a>
+        <a className="button" href="/worship/repertoire">Gerir músicas</a>
+        <a className="button" href="/worship/substitutions">Trocas</a>
       </div>
     </section>
     <section aria-labelledby="leader-schedules-heading" style={{marginTop:26}}>
@@ -296,8 +296,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                 <p className="muted small">{new Date(schedule.starts_at).toLocaleString("pt-PT")} · {team.length} pessoas · {confirmed} confirmadas · {musicCount} músicas</p>
               </div>
               <div className="button-row">
-                <Link className="button primary" href={"/worship/schedules/new?schedule="+schedule.id+"&step=participants"}>Editar escala</Link>
-                {schedule.publication_state==="published"&&<Link className="button" href={"/worship/share?schedule="+schedule.id}>Comunicar</Link>}
+                <a className="button primary" href={"/worship/schedules/new?schedule="+schedule.id+"&step=participants"}>Gerir escala</a>
+                {schedule.publication_state==="published"&&<a className="button" href={"/worship/share?schedule="+schedule.id}>Comunicar</a>}
               </div>
             </div>
           </article>;
