@@ -54,7 +54,7 @@ export default async function WorshipSubstitutionsPage({
   const directory=canLead?(await ctx.supabase.rpc("worship_member_directory")).data??[]:[];
   const personByMembership=new Map((directory??[]).map((p:any)=>[p.membership_id,p]));
 
-  return <AppShell title="Substituições" active="/worship" email={ctx.email}>
+  return <AppShell title="Trocas e substituições" active="/worship/substitutions" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}>
       <a className="button" href="/worship">← Voltar ao Louvor</a>
