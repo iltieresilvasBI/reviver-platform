@@ -13,7 +13,7 @@ export default async function WorshipReportsPage({
     :{data:null as any};
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
   if(!canLead){
-    return <AppShell title="Relatórios do Louvor" active="/worship" email={ctx.email}>
+    return <AppShell title="Relatórios do Louvor" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
       <section className="hero-card"><p className="eyebrow">ACESSO RESTRITO</p><h2>Relatórios disponíveis apenas para líderes e administradores.</h2><Link className="button" href="/worship">Voltar</Link></section>
     </AppShell>;
   }
@@ -130,7 +130,7 @@ export default async function WorshipReportsPage({
   if(qs.q) query.set("q",qs.q);
   if(qs.serviceType) query.set("serviceType",qs.serviceType);
 
-  return <AppShell title="Relatórios do Louvor" active="/worship" email={ctx.email}>
+  return <AppShell title="Relatórios do Louvor" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/worship/repertoire">← Repertório</Link><a className="button primary" href={"/api/worship/reports.csv?"+query.toString()}>Exportar CSV</a></div>
     <section className="hero-card"><p className="eyebrow">RELATÓRIOS</p><h2>Utilização real do repertório.</h2><p>Somente execuções confirmadas em cultos concluídos entram nestes números.</p></section>
     {error&&<div className="notice warn" style={{marginTop:16}}>Não foi possível carregar todas as execuções.</div>}
