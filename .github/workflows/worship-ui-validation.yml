@@ -10,9 +10,33 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  dependency-repair:
+    if: github.event_name == 'pull_request' && github.head_ref == 'feature/worship-role-ux-20261109' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/worship-role-ux-20261109
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Patch without forcing major changes
+        run: |
+          npm audit fix
+          npm audit --audit-level=high
+      - name: Commit patched lockfile to same branch
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json
+          git commit -m 'fix(deps): update audited dependencies'
+          git push origin HEAD:feature/worship-role-ux-20261109
   ui-validation:
     runs-on: ubuntu-latest
     timeout-minutes: 15
