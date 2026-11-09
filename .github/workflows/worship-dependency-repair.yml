@@ -1,0 +1,49 @@
+name: Repair Dependency Audit (Worship PR)
+
+on:
+  push:
+    branches:
+      - feature/worship-role-ux-20261109
+    paths:
+      - '.github/workflows/worship-dependency-repair.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.repository == 'iltieresilvasBI/reviver-platform'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/worship-role-ux-20261109
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Apply non-breaking dependency patches
+        run: |
+          npm audit fix
+          npm audit --audit-level=high
+      - name: Verify clean install and types
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://blyvwsbbrnhpswvxezjt.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_4rlp2NXYO9blpvsrRS-C7A_VX6ssJAi
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+      - name: Commit updated manifest and lockfile to PR branch
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency changes necessary"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "fix(deps): patch vulnerable packages without major upgrades"
+          git push origin HEAD:feature/worship-role-ux-20261109
