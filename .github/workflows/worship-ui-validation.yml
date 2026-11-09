@@ -6,50 +6,18 @@ on:
       - 'app/worship/**'
       - 'components/app-shell.tsx'
       - 'app/globals.css'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/worship-ui-validation.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  dependency-repair:
-    if: github.event_name == 'pull_request' && github.head_ref == 'feature/worship-role-ux-20261109' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: feature/worship-role-ux-20261109
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm ci
-      - name: Override vulnerable build-only glob dependencies
-        run: |
-          npm pkg set 'overrides.glob=^14.0.2' 'overrides.minimatch=^11.0.1'
-          npm install --package-lock-only
-          npm ci
-          npm audit --audit-level=high
-      - name: Check compatibility before committing
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://blyvwsbbrnhpswvxezjt.supabase.co
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_4rlp2NXYO9blpvsrRS-C7A_VX6ssJAi
-        run: |
-          npm run typecheck
-          npm run build
-          npm run cf:build
-      - name: Commit patched lockfile to same branch
-        run: |
-          if git diff --quiet -- package.json package-lock.json; then exit 0; fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add package.json package-lock.json
-          git commit -m 'fix(deps): update audited dependencies'
-          git push origin HEAD:feature/worship-role-ux-20261109
   ui-validation:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://blyvwsbbrnhpswvxezjt.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_4rlp2NXYO9blpvsrRS-C7A_VX6ssJAi
@@ -60,7 +28,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Check dependency security
+        run: npm audit --audit-level=high
       - name: TypeScript validation
         run: npm run typecheck
       - name: Next.js build
         run: npm run build
+      - name: Cloudflare compatibility build
+        run: npm run cf:build
