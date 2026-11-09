@@ -12,7 +12,7 @@ export default async function WorshipRunSheetPage({params,searchParams}:{params:
   const {data:membership}=network?await ctx.supabase.from("network_memberships").select("role,status").eq("network_id",network.id).eq("user_id",ctx.userId).maybeSingle():{data:null as any};
   const canRead=ctx.isAdmin||membership?.status==="active";
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
-  if(!canRead)return <AppShell title="Roteiro do culto" active="/worship" email={ctx.email}><section className="hero-card"><h2>Acesso ao Louvor necessário.</h2><Link className="button" href="/worship">Voltar</Link></section></AppShell>;
+  if(!canRead)return <AppShell title="Roteiro do culto" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}><section className="hero-card"><h2>Acesso ao Louvor necessário.</h2><Link className="button" href="/worship">Voltar</Link></section></AppShell>;
 
   const [{data:schedule},{data:items},{data:songs},{data:notes}]=await Promise.all([
     ctx.supabase.from("worship_schedules").select("id,title,service_type,starts_at,call_time,group_code,themes,location,status,publication_state").eq("id",id).maybeSingle(),
@@ -20,12 +20,12 @@ export default async function WorshipRunSheetPage({params,searchParams}:{params:
     ctx.supabase.from("worship_songs").select("id,title,artist,default_key,recommended_key").eq("active",true).is("archived_at",null).order("title"),
     ctx.supabase.from("worship_schedule_notes").select("id,note_type,visibility,body,due_at,resolved_at,created_by,created_at").eq("schedule_id",id).order("created_at",{ascending:false}),
   ]);
-  if(!schedule)return <AppShell title="Roteiro do culto" active="/worship" email={ctx.email}><section className="hero-card"><h2>Culto não encontrado.</h2><Link className="button" href="/worship">Voltar</Link></section></AppShell>;
+  if(!schedule)return <AppShell title="Roteiro do culto" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}><section className="hero-card"><h2>Culto não encontrado.</h2><Link className="button" href="/worship">Voltar</Link></section></AppShell>;
 
   const total=(items??[]).reduce((n:number,x:any)=>n+(x.planned_minutes??0),0);
   const songById=new Map((songs??[]).map((s:any)=>[s.id,s]));
 
-  return <AppShell title="Roteiro do culto" active="/worship" email={ctx.email}>
+  return <AppShell title="Roteiro do culto" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/worship">← Louvor</Link><a className="button" href={"/api/worship/schedule-card/"+schedule.id} target="_blank" rel="noreferrer">Abrir imagem da escala</a></div>
     <section className="hero-card"><p className="eyebrow">ROTEIRO DO CULTO</p><h2>{schedule.title}</h2><p>{new Date(schedule.starts_at).toLocaleString("pt-PT")} · Grupo {schedule.group_code??"—"} · {(schedule.themes??[]).join(" / ")||"sem tema"}{schedule.location?" · "+schedule.location:""}</p></section>
