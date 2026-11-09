@@ -32,7 +32,7 @@ export default async function WorshipSubstitutionsPage({
   const canRead=ctx.isAdmin||membership?.status==="active";
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
   if(!canRead){
-    return <AppShell title="Trocas e substituições" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
+    return <AppShell title="Trocas e substituições" active="/worship/substitutions" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
       <section className="hero-card"><h2>Acesso ativo ao Louvor necessário.</h2><Link className="button" href="/worship">Voltar</Link></section>
     </AppShell>;
   }
