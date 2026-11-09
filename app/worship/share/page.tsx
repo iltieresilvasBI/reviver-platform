@@ -98,7 +98,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
     "Portal: "+portalUrl
   ].filter(Boolean).join("\n"):"";
 
-  return <AppShell title={canLead?"Comunicação do Louvor":"Preferências de contacto"} active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
+  return <AppShell title={canLead?"Comunicação do Louvor":"Preferências de contacto"} active="/worship/share" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}><a className="button" href="/worship">← Voltar ao Louvor</a></div>
     <section className="hero-card"><p className="eyebrow">COMUNICAÇÃO</p><h2>{canLead?"Mensagens e confirmações de escala.":"Escolhe como queres receber avisos."}</h2><p>{canLead?(whatsappIntegration.configured?"A integração permite o envio individual de escalas e pedidos de substituição.":"O envio automático ainda aguarda a configuração da Meta. A partilha manual continua disponível."):"Autoriza notificações e escolhe WhatsApp ou email. Podes alterar esta preferência quando quiseres."}</p></section>
