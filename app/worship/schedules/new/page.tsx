@@ -50,7 +50,7 @@ export default async function NewWorshipSchedulePage({
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
 
   if(!canLead){
-    return <AppShell title="Nova escala" active="/worship" email={ctx.email}>
+    return <AppShell title="Nova escala" active="/worship/schedules/new" email={ctx.email} variant="worship-leader">
       <section className="hero-card"><h2>Acesso de liderança necessário.</h2><Link className="button" href="/worship">Voltar</Link></section>
     </AppShell>;
   }
@@ -112,7 +112,7 @@ export default async function NewWorshipSchedulePage({
     "Músicas: "+songCount
   ].filter(Boolean).join("\n"):"";
 
-  return <AppShell title="Nova escala" active="/worship" email={ctx.email}>
+  return <AppShell title="Nova escala" active="/worship/schedules/new" email={ctx.email} variant="worship-leader">
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}>
       <Link className="button" href="/worship">← Louvor</Link>

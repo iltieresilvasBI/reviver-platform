@@ -32,7 +32,7 @@ export default async function WorshipSubstitutionsPage({
   const canRead=ctx.isAdmin||membership?.status==="active";
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
   if(!canRead){
-    return <AppShell title="Substituições" active="/worship" email={ctx.email}>
+    return <AppShell title="Trocas e substituições" active="/worship/substitutions" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
       <section className="hero-card"><h2>Acesso ativo ao Louvor necessário.</h2><Link className="button" href="/worship">Voltar</Link></section>
     </AppShell>;
   }
@@ -54,20 +54,20 @@ export default async function WorshipSubstitutionsPage({
   const directory=canLead?(await ctx.supabase.rpc("worship_member_directory")).data??[]:[];
   const personByMembership=new Map((directory??[]).map((p:any)=>[p.membership_id,p]));
 
-  return <AppShell title="Substituições" active="/worship" email={ctx.email}>
+  return <AppShell title="Trocas e substituições" active="/worship/substitutions" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}>
-      <Link className="button" href="/worship">← Louvor</Link>
+      <a className="button" href="/worship">← Voltar ao Louvor</a>
       {canLead&&<Link className="button" href="/worship/band-rotation">Combinações e backups</Link>}
     </div>
 
     <section className="hero-card">
       <p className="eyebrow">SUBSTITUIÇÃO AUTOMÁTICA</p>
-      <h2>Sem validação manual da liderança.</h2>
-      <p>Ao pedir substituição, a plataforma procura backups compatíveis com a mesma função, ignora quem está indisponível ou já escalado e envia o pedido aos candidatos. O primeiro que aceitar assume automaticamente a posição.</p>
+      <h2>Peça uma troca ou responda como backup.</h2>
+      <p>Não podes servir? Pede uma substituição na tua escala. Os backups disponíveis recebem o pedido e a primeira aceitação válida atualiza a equipa automaticamente. Podes acompanhar os pedidos abaixo.</p><div className="button-row" style={{marginTop:16}}><a className="button primary" href="#request-change">Preciso de substituição</a><a className="button" href="#backup-offers">Responder a pedido</a></div>
     </section>
 
-    <div className="section-title"><div><p className="eyebrow">MINHAS ESCALAS</p><h2>Preciso de substituição</h2></div></div>
+    <div id="request-change" className="section-title"><div><p className="eyebrow">MINHAS ESCALAS</p><h2>Preciso de substituição</h2></div></div>
     <div className="list">{myAssignments.length===0?<div className="empty">Não tens escalas futuras atribuídas.</div>:myAssignments.map((a:any)=>{
       const schedule=scheduleById.get(a.schedule_id) as any;
       const existing=(requests??[]).find((r:any)=>r.assignment_id===a.id&&!["rejected","cancelled","approved"].includes(r.status));
@@ -92,7 +92,7 @@ export default async function WorshipSubstitutionsPage({
       </article>;
     })}</div>
 
-    <div className="section-title"><div><p className="eyebrow">PEDIDOS PARA MIM</p><h2>Posso substituir?</h2></div></div>
+    <div id="backup-offers" className="section-title"><div><p className="eyebrow">PEDIDOS PARA MIM</p><h2>Posso substituir?</h2></div></div>
     <div className="list">{myOffers.length===0?<div className="empty">Nenhum pedido de backup pendente.</div>:myOffers.map((offer:any)=>{
       const req=(requests??[]).find((r:any)=>r.id===offer.request_id);
       const assignment=req?assignmentById.get(req.assignment_id) as any:null;

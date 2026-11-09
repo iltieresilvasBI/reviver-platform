@@ -48,7 +48,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
 
   if(!canRead){
-    return <AppShell title="Ministério de Louvor" active="/worship" email={ctx.email}>
+    return <AppShell title="Gestão do Louvor" active="/worship" email={ctx.email} variant="worship-leader">
       {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
       <section className="hero-card">
         <p className="eyebrow">ACESSO INTERNO</p><h2>Recursos do Ministério de Louvor</h2>
@@ -119,13 +119,13 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         <section className="hero-card">
           <p className="eyebrow">ÁREA DO INTEGRANTE</p>
           <h2>As tuas escalas, repertórios e avisos.</h2>
-          <p className="readonly-note">Esta visão é apenas de consulta. Planeamento, edição de repertório, gestão de pessoas e publicação ficam reservados à liderança.</p>
+          <p className="readonly-note">Aqui podes consultar as tuas escalas, confirmar presença, indicar quando não podes servir e responder a pedidos de substituição. A criação e edição de escalas é exclusiva da liderança.</p>
           <div className="button-row" style={{marginTop:18}}>
-            <Link className="button primary" href="/academy">Abrir Academy</Link>
+            <a className="button primary" href="#my-schedules">Ver as minhas escalas</a>
+            <Link className="button" href="/worship/substitutions">Pedir ou aceitar troca</Link>
+            <a className="button" href="#my-availability">Indicar indisponibilidade</a>
             <Link className="button" href="/worship/repertoire">Consultar repertório</Link>
-            <a className="button" href="/worship/calendar">Meu calendário</a>
-            <Link className="button" href="/worship/substitutions">Substituições</Link>
-            <Link className="button" href="/worship/share">Comunicação</Link>
+            <Link className="button" href="/worship/share">Preferências de contacto</Link>
           </div>
         </section>
 
@@ -141,7 +141,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <div className="grid grid-3">{memberReminders.slice(0,6).map((reminder:any,index:number)=><a className="card" href={reminder.href} key={reminder.title+"-"+index}><span className={reminder.kind==="action"?"pill gold":"pill"}>{reminder.kind==="action"?"ação":reminder.kind==="soon"?"próximo":"info"}</span><h3>{reminder.title}</h3><p className="muted small">{reminder.body}</p></a>)}</div>
         </>}
 
-        <div className="section-title"><div><p className="eyebrow">ESCALAS</p><h2>Minhas próximas participações</h2></div><span className="muted small">Definidas pela gestão do Louvor</span></div>
+        <div id="my-schedules" className="section-title"><div><p className="eyebrow">ESCALAS</p><h2>Minhas próximas participações</h2></div><span className="muted small">Definidas pela gestão do Louvor</span></div>
         <div className="list">{memberSchedules.length===0?<div className="empty">Não tens nenhuma escala futura atribuída.</div>:memberSchedules.map((schedule:any)=>{
           const assignment=myAssignments.find((a:any)=>a.schedule_id===schedule.id);
           const response=assignment?memberResponseByAssignment.get(assignment.id) as any:null;
@@ -187,7 +187,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           </article>;
         })}</div>
 
-        <div className="section-title"><div><p className="eyebrow">DISPONIBILIDADE</p><h2>Quando não posso servir</h2></div><span className="muted small">A liderança verá conflito ao montar a escala.</span></div>
+        <div id="my-availability" className="section-title"><div><p className="eyebrow">DISPONIBILIDADE</p><h2>Quando não posso servir</h2></div><span className="muted small">A liderança verá conflito ao montar a escala.</span></div>
         <div className="grid grid-2">
           <form action={createWorshipUnavailability} className="card form-grid">
             <div className="grid grid-2">
@@ -303,9 +303,9 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
 
     <section className="hero-card">
       <p className="eyebrow">REVIVER WORSHIP</p>
-      <h2>Escala, repertório e formação no mesmo lugar.</h2>
+      <h2>Organize os cultos, a equipa e o repertório.</h2>
       <p>Organiza os grupos A/B/C/D, prepara cultos e ensaios, mantém o repertório centralizado e acompanha a evolução da equipa na Academy.</p>
-      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/academy">Abrir Academy</Link><Link className="button" href="/worship/repertoire">Repertório inteligente</Link>{canLead&&<Link className="button" href="/worship/reports">Relatórios</Link>}{canLead&&<Link className="button" href="/worship/themes">Temas</Link>}<Link className="button" href="/worship/substitutions">Substituições</Link><Link className="button" href="/worship/share">Comunicação</Link>{canLead&&<Link className="button" href="/worship/import">Importar membros</Link>}<Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação vocal A/B/C/D</Link>{canLead&&<Link className="button" href="/worship/band-rotation">Banda e backups</Link>}<a className="button" href="/worship/calendar">Exportar meu calendário</a></div>
+      <div className="button-row" style={{marginTop:18}}><Link className="button primary" href="/worship/schedules/new">Criar nova escala</Link><Link className="button" href="/academy">Abrir Academy</Link><Link className="button" href="/worship/repertoire">Repertório inteligente</Link>{canLead&&<Link className="button" href="/worship/reports">Relatórios</Link>}{canLead&&<Link className="button" href="/worship/themes">Temas</Link>}<Link className="button" href="/worship/substitutions">Substituições</Link><Link className="button" href="/worship/share">Comunicação</Link>{canLead&&<Link className="button" href="/worship/import">Importar membros</Link>}<Link className="button" href="/academy/resources">Biblioteca de recursos</Link><Link className="button" href="/worship/rotacao">Rotação vocal A/B/C/D</Link>{canLead&&<Link className="button" href="/worship/band-rotation">Banda e backups</Link>}<a className="button" href="/worship/calendar">Exportar meu calendário</a></div>
     </section>
 
     <div className="grid grid-4" style={{marginTop:18}}>
