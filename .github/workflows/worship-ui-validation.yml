@@ -25,10 +25,20 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - name: Patch without forcing major changes
+      - name: Override vulnerable build-only glob dependencies
         run: |
-          npm audit fix || true
-          npm audit --audit-level=high || true
+          npm pkg set 'overrides.glob=^14.0.2' 'overrides.minimatch=^11.0.1'
+          npm install --package-lock-only
+          npm ci
+          npm audit --audit-level=high
+      - name: Check compatibility before committing
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://blyvwsbbrnhpswvxezjt.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_4rlp2NXYO9blpvsrRS-C7A_VX6ssJAi
+        run: |
+          npm run typecheck
+          npm run build
+          npm run cf:build
       - name: Commit patched lockfile to same branch
         run: |
           if git diff --quiet -- package.json package-lock.json; then exit 0; fi
