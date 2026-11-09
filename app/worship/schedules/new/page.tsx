@@ -112,7 +112,7 @@ export default async function NewWorshipSchedulePage({
     "Músicas: "+songCount
   ].filter(Boolean).join("\n"):"";
 
-  return <AppShell title="Nova escala" active="/worship" email={ctx.email} variant="worship-leader">
+  return <AppShell title="Nova escala" active="/worship/schedules/new" email={ctx.email} variant="worship-leader">
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
     <div className="button-row" style={{marginBottom:18}}>
       <Link className="button" href="/worship">← Louvor</Link>
