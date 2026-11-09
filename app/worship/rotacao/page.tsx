@@ -16,7 +16,7 @@ export default async function WorshipRotationPage({searchParams}:{searchParams:P
 
   const canRead=ctx.isAdmin||membership?.status==="active";
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
-  if(!canRead) return <AppShell title="Rotação do Louvor" active="/worship" email={ctx.email}><div className="empty">Acesso reservado ao Ministério de Louvor.</div></AppShell>;
+  if(!canRead) return <AppShell title="Rotação do Louvor" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}><div className="empty">Acesso reservado ao Ministério de Louvor.</div></AppShell>;
 
   const [{data:slots},{data:months}]=await Promise.all([
     ctx.supabase.from("worship_rotation_service_slots").select("*").order("weekday").order("service_time").order("sort_order"),
@@ -36,7 +36,7 @@ export default async function WorshipRotationPage({searchParams}:{searchParams:P
   const min=Math.min(...Object.values(load),0);
   const balanced=(assignments??[]).length===0?true:max-min<=1;
 
-  return <AppShell title="Rotação A/B/C/D" active="/worship" email={ctx.email}>
+  return <AppShell title="Rotação A/B/C/D" active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     <div className="button-row" style={{marginBottom:18}}>
       <Link className="button" href="/worship">← Ministério de Louvor</Link>
     </div>
