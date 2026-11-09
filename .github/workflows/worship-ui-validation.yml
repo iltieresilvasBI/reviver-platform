@@ -5,6 +5,7 @@ on:
     paths:
       - 'app/worship/**'
       - 'scripts/test-worship-flow.mjs'
+      - 'scripts/audit-worship-buttons.mjs'
       - 'components/app-shell.tsx'
       - 'app/globals.css'
       - 'package.json'
@@ -32,7 +33,9 @@ jobs:
       - name: Check dependency security
         run: npm audit --audit-level=high
       - name: Worship role journey and button contract tests
-        run: node scripts/test-worship-flow.mjs
+        run: |
+          node scripts/test-worship-flow.mjs
+          node scripts/audit-worship-buttons.mjs
       - name: TypeScript validation
         run: npm run typecheck
       - name: Next.js build
