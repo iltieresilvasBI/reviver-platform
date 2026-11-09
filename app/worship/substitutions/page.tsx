@@ -21,7 +21,7 @@ function roleLabel(value:string|null|undefined){
 
 export default async function WorshipSubstitutionsPage({
   searchParams
-}:{searchParams:Promise<{message?:string}>}){
+}:{searchParams:Promise<{message?:string;schedule?:string}>}){
   const qs=await searchParams;
   const ctx=await getAccessContext();
   const {data:network}=await ctx.supabase.from("networks").select("id").eq("slug","worship").maybeSingle();
@@ -48,7 +48,7 @@ export default async function WorshipSubstitutionsPage({
 
   const scheduleById=new Map((schedules??[]).map((s:any)=>[s.id,s]));
   const assignmentById=new Map((assignments??[]).map((a:any)=>[a.id,a]));
-  const myAssignments=(assignments??[]).filter((a:any)=>a.membership_id===membership?.id&&scheduleById.has(a.schedule_id));
+  const myAssignments=(assignments??[]).filter((a:any)=>a.membership_id===membership?.id&&scheduleById.has(a.schedule_id)).sort((a:any,b:any)=>Number(b.schedule_id===qs.schedule)-Number(a.schedule_id===qs.schedule));
   const myOffers=(offers??[]).filter((o:any)=>o.proposed_membership_id===membership?.id&&o.status==="pending"&&((requests??[]).some((req:any)=>req.id===o.request_id&&req.status==="requested")));
 
   const directory=canLead?(await ctx.supabase.rpc("worship_member_directory")).data??[]:[];
@@ -72,7 +72,7 @@ export default async function WorshipSubstitutionsPage({
       const schedule=scheduleById.get(a.schedule_id) as any;
       const existing=(requests??[]).find((r:any)=>r.assignment_id===a.id&&!["rejected","cancelled","approved"].includes(r.status));
       const completed=(requests??[]).find((r:any)=>r.assignment_id===a.id&&r.status==="approved");
-      return <article className="card" key={a.id}>
+      return <article className={qs.schedule===a.schedule_id?"card worship-focused":"card"} key={a.id}>
         <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
           <div>
             <h3>{schedule?.title??"Culto"}</h3>
