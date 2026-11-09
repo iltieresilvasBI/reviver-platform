@@ -158,7 +158,7 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                   <input name="note" className="inline-input" placeholder="Motivo opcional"/>
                   <SubmitButton className="button danger" pendingText="A registar…">Não posso servir</SubmitButton>
                 </form>
-                <a className="button" href={"/worship/substitutions?schedule="+schedule.id}>Procurar substituto</a>
+                <a className="button" href={"/worship/substitutions?schedule="+schedule.id+"#request-change"}>Procurar substituto</a>
               </div>
               {response&&<div className="muted small" style={{marginTop:10}}>Resposta atual: {response.response_status==="confirmed"?"Confirmado":"Não disponível"}{response.note?" · "+response.note:""}</div>}
             </div>}
