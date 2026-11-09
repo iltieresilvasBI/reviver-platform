@@ -56,7 +56,7 @@ export default async function NewWorshipSchedulePage({
   }
 
   const scheduleId=qs.schedule??"";
-  const step=["details","participants","songs","run-sheet"].includes(qs.step??"")?(qs.step as string):"details";
+  const step=scheduleId&&["details","participants","songs","run-sheet"].includes(qs.step??"")?(qs.step as string):"details";
 
   const {data:schedule}=scheduleId
     ?await ctx.supabase.from("worship_schedules").select("*").eq("id",scheduleId).maybeSingle()
@@ -126,7 +126,7 @@ export default async function NewWorshipSchedulePage({
           ["participants","Participantes","♟"],
           ["songs","Músicas","♫"],
           ["run-sheet","Roteiro","◷"],
-        ].map(([id,label,icon])=><Link
+        ].map(([id,label,icon])=>!schedule&&id!=="details"?<div key={id} className="card muted" aria-disabled="true" style={{textAlign:"center",padding:14,opacity:.45}}><div style={{fontSize:22}}>{icon}</div><strong>{label}</strong><div className="muted small">Crie primeiro a escala</div></div>:<Link
           href={tabHref(schedule?.id,id)}
           key={id}
           className={step===id?"card":"card muted"}
@@ -221,9 +221,9 @@ export default async function NewWorshipSchedulePage({
           <div className="button-row">
             {schedule.publication_state==="draft"&&<form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={schedule.id}/><input type="hidden" name="publicationAction" value="approve"/><SubmitButton className="button" pendingText="A aprovar…">Aprovar escala</SubmitButton></form>}
             {schedule.publication_state!=="published"&&<form action={updateWorshipPublication}><input type="hidden" name="scheduleId" value={schedule.id}/><input type="hidden" name="publicationAction" value="publish"/><SubmitButton className="button primary" pendingText="A publicar…">Publicar escala</SubmitButton></form>}
-            {schedule.publication_state==="published"&&<form action={sendScheduleWhatsApp}><input type="hidden" name="scheduleId" value={schedule.id}/><SubmitButton className="button primary" pendingText="A enviar pela Meta…" disabled={!whatsappIntegration.configured}>Enviar WhatsApp pela Meta</SubmitButton></form>}
+            {schedule.publication_state==="published"&&<form action={sendScheduleWhatsApp}><input type="hidden" name="scheduleId" value={schedule.id}/><SubmitButton className="button primary" pendingText="A enviar pela Meta…" disabled={!whatsappIntegration.configured||participantCount===0}>Enviar WhatsApp pela Meta</SubmitButton></form>}
             <Link className="button" href={"/worship/share?schedule="+schedule.id}>Comunicação e estados</Link>
-            <a className="button" href={"https://wa.me/?text="+encodeURIComponent(shareText)} target="_blank" rel="noreferrer">Partilhar no grupo</a>
+            {schedule.publication_state==="published"&&<a className="button" href={"https://wa.me/?text="+encodeURIComponent(shareText)} target="_blank" rel="noreferrer">Partilhar no grupo</a>}
           </div>
           <p className="muted small">{whatsappIntegration.configured?"Depois de Publicar, pode disparar as mensagens individuais pela API oficial. A página Comunicação mostra enviado, entregue, lido e falhas.":"A Cloud API ainda aguarda as credenciais da Meta; a partilha manual continua disponível."} O botão de grupo abre o WhatsApp para escolher o grupo atual do Louvor.</p>
         </div>
