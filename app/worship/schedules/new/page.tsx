@@ -61,6 +61,9 @@ export default async function NewWorshipSchedulePage({
   const {data:schedule}=scheduleId
     ?await ctx.supabase.from("worship_schedules").select("*").eq("id",scheduleId).maybeSingle()
     :{data:null as any};
+  if(scheduleId&&!schedule){
+    return <AppShell title="Escala indisponível" active="/worship/schedules/new" email={ctx.email} variant="worship-leader"><section className="hero-card"><h2>Esta escala não está disponível.</h2><p>O registo pode ter sido removido ou já não estar acessível.</p><a className="button primary" href="/worship">Voltar aos cultos</a></section></AppShell>;
+  }
 
   const [{data:directory},{data:profiles},{data:assignments},{data:songs},{data:scheduleSongs},{data:executions},{data:bandTemplates}]=schedule?await Promise.all([
     ctx.supabase.rpc("worship_member_directory"),
