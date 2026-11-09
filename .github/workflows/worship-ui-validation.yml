@@ -1,0 +1,32 @@
+name: Worship UI Validation
+
+on:
+  pull_request:
+    paths:
+      - 'app/worship/**'
+      - 'components/app-shell.tsx'
+      - 'app/globals.css'
+      - '.github/workflows/worship-ui-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: TypeScript validation
+        run: npm run typecheck
+      - name: Next.js build
+        run: npm run build
