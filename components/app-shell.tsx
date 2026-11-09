@@ -17,21 +17,17 @@ const nav=[
 
 const worshipMemberNav=[
   ["Meu Louvor","/worship"],
-  ["Trocas de escala","/worship/substitutions"],
-  ["Repertório","/worship/repertoire"],
-  ["Academy","/academy"],
-  ["Biblioteca","/academy/resources"],
-  ["Perfil","/profile"],
+  ["Trocas","/worship/substitutions"],
+  ["Músicas","/worship/repertoire"],
+  ["Contacto","/worship/share"],
 ];
 
 const worshipLeaderNav=[
   ["Gestão do Louvor","/worship"],
-  ["Criar escala","/worship/schedules/new"],
+  ["Nova escala","/worship/schedules/new"],
   ["Repertório","/worship/repertoire"],
-  ["Trocas e backups","/worship/substitutions"],
+  ["Trocas","/worship/substitutions"],
   ["Comunicação","/worship/share"],
-  ["Formação","/academy"],
-  ["Perfil","/profile"],
 ];
 
 export function AppShell({title,eyebrow="REVIVER PLATFORM",active,email,variant="default",children}:Props){
