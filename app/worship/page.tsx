@@ -121,11 +121,9 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
           <h2>As tuas próximas participações.</h2>
           <p className="readonly-note">Consulta a tua escala, confirma a presença ou pede uma troca. A liderança organiza os cultos.</p>
           <div className="button-row" style={{marginTop:18}}>
-            <a className="button primary" href="#my-schedules">Ver as minhas escalas</a>
+            <a className="button primary" href="#my-schedules">Ver minhas escalas</a>
             <Link className="button" href="/worship/substitutions">Pedir ou aceitar troca</Link>
-            <a className="button" href="#my-availability">Indicar ausência</a>
-            <Link className="button" href="/worship/repertoire">Consultar repertório</Link>
-            <Link className="button" href="/worship/share">Preferências de contacto</Link>
+            <a className="button" href="#my-availability">Indicar indisponibilidade</a>
           </div>
         </section>
 
@@ -158,9 +156,9 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
                   <input type="hidden" name="assignmentId" value={assignment.id}/>
                   <input type="hidden" name="responseStatus" value="declined"/>
                   <input name="note" className="inline-input" placeholder="Motivo opcional"/>
-                  <SubmitButton className="button danger" pendingText="A registar…">Não posso</SubmitButton>
+                  <SubmitButton className="button danger" pendingText="A registar…">Não posso servir</SubmitButton>
                 </form>
-                <Link className="button" href={"/worship/substitutions?schedule="+schedule.id}>Pedir substituição</Link>
+                <Link className="button" href={"/worship/substitutions?schedule="+schedule.id}>Procurar substituto</Link>
               </div>
               {response&&<div className="muted small" style={{marginTop:10}}>Resposta atual: {response.response_status==="confirmed"?"Confirmado":"Não disponível"}{response.note?" · "+response.note:""}</div>}
             </div>}
