@@ -98,10 +98,10 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
     "Portal: "+portalUrl
   ].filter(Boolean).join("\n"):"";
 
-  return <AppShell title="Comunicação do Louvor" active="/worship" email={ctx.email}>
+  return <AppShell title={canLead?"Comunicação do Louvor":"Preferências de contacto"} active="/worship" email={ctx.email} variant={canLead?"worship-leader":"worship-member"}>
     {qs.message&&<div className="notice" style={{marginBottom:16}}>{qs.message}</div>}
-    <div className="button-row" style={{marginBottom:18}}><Link className="button" href="/worship">← Louvor</Link></div>
-    <section className="hero-card"><p className="eyebrow">COMUNICAÇÃO</p><h2>WhatsApp com consentimento explícito.</h2><p>{whatsappIntegration.configured?"A Cloud API está pronta para envio individual, confirmações e substituições.":"A infraestrutura oficial está instalada; falta apenas ligar as credenciais e templates aprovados da Meta."}</p></section>
+    <div className="button-row" style={{marginBottom:18}}><a className="button" href="/worship">← Voltar ao Louvor</a></div>
+    <section className="hero-card"><p className="eyebrow">COMUNICAÇÃO</p><h2>{canLead?"Mensagens e confirmações de escala.":"Escolhe como queres receber avisos."}</h2><p>{canLead?(whatsappIntegration.configured?"A integração permite o envio individual de escalas e pedidos de substituição.":"O envio automático ainda aguarda a configuração da Meta. A partilha manual continua disponível."):"Autoriza notificações e escolhe WhatsApp ou email. Podes alterar esta preferência quando quiseres."}</p></section>
 
     <div className="grid grid-2" style={{marginTop:18}}>
       <form action={saveMyWorshipCommunicationPreference} className="card form-grid">
@@ -110,7 +110,7 @@ export default async function WorshipSharePage({searchParams}:{searchParams:Prom
         <div className="field"><label>Canal preferido</label><select name="communicationPreference" defaultValue={myProfile?.communication_preference??""}><option value="">Sem preferência</option><option value="WhatsApp">WhatsApp</option><option value="Email">Email</option></select></div>
         <SubmitButton className="button" pendingText="A guardar…">Guardar preferências</SubmitButton>
       </form>
-      <article className="card"><p className="eyebrow">ESTADO DA INTEGRAÇÃO</p><h3>{whatsappIntegration.configured?"Cloud API pronta":"Aguardando credenciais Meta"}</h3><p className="muted">{whatsappIntegration.configured?(whatsappIntegration.webhookConfigured?"Envio e webhook configurados. Estados de entrega e respostas podem ser sincronizados automaticamente.":"Envio configurado, mas o webhook ainda não está completo."):"O portal não envia nada pela API enquanto os secrets não estiverem configurados. O modo manual continua disponível."}</p></article>
+      {canLead&&<article className="card"><p className="eyebrow">ESTADO DA INTEGRAÇÃO</p><h3>{whatsappIntegration.configured?"Cloud API pronta":"Aguardando credenciais Meta"}</h3><p className="muted">{whatsappIntegration.configured?(whatsappIntegration.webhookConfigured?"Envio e webhook configurados. Estados de entrega e respostas podem ser sincronizados automaticamente.":"Envio configurado, mas o webhook ainda não está completo."):"O portal não envia nada pela API enquanto os secrets não estiverem configurados. O modo manual continua disponível."}</p></article>}
     </div>
 
     {canLead&&<>
