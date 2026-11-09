@@ -50,7 +50,7 @@ export default async function NewWorshipSchedulePage({
   const canLead=ctx.isAdmin||(membership?.status==="active"&&membership?.role==="leader");
 
   if(!canLead){
-    return <AppShell title="Nova escala" active="/worship" email={ctx.email} variant="worship-leader">
+    return <AppShell title="Nova escala" active="/worship/schedules/new" email={ctx.email} variant="worship-leader">
       <section className="hero-card"><h2>Acesso de liderança necessário.</h2><Link className="button" href="/worship">Voltar</Link></section>
     </AppShell>;
   }
