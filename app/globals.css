@@ -175,3 +175,12 @@ button.pill:active{transform:scale(.97)}
   }
 }
 .card[href]:active,a.card:active{transform:translateY(0) scale(.99)}
+
+
+/* Worship operational UX: keyboard access, anchors, and compact action areas. */
+.skip-link{position:absolute;left:12px;top:-90px;z-index:100;background:var(--gold);color:#17120a;border-radius:8px;padding:12px 18px;font-weight:800}
+.skip-link:focus{top:12px}
+#page-content [id]{scroll-margin-top:24px}
+#page-content a:focus-visible,#page-content button:focus-visible,#page-content input:focus-visible,#page-content select:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+#page-content .button-row{flex-wrap:wrap}
+@media(max-width:720px){#page-content .hero-card .button-row>.button{flex:1 1 180px;text-align:center}#page-content .list-row{flex-wrap:wrap}}
