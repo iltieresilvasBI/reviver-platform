@@ -235,24 +235,8 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
     }).sort((a:any,b:any)=>b.score-a.score||a.usage.count-b.usage.count||String(a.song.title).localeCompare(String(b.song.title),"pt-PT"));
   };
 
-  const {count:lessonCount}=canLead
-    ?await ctx.supabase.from("academy_lessons").select("*",{count:"exact",head:true}).eq("active",true)
-    :{count:0 as number|null};
-
-  const memberMetrics=canLead?await Promise.all((directory??[]).map(async(m:any)=>{
-    const [{data:progress},{data:attempts},{data:practice}]=await Promise.all([
-      ctx.supabase.from("lesson_progress").select("status,last_activity_at").eq("user_id",m.user_id),
-      ctx.supabase.from("quiz_attempts").select("score_percentage,attempted_at").eq("user_id",m.user_id),
-      ctx.supabase.from("practice_sessions").select("duration_seconds,practiced_at").eq("user_id",m.user_id).order("practiced_at",{ascending:false}).limit(20)
-    ]);
-    const completed=(progress??[]).filter(p=>p.status==="completed").length;
-    const avg=(attempts??[]).length?Math.round((attempts??[]).reduce((sum,a)=>sum+Number(a.score_percentage??0),0)/(attempts??[]).length):0;
-    const last=[...(progress??[]).map(p=>p.last_activity_at),...(attempts??[]).map(a=>a.attempted_at),...(practice??[]).map(p=>p.practiced_at)].filter(Boolean).sort().at(-1)??null;
-    const practiceMinutes=Math.round((practice??[]).reduce((sum,p)=>sum+(p.duration_seconds??0),0)/60);
-    const profile=profilesByMembership.get(m.membership_id) as any;
-    const serviceParticipations=(assignments??[]).filter((a:any)=>a.membership_id===m.membership_id&&a.attendance_status==="completed").length;
-    return {...m,profile,completion:Math.round((completed/Math.max(lessonCount??0,1))*100),completed,avg,last,practiceMinutes,serviceParticipations};
-  })):[];
+  // O diretório é suficiente para a gestão diária. Dados da Academy são consultados na respetiva área.
+  const memberMetrics=(directory??[]).map((m:any)=>({...m,profile:profilesByMembership.get(m.membership_id)}));
 
   const selectedMemberGroup=(qs.memberGroup??"").trim();
   const selectedMemberRole=(qs.memberRole??"").trim();
@@ -345,12 +329,12 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
         <summary style={{cursor:"pointer"}}>
           <div className="list-row" style={{padding:0,border:0,background:"transparent"}}>
             <div><div className="button-row">{m.profile?.group_code&&<span className="pill gold">Grupo {m.profile.group_code}</span>}{(m.profile?.roles??[]).map((role:string)=><span className="pill" key={role}>{roleLabel(role)}</span>)}</div><h3 style={{margin:"8px 0 4px"}}>{m.display_name||m.email}</h3><span className="muted small">{m.email} · {m.role} · {m.status}</span></div>
-            <div className="button-row">
-              {m.status==="pending"&&<><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="approve"/><button className="button primary">Aprovar</button></form><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="reject"/><button className="button">Rejeitar</button></form></>}
-              {m.status==="active"&&<form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="revoke"/><button className="button danger">Revogar</button></form>}
-            </div>
           </div>
         </summary>
+        <div className="button-row" style={{marginTop:12}}>
+          {m.status==="pending"&&<><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="approve"/><SubmitButton className="button primary" pendingText="A aprovar…">Aprovar</SubmitButton></form><form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="reject"/><SubmitButton className="button" pendingText="A rejeitar…">Rejeitar</SubmitButton></form></>}
+          {m.status==="active"&&<form action={decideWorship}><input type="hidden" name="membershipId" value={m.membership_id}/><input type="hidden" name="decision" value="revoke"/><SubmitButton className="button danger" pendingText="A revogar…">Revogar acesso</SubmitButton></form>}
+        </div>
 
         {m.status==="active"&&<>
           <form action={saveWorshipMemberProfile} className="form-grid" style={{marginTop:16}}>
@@ -362,9 +346,6 @@ export default async function WorshipPage({searchParams}:{searchParams:Promise<{
             </div>
             <SubmitButton className="button" pendingText="A guardar…">Guardar perfil do ministério</SubmitButton>
           </form>
-          <div className="grid grid-4" style={{marginTop:14}}><div className="metric"><span>Academy</span><strong>{m.completion}%</strong></div><div className="metric"><span>Aulas concluídas</span><strong>{m.completed}</strong></div><div className="metric"><span>Média quizzes</span><strong>{m.avg}%</strong></div><div className="metric"><span>Participações</span><strong>{m.serviceParticipations}</strong></div></div>
-          <div className="muted small" style={{marginTop:10}}>Prática recente: {m.practiceMinutes}m</div>
-          {m.last&&<div className="muted small" style={{marginTop:12}}>Última atividade: {new Date(m.last).toLocaleString("pt-PT")}</div>}
         </>}
       </details>)}</div>
 
